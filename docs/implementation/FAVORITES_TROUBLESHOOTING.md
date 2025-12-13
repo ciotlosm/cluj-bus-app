@@ -12,7 +12,7 @@ The user is seeing garbled information in the favorites selection instead of pro
 **Solution**:
 1. Go to **Settings** → **Configuration** tab
 2. Set **City** to exactly `CTP Cluj` (case sensitive)
-3. Set **API Key** to `VO6FHv9mLe7CQOtPMJdWb8Za4LHJwegtxqgAJTej`
+3. Set **API Key** to `[YOUR_TRANZY_API_KEY]`
 4. Go back to **Settings** → **Favorite Buses** tab
 
 ### 2. Corrupted Favorite Bus Data

@@ -8,7 +8,7 @@
 3. **Go to "Configuration" tab**
 4. **Set the following**:
    - **City**: `CTP Cluj` (exactly as shown)
-   - **API Key**: `VO6FHv9mLe7CQOtPMJdWb8Za4LHJwegtxqgAJTej`
+   - **API Key**: `[YOUR_TRANZY_API_KEY]`
    - **Home Location**: Any address in Cluj-Napoca (e.g., "Piața Unirii, Cluj-Napoca")
    - **Work Location**: Any other address in Cluj-Napoca (e.g., "Universitatea Babeș-Bolyai, Cluj-Napoca")
 
@@ -53,8 +53,8 @@ JSON.parse(localStorage.getItem('bus-tracker-config') || '{}')
 // Check available agencies
 fetch('/api/tranzy/v1/opendata/agency', {
   headers: {
-    'Authorization': 'Bearer VO6FHv9mLe7CQOtPMJdWb8Za4LHJwegtxqgAJTej',
-    'X-API-Key': 'VO6FHv9mLe7CQOtPMJdWb8Za4LHJwegtxqgAJTej'
+    'Authorization': 'Bearer [YOUR_TRANZY_API_KEY]',
+    'X-API-Key': '[YOUR_TRANZY_API_KEY]'
   }
 }).then(r => r.json()).then(console.log)
 ```

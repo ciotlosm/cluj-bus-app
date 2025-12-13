@@ -50,3 +50,8 @@ dist-ssr
 *.tmp
 *.temp
 .cache/
+
+# Debug and test files with API keys
+src/debug-*.js
+tools/test/
+tools/debug/
