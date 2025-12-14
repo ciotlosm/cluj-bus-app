@@ -36,8 +36,14 @@ export const RouteTypeFilters: React.FC<RouteTypeFiltersProps> = ({
         </Typography>
       </Stack>
       <ToggleButtonGroup
-        value={selectedTypes}
-        onChange={onTypeFilterChange}
+        value={selectedTypes.length === 1 ? selectedTypes[0] : null} // Single selection mode
+        exclusive // Enable exclusive (single) selection
+        onChange={(event, newType) => {
+          // Handle single selection - if same type clicked, deselect (show all)
+          // If different type clicked, select only that type
+          const newTypes = newType ? [newType] : [];
+          onTypeFilterChange(event, newTypes);
+        }}
         aria-label="bus type filter"
         size="small"
         sx={{

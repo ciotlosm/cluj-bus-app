@@ -149,7 +149,9 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
   };
 
   const handleTypeFilterChange = (_event: React.MouseEvent<HTMLElement>, newTypes: string[]): void => {
-    setSelectedTypes(newTypes);
+    // Ensure only single selection - take the first type if multiple somehow selected
+    const singleType = newTypes.length > 1 ? [newTypes[0]] : newTypes;
+    setSelectedTypes(singleType);
   };
 
   return {
