@@ -1,0 +1,22 @@
+{
+  "name": "Cluj Bus Tracker",
+  "short_name": "Cluj Bus",
+  "description": "Real-time bus tracking for Cluj-Napoca, Romania",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1976d2",
+  "theme_color": "#1976d2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "navigation", "utilities"],
+  "lang": "en",
+  "scope": "/",
+  "id": "cluj-bus-tracker"
+}

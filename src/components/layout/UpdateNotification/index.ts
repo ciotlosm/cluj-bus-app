@@ -1,0 +1,1 @@
+export { UpdateNotification, default } from './UpdateNotification';

@@ -54,7 +54,7 @@ export const useRefreshSystem = () => {
     const currentAutoRefreshState = busStore.isAutoRefreshEnabled;
     
     if (currentAutoRefreshState && config?.refreshRate && config?.city && config?.homeLocation && config?.workLocation) {
-      // Restart auto refresh with new rate
+      // Restart auto refresh with new rate for enhanced bus store
       busStore.stopAutoRefresh();
       // Small delay to ensure cleanup is complete
       const timeoutId = setTimeout(() => {
@@ -65,6 +65,19 @@ export const useRefreshSystem = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [config?.refreshRate, config?.city, config?.homeLocation, config?.workLocation]); // Removed isAutoRefreshEnabled from deps
+
+  // Handle refresh rate changes for favorite bus store
+  useEffect(() => {
+    const updateFavoriteBusRefreshRate = async () => {
+      const { useFavoriteBusStore } = await import('../stores/favoriteBusStore');
+      const favoriteBusStore = useFavoriteBusStore.getState();
+      favoriteBusStore.updateRefreshRate();
+    };
+
+    if (config?.refreshRate) {
+      updateFavoriteBusRefreshRate();
+    }
+  }, [config?.refreshRate]);
 
   // Debounced manual refresh to prevent rapid successive calls
   const debouncedManualRefresh = useDebounceCallback(

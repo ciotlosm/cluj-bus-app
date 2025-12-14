@@ -31,6 +31,7 @@ export interface FavoriteBusStore {
   startAutoRefresh: () => void;
   stopAutoRefresh: () => void;
   manualRefresh: () => Promise<void>;
+  updateRefreshRate: () => void;
 }
 
 // Global refresh interval
@@ -212,19 +213,23 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
         const state = get();
         if (state.isAutoRefreshEnabled) return;
 
-        logger.info('Starting auto-refresh for favorite buses');
+        // Get user's configured refresh rate
+        const { config } = useConfigStore.getState();
+        const refreshRate = config?.refreshRate || 60000; // Default to 1 minute if not configured
+
+        logger.info('Starting auto-refresh for favorite buses', { refreshRate: `${refreshRate / 1000}s` });
         
         // Initial refresh
         state.refreshFavorites();
         
-        // Set up interval (refresh every 1 minute for favorites)
+        // Set up interval using user's configured refresh rate
         autoRefreshInterval = window.setInterval(() => {
           const currentState = get();
           if (currentState.isAutoRefreshEnabled) {
             logger.debug('Auto-refreshing favorite buses');
             currentState.refreshFavorites();
           }
-        }, 60 * 1000); // 1 minute
+        }, refreshRate); // Use user's configured refresh rate
 
         set({ isAutoRefreshEnabled: true });
       },
@@ -239,6 +244,16 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
         }
         
         set({ isAutoRefreshEnabled: false });
+      },
+
+      // Update refresh rate (restart auto-refresh with new rate)
+      updateRefreshRate: () => {
+        const state = get();
+        if (state.isAutoRefreshEnabled) {
+          // Restart auto-refresh with new rate
+          state.stopAutoRefresh();
+          state.startAutoRefresh();
+        }
       }
     }),
     {

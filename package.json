@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:prod": "node scripts/update-version.js && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "update-version": "node scripts/update-version.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -1,6 +1,8 @@
 // Service Worker for Bus Tracker offline functionality
-const CACHE_NAME = 'bus-tracker-v1';
-const API_CACHE_NAME = 'bus-tracker-api-v1';
+// Update this version number with each deployment to force cache refresh
+const VERSION = '2025-12-14-0815';
+const CACHE_NAME = `bus-tracker-${VERSION}`;
+const API_CACHE_NAME = `bus-tracker-api-${VERSION}`;
 
 // Static assets to cache
 const STATIC_ASSETS = [
@@ -21,7 +23,7 @@ const API_PATTERNS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
+  console.log(`Service Worker installing version ${VERSION}...`);
   
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -30,7 +32,8 @@ self.addEventListener('install', (event) => {
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        // Skip waiting to activate immediately
+        // Skip waiting to activate immediately - forces update
+        console.log('Service Worker installed, skipping waiting...');
         return self.skipWaiting();
       })
       .catch((error) => {
@@ -41,23 +44,35 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
+  console.log(`Service Worker activating version ${VERSION}...`);
   
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME && cacheName !== API_CACHE_NAME) {
-              console.log('Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
+        // Delete ALL old caches to force fresh content
+        const deletePromises = cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME && cacheName !== API_CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        });
+        return Promise.all(deletePromises);
       })
       .then(() => {
-        // Take control of all clients immediately
+        // Take control of all clients immediately - forces refresh
+        console.log('Service Worker activated, claiming clients...');
         return self.clients.claim();
+      })
+      .then(() => {
+        // Notify all clients about the update
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'SW_UPDATED',
+              version: VERSION
+            });
+          });
+        });
       })
   );
 });
@@ -178,6 +193,11 @@ self.addEventListener('message', (event) => {
   const { type, payload } = event.data;
   
   switch (type) {
+    case 'SKIP_WAITING':
+      // Force service worker to activate immediately
+      self.skipWaiting();
+      break;
+      
     case 'CLEAR_CACHE':
       handleClearCache(payload?.cacheType)
         .then(() => {
@@ -196,6 +216,13 @@ self.addEventListener('message', (event) => {
         .catch((error) => {
           event.ports[0]?.postMessage({ success: false, error: error.message });
         });
+      break;
+      
+    case 'GET_VERSION':
+      event.ports[0]?.postMessage({ 
+        success: true, 
+        version: VERSION 
+      });
       break;
       
     default:

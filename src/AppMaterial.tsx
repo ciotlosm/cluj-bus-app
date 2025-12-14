@@ -47,7 +47,9 @@ import { logger } from './utils/logger';
 import { DebugPanel } from './components/features/Debug/DebugPanel';
 import MaterialFavoriteBusDisplay from './components/features/FavoriteBuses/MaterialFavoriteBusDisplay';
 import MaterialFavoriteBusManager from './components/features/FavoriteBuses/MaterialFavoriteBusManager';
+import UpdateNotification from './components/layout/UpdateNotification';
 import { useFavoriteBusStore } from './stores/favoriteBusStore';
+import { initializeServiceWorker } from './utils/serviceWorkerManager';
 
 
 
@@ -273,6 +275,11 @@ function AppMaterial() {
   useEffect(() => {
     logger.info('App initializing', { isConfigured, currentView });
     initializeOffline();
+    
+    // Initialize service worker for PWA functionality and updates
+    initializeServiceWorker().catch((error) => {
+      logger.error('Failed to initialize service worker:', error);
+    });
     
     // Check for corrupted agency data on startup
     const wasCorrupted = checkAndFixCorruptedData();
@@ -542,7 +549,8 @@ function AppMaterial() {
           isFromSetupFlowRef={isFromSetupFlow}
         />
 
-
+        {/* Update Notification for PWA */}
+        <UpdateNotification />
 
         {/* Debug Panel (Development Only) */}
         <DebugPanel />
