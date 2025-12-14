@@ -15,13 +15,19 @@ import { Timer as TimerIcon } from '@mui/icons-material';
 interface AdvancedSettingsSectionProps {
   refreshRate: number;
   onRefreshRateChange: (rate: number) => void;
-  error?: string;
+  staleDataThreshold: number;
+  onStaleDataThresholdChange: (threshold: number) => void;
+  refreshRateError?: string;
+  staleDataError?: string;
 }
 
 export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   refreshRate,
   onRefreshRateChange,
-  error,
+  staleDataThreshold,
+  onStaleDataThresholdChange,
+  refreshRateError,
+  staleDataError,
 }) => {
   const theme = useTheme();
 
@@ -44,8 +50,8 @@ export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = (
               const seconds = parseInt(e.target.value) || 30;
               onRefreshRateChange(seconds * 1000);
             }}
-            error={!!error}
-            helperText={error || 'How often to refresh bus data (5-300 seconds)'}
+            error={!!refreshRateError}
+            helperText={refreshRateError || 'How often to refresh bus data (5-300 seconds)'}
             slotProps={{
               input: {
                 startAdornment: (
@@ -54,6 +60,29 @@ export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = (
                   </InputAdornment>
                 ),
                 inputProps: { min: 5, max: 300 }
+              }
+            }}
+            sx={{ maxWidth: 300 }}
+          />
+
+          <TextField
+            label="Stale Data Threshold (minutes)"
+            type="number"
+            value={staleDataThreshold}
+            onChange={(e) => {
+              const minutes = parseInt(e.target.value) || 2;
+              onStaleDataThresholdChange(minutes);
+            }}
+            error={!!staleDataError}
+            helperText={staleDataError || 'When to consider vehicle data as outdated (1-30 minutes)'}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <TimerIcon color="action" />
+                  </InputAdornment>
+                ),
+                inputProps: { min: 1, max: 30 }
               }
             }}
             sx={{ maxWidth: 300 }}

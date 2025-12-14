@@ -26,8 +26,6 @@ import {
   Storage as DatabaseIcon,
   Download as DownloadIcon,
   Upload as UploadIcon,
-  Build as WrenchIcon,
-  Info as InfoIcon,
   Warning as AlertIcon,
   Favorite as FavoriteIcon,
   Schedule as ScheduleIcon,
@@ -37,9 +35,8 @@ import {
 
 import { useConfigStore } from '../../../stores/configStore';
 import MaterialConfigurationManager from '../Configuration/MaterialConfigurationManager';
-import CacheManagement from './CacheManagement';
 import MaterialFavoriteBusManager from '../FavoriteBuses/MaterialFavoriteBusManager';
-import { ScheduleCacheManager } from './ScheduleCacheManager';
+import { SimplifiedCacheManager } from './SimplifiedCacheManager';
 import { MaterialButton } from '../../ui/Button';
 import { InfoCard } from '../../ui/Card';
 import type { UserConfig } from '../../../types';
@@ -159,10 +156,8 @@ export const MaterialSettings: React.FC<MaterialSettingsProps> = ({ onClose }) =
   const tabs = [
     { label: 'Configuration', icon: <SettingsIcon /> },
     { label: 'Favorites', icon: <FavoriteIcon /> },
-    { label: 'Schedules', icon: <ScheduleIcon /> },
     { label: 'Cache', icon: <DatabaseIcon /> },
     { label: 'Backup', icon: <BackupIcon /> },
-    { label: 'Advanced', icon: <WrenchIcon /> },
   ];
 
   return (
@@ -204,29 +199,13 @@ export const MaterialSettings: React.FC<MaterialSettingsProps> = ({ onClose }) =
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        <InfoCard
-          title="Schedule Cache"
-          subtitle="Manage cached bus schedules and timetables"
-          icon={<ScheduleIcon />}
-        >
-          <ScheduleCacheManager />
-        </InfoCard>
+        <SimplifiedCacheManager />
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
         <InfoCard
-          title="Cache Management"
-          subtitle="Clear cached data and manage storage"
-          icon={<DatabaseIcon />}
-        >
-          <CacheManagement />
-        </InfoCard>
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={4}>
-        <InfoCard
           title="Backup & Restore"
-          subtitle="Export and import your configuration"
+          subtitle="Export, import, and reset your configuration"
           icon={<BackupIcon />}
         >
           <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
@@ -254,54 +233,50 @@ export const MaterialSettings: React.FC<MaterialSettingsProps> = ({ onClose }) =
             </MaterialButton>
           </Box>
 
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info" sx={{ mb: 3 }}>
             <Typography variant="body2">
               <strong>Note:</strong> API keys are not included in exports for security reasons. 
               You'll need to re-enter your API key after importing a configuration.
             </Typography>
           </Alert>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Reset Section */}
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ResetIcon />
+                Reset All Settings
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                This will permanently delete all your configuration, favorites, and cached data.
+              </Typography>
+              <MaterialButton
+                variant="outlined"
+                color="error"
+                onClick={() => setShowResetConfirm(true)}
+                icon={<ResetIcon />}
+                size="small"
+              >
+                Reset Everything
+              </MaterialButton>
+            </Box>
+          </Alert>
         </InfoCard>
       </TabPanel>
 
-      <TabPanel value={activeTab} index={5}>
-        <InfoCard
-          title="Advanced Settings"
-          subtitle="Reset configuration and advanced options"
-          icon={<WrenchIcon />}
-        >
-          <List>
-            <ListItem>
-              <ListItemIcon>
-                <InfoIcon color="info" />
-              </ListItemIcon>
-              <ListItemText
-                primary="App Version"
-                secondary="1.0.0"
-              />
-            </ListItem>
-            
-            <Divider />
-            
-            <ListItemButton
-              onClick={() => setShowResetConfirm(true)}
-              sx={{
-                color: theme.palette.error.main,
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.error.main, 0.04),
-                },
-              }}
-            >
-              <ListItemIcon>
-                <ResetIcon color="error" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Reset All Settings"
-                secondary="This will clear all your configuration and data"
-              />
-            </ListItemButton>
-          </List>
-        </InfoCard>
-      </TabPanel>
+      {/* Subtle version footer */}
+      <Box sx={{ 
+        textAlign: 'center', 
+        py: 2, 
+        mt: 4,
+        borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` 
+      }}>
+        <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+          Cluj Bus Tracker v1.0.0
+        </Typography>
+      </Box>
 
       {/* Reset Confirmation Dialog */}
       <Dialog

@@ -118,7 +118,10 @@ export const MaterialConfigurationManager: React.FC<MaterialConfigurationManager
         <AdvancedSettingsSection
           refreshRate={formData.refreshRate || 30000}
           onRefreshRateChange={(rate) => setFormData(prev => ({ ...prev, refreshRate: rate }))}
-          error={errors.refreshRate}
+          staleDataThreshold={formData.staleDataThreshold || 2}
+          onStaleDataThresholdChange={(threshold) => setFormData(prev => ({ ...prev, staleDataThreshold: threshold }))}
+          refreshRateError={errors.refreshRate}
+          staleDataError={errors.staleDataThreshold}
         />
 
         {/* Save Button */}

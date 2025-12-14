@@ -11,6 +11,7 @@ interface ValidationErrors {
   apiKey?: string;
   googleMapsApiKey?: string;
   refreshRate?: string;
+  staleDataThreshold?: string;
 }
 
 export interface UseConfigurationManagerReturn {
@@ -62,6 +63,7 @@ export const useConfigurationManager = (
     workLocation: config?.workLocation || undefined,
     apiKey: config?.apiKey || '',
     refreshRate: config?.refreshRate || 30000,
+    staleDataThreshold: config?.staleDataThreshold || 2,
   });
   
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -98,6 +100,10 @@ export const useConfigurationManager = (
     
     if (formData.refreshRate && (formData.refreshRate < 5000 || formData.refreshRate > 300000)) {
       newErrors.refreshRate = 'Refresh rate must be between 5 and 300 seconds';
+    }
+    
+    if (formData.staleDataThreshold && (formData.staleDataThreshold < 1 || formData.staleDataThreshold > 30)) {
+      newErrors.staleDataThreshold = 'Stale data threshold must be between 1 and 30 minutes';
     }
     
     setErrors(newErrors);

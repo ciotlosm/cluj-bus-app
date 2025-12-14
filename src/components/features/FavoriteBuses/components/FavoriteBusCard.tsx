@@ -13,7 +13,7 @@ import {
   ListItemIcon,
 } from '@mui/material';
 import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, PersonPin } from '@mui/icons-material';
-import { getRouteTypeInfo } from '../../../../utils/busDisplayUtils';
+
 import { BusCard } from '../../../ui/Card';
 import { BusRouteMapModal } from './BusRouteMapModal';
 import { SimplifiedRouteDisplay } from './SimplifiedRouteDisplay';
@@ -37,7 +37,6 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
   const { config } = useConfigStore();
   const { currentLocation } = useLocationStore();
   
-  const routeTypeInfo = getRouteTypeInfo(String(bus?.routeType || 'bus'), theme);
   const displayRouteName = String(bus?.routeShortName || ''); // Just show the route number, not the full description
   const avatarRouteNumber = String(bus?.routeShortName || 'N/A');
 
@@ -120,13 +119,14 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
     return !!(config.googleMapsApiKey || import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
   };
 
-  // Check if vehicle data is stale (older than 2 minutes)
+  // Check if vehicle data is stale (configurable threshold)
   const isDataStale = () => {
     if (!bus?.lastUpdate || !(bus.lastUpdate instanceof Date)) {
       return true; // Consider unknown update time as stale
     }
     const timeSinceUpdate = (Date.now() - bus.lastUpdate.getTime()) / 1000 / 60; // Convert to minutes
-    return timeSinceUpdate > 2;
+    const threshold = config?.staleDataThreshold || 2; // Default to 2 minutes if not configured
+    return timeSinceUpdate > threshold;
   };
 
   // Calculate arrival status based on bus direction and user location
@@ -203,7 +203,6 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
     return null;
   }
 
-  const updateText = getUpdateText();
   const arrivalStatus = getArrivalStatus();
 
   return (

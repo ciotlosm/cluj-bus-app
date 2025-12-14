@@ -144,7 +144,7 @@ export const BusCard: React.FC<BusCardProps> = ({
                   }}
                 >
                   {(() => {
-                    // Parse message to style time portion (text in parentheses) in gray
+                    // Parse message to style time portion (text in parentheses)
                     const message = arrivalStatus.message;
                     const timeMatch = message.match(/^(.+?)(\s*\([^)]+\))$/);
                     
@@ -156,8 +156,11 @@ export const BusCard: React.FC<BusCardProps> = ({
                           <Box
                             component="span"
                             sx={{
-                              color: theme.palette.text.secondary,
-                              fontWeight: 400,
+                              // Highlight timestamp in red if data is stale, otherwise gray
+                              color: arrivalStatus.isStale 
+                                ? theme.palette.error.main 
+                                : theme.palette.text.secondary,
+                              fontWeight: arrivalStatus.isStale ? 600 : 400,
                             }}
                           >
                             {timeText}

@@ -108,23 +108,51 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
     setExpandedGroups(newExpanded);
   };
 
-  // Auto-expand groups with buses at stop or arriving soon
-  React.useEffect(() => {
-    const autoExpand = new Set<string>();
+  // Auto-expand only the route with the closest station to user
+  // This should only recalculate when routes change, not when bus positions change
+  const routeDistances = useMemo(() => {
+    const distances = new Map<string, number>();
     
     groupedBuses.forEach(([routeShortName, busGroup]) => {
-      const hasUrgentBuses = busGroup.some(bus => 
-        bus.arrivalStatus.status === 'at-stop' || 
-        (bus.arrivalStatus.status === 'arriving' && (bus.arrivalStatus.estimatedMinutes || 999) <= 5)
-      );
-      
-      if (hasUrgentBuses) {
-        autoExpand.add(routeShortName);
+      // Only check the first bus in each group since all buses on the same route
+      // will have the same closest station and distance to user
+      const firstBus = busGroup[0];
+      if (firstBus?.stopSequence && firstBus.stopSequence.length > 0) {
+        const userStop = firstBus.stopSequence.find(stop => stop.isClosestToUser);
+        if (userStop && userStop.distanceToUser !== undefined) {
+          distances.set(routeShortName, userStop.distanceToUser);
+        }
+      }
+    });
+    
+    return distances;
+  }, [buses.map(bus => `${bus.routeShortName}-${bus.stopSequence?.find(s => s.isClosestToUser)?.distanceToUser}`).join(',')]);
+
+  React.useEffect(() => {
+    if (routeDistances.size === 0) {
+      setExpandedGroups(new Set());
+      return;
+    }
+
+    // Find the route with the closest station to the user
+    let closestRoute: string | null = null;
+    let closestDistance = Infinity;
+
+    routeDistances.forEach((distance, routeShortName) => {
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestRoute = routeShortName;
       }
     });
 
+    // Only expand the route with the closest station
+    const autoExpand = new Set<string>();
+    if (closestRoute) {
+      autoExpand.add(closestRoute);
+    }
+
     setExpandedGroups(autoExpand);
-  }, [groupedBuses]);
+  }, [routeDistances]);
 
   if (groupedBuses.length === 0) {
     return null;
@@ -237,7 +265,7 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
                   )}
                   {statusCounts['arriving'] && (
                     <Chip
-                      label={`${statusCounts['arriving']} arriving`}
+                      label={`${statusCounts['arriving']} on route`}
                       size="small"
                       color="success"
                       variant="filled"

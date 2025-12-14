@@ -260,10 +260,10 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
         // Stop existing intervals
         get().stopAutoRefresh();
 
-        // Start live data refresh (every minute)
+        // Start live data refresh using user's refresh rate setting
         liveDataInterval = setInterval(() => {
           get().refreshLiveData();
-        }, 60 * 1000); // 1 minute
+        }, config.refreshRate); // Use user's setting
 
         // Start schedule data refresh (daily at 3 AM)
         const now = new Date();
@@ -286,7 +286,7 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
         set({ isAutoRefreshEnabled: true });
         
         logger.info('Auto refresh started', {
-          liveInterval: '1 minute',
+          liveInterval: `${config.refreshRate / 1000} seconds`,
           scheduleInterval: 'daily at 3 AM',
         }, 'BUS_STORE');
       },

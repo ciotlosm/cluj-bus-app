@@ -44,9 +44,7 @@ import { useErrorHandler } from './hooks/useErrorHandler';
 import { useComponentLifecycle, logPerformanceMetrics } from './utils/performance';
 import { logger } from './utils/logger';
 import { DebugPanel } from './components/features/Debug/DebugPanel';
-import MaterialIntelligentBusDisplay from './components/features/BusDisplay/MaterialIntelligentBusDisplay';
 import MaterialFavoriteBusDisplay from './components/features/FavoriteBuses/MaterialFavoriteBusDisplay';
-import { useIntelligentBusStore } from './stores/intelligentBusStore';
 import { useFavoriteBusStore } from './stores/favoriteBusStore';
 
 
@@ -101,8 +99,9 @@ const MaterialHeader: React.FC<{
         {/* Theme Toggle */}
         <ThemeToggle color="inherit" />
         
+        {/* Manual Refresh Button */}
         {showRefresh && (
-          <Box sx={{ ml: 2 }}>
+          <Box sx={{ ml: 1 }}>
             <MaterialRefreshControl />
           </Box>
         )}
@@ -117,7 +116,8 @@ const MaterialBottomNav: React.FC<{
   currentView: 'buses' | 'settings'; 
   onViewChange: (view: 'buses' | 'settings') => void;
   isConfigured: boolean;
-}> = React.memo(({ currentView, onViewChange, isConfigured: isFullyConfigured }) => {
+  isFromSetupFlowRef: React.MutableRefObject<boolean>;
+}> = React.memo(({ currentView, onViewChange, isConfigured: isFullyConfigured, isFromSetupFlowRef }) => {
   const theme = useTheme();
   
   const handleNavigation = React.useCallback((view: 'buses' | 'settings') => {
@@ -129,10 +129,13 @@ const MaterialBottomNav: React.FC<{
     
     logger.info('Navigation clicked', { from: currentView, to: view }, 'UI');
     
-    // Use requestAnimationFrame to ensure the click event is fully processed
-    requestAnimationFrame(() => {
-      onViewChange(view);
-    });
+    // Reset setup flow flag when user manually navigates
+    if (view === 'settings') {
+      isFromSetupFlowRef.current = false;
+    }
+    
+    // Direct call without requestAnimationFrame to avoid timing issues
+    onViewChange(view);
   }, [currentView, onViewChange]);
 
   return (
@@ -150,10 +153,9 @@ const MaterialBottomNav: React.FC<{
     >
       <BottomNavigation
         value={currentView}
-        onChange={(_, newValue) => {
-          console.log('BottomNavigation onChange:', { newValue, currentView });
-          if (newValue === 'buses' && !isFullyConfigured) return;
-          handleNavigation(newValue);
+        onChange={() => {
+          // Disable MUI's built-in onChange to prevent conflicts
+          // We handle navigation via individual button clicks
         }}
         sx={{
           borderRadius: '24px 24px 0 0',
@@ -172,6 +174,13 @@ const MaterialBottomNav: React.FC<{
           value="buses"
           icon={<BusIcon />}
           disabled={!isFullyConfigured}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!isFullyConfigured) return;
+            console.log('Buses button clicked');
+            handleNavigation('buses');
+          }}
           sx={{
             '&.Mui-selected': {
               color: theme.palette.primary.main,
@@ -185,6 +194,12 @@ const MaterialBottomNav: React.FC<{
           label="Settings"
           value="settings"
           icon={<SettingsIcon />}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Settings button clicked');
+            handleNavigation('settings');
+          }}
           sx={{
             '&.Mui-selected': {
               color: theme.palette.primary.main,
@@ -218,12 +233,15 @@ function AppMaterial() {
   const [currentView, setCurrentView] = useState<'buses' | 'settings'>('buses');
   const [showSetupPrompt, setShowSetupPrompt] = useState(true);
   const { config, isConfigured, isFullyConfigured } = useConfigStore();
-  const { isLoading, error } = useIntelligentBusStore();
+
   const { isAutoRefreshEnabled } = useRefreshSystem();
   const { error: globalError, clearError } = useErrorHandler();
   const { initialize: initializeOffline, cleanup: cleanupOffline } = useOfflineStore();
   const { checkAndFixCorruptedData } = useAgencyStore();
   const theme = useTheme();
+
+  // Track if navigation is coming from setup flow
+  const isFromSetupFlow = React.useRef(false);
 
   // Performance monitoring
   useComponentLifecycle('App');
@@ -239,11 +257,9 @@ function AppMaterial() {
       logger.info('Corrupted agency data was cleared on startup');
     }
     
-    // Initialize intelligent bus store if fully configured
+    // Initialize favorite bus store if fully configured
     if (isFullyConfigured) {
-      const { startAutoRefresh } = useIntelligentBusStore.getState();
       const { startAutoRefresh: startFavoritesRefresh } = useFavoriteBusStore.getState();
-      startAutoRefresh();
       startFavoritesRefresh();
     }
     
@@ -259,18 +275,18 @@ function AppMaterial() {
     // Cleanup on unmount
     return () => {
       logger.info('App cleanup');
-      const { stopAutoRefresh } = useIntelligentBusStore.getState();
       const { stopAutoRefresh: stopFavoritesRefresh } = useFavoriteBusStore.getState();
-      stopAutoRefresh();
       stopFavoritesRefresh();
       cleanupOffline();
     };
   }, [isFullyConfigured]);
 
-  // Auto-switch to buses view when full configuration is complete
+  // Auto-switch to buses view when full configuration is complete (only from setup flow)
   const hasAutoSwitched = React.useRef(false);
+  
   useEffect(() => {
-    if (isFullyConfigured && currentView === 'settings' && !hasAutoSwitched.current) {
+    // Only auto-switch if we're coming from the setup flow, not from user navigation
+    if (isFullyConfigured && currentView === 'settings' && !hasAutoSwitched.current && isFromSetupFlow.current) {
       logger.info('Auto-switching to buses view after full configuration');
       hasAutoSwitched.current = true;
       setCurrentView('buses');
@@ -333,6 +349,7 @@ function AppMaterial() {
               fullWidth
               onClick={() => {
                 setShowSetupPrompt(false);
+                isFromSetupFlow.current = true; // Mark that we're coming from setup
                 setCurrentView('settings');
               }}
               sx={{
@@ -386,7 +403,10 @@ function AppMaterial() {
               </Typography>
               <Button
                 variant="contained"
-                onClick={() => setCurrentView('settings')}
+                onClick={() => {
+                  isFromSetupFlow.current = true; // Mark that we're coming from setup
+                  setCurrentView('settings');
+                }}
                 sx={{
                   borderRadius: 3,
                   textTransform: 'none',
@@ -401,12 +421,6 @@ function AppMaterial() {
 
         return (
           <Box sx={{ space: 3 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                <ErrorDisplay error={error} />
-              </Alert>
-            )}
-            
             {/* Offline Indicator */}
             <Box sx={{ mb: 2 }}>
               <MaterialOfflineIndicator />
@@ -415,11 +429,6 @@ function AppMaterial() {
             {/* Favorite Buses */}
             <Box sx={{ mb: 3 }}>
               <MaterialFavoriteBusDisplay />
-            </Box>
-            
-            {/* Intelligent Bus Display */}
-            <Box>
-              <MaterialIntelligentBusDisplay />
             </Box>
           </Box>
         );
@@ -454,7 +463,6 @@ function AppMaterial() {
         <MaterialHeader 
           title={getHeaderTitle()}
           showRefresh={currentView === 'buses'}
-          isLoading={isLoading}
         />
         
         <MaterialContentArea>
@@ -463,19 +471,9 @@ function AppMaterial() {
 
         <MaterialBottomNav 
           currentView={currentView}
-          onViewChange={(view) => {
-            console.log('Navigation change requested:', { from: currentView, to: view });
-            // Use functional update to ensure we have the latest state
-            setCurrentView(prevView => {
-              if (prevView === view) {
-                console.log('Navigation ignored - already on target view:', view);
-                return prevView;
-              }
-              console.log('Navigation executing:', { from: prevView, to: view });
-              return view;
-            });
-          }}
+          onViewChange={setCurrentView}
           isConfigured={isFullyConfigured}
+          isFromSetupFlowRef={isFromSetupFlow}
         />
 
 
