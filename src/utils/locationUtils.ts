@@ -237,6 +237,7 @@ export const CLUJ_POPULAR_LOCATIONS = [
   { name: 'Iulius Mall', lat: 46.7318, lng: 23.5644 },
   { name: 'FSEGA', lat: 46.7596, lng: 23.5847 },
   { name: 'Polus Center', lat: 46.8008, lng: 23.6267 },
+  { name: 'The Office', lat: 46.7580, lng: 23.6050 },
 ] as const;
 
 /**

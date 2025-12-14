@@ -411,7 +411,7 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
                     </Typography>
                   )}
                   <Typography variant="caption" display="block" color="text.secondary">
-                    Last update: {bus.lastUpdate.toLocaleTimeString()}
+                    {bus.lastUpdate.toLocaleTimeString()}
                   </Typography>
                 </Box>
               </Popup>

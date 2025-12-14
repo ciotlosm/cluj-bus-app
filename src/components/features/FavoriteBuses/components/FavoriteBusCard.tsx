@@ -242,8 +242,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                         <ExpandMore fontSize="small" />
                       </IconButton>
                       <Typography variant="caption" color="text.secondary">
-                        Route Stops ({bus.stopSequence.length})
-                        {bus.direction && ` • ${bus.direction === 'inbound' ? 'Inbound' : 'Outbound'}`}
+                        Stops ({bus.stopSequence.length})
                       </Typography>
                     </Stack>
                   </Box>
@@ -262,8 +261,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                       <ExpandLess fontSize="small" />
                     </IconButton>
                     <Typography variant="subtitle2" color="text.primary">
-                      Route Stops ({bus.stopSequence?.length || 0})
-                      {bus.direction && ` • ${bus.direction === 'inbound' ? 'Inbound' : 'Outbound'}`}
+                      Stops ({bus.stopSequence?.length || 0})
                     </Typography>
                   </Stack>
                 </Box>
@@ -328,19 +326,14 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                                   {stop.arrivalTime}
                                 </Typography>
                               )}
-                              {isCurrent && stop.distanceFromBus && (
-                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                                  • {formatDistance(stop.distanceFromBus)} from bus
-                                </Typography>
-                              )}
                               {isClosestToUser && stop.distanceToUser && (
                                 <Typography variant="caption" color="info.main" sx={{ fontSize: '0.65rem' }}>
-                                  • {formatDistance(stop.distanceToUser)} from you
+                                  You are {formatDistance(stop.distanceToUser)} away from this station.
                                 </Typography>
                               )}
-                              {isCurrent && (
+                              {isCurrent && stop.distanceFromBus && (
                                 <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                                  • Last update {updateText}
+                                  Bus is {formatDistance(stop.distanceFromBus)} from station.
                                 </Typography>
                               )}
                             </Stack>
