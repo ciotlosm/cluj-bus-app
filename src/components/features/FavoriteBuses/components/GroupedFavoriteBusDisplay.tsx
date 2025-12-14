@@ -209,7 +209,13 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
                 },
               }}
             >
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                width: '100%',
+                gap: 2,
+                overflow: 'hidden' // Prevent content from overflowing
+              }}>
                 {/* Route Avatar */}
                 <Box
                   sx={{
@@ -223,16 +229,34 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
                     justifyContent: 'center',
                     fontWeight: 'bold',
                     fontSize: '0.9rem',
+                    flexShrink: 0, // Don't shrink the avatar
                   }}
                 >
                   {routeShortName}
                 </Box>
 
-                {/* Route Info */}
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      Route {routeShortName}
+                {/* Route Info - Flexible container */}
+                <Box sx={{ 
+                  flex: 1, 
+                  minWidth: 0, // Allow shrinking
+                  overflow: 'hidden'
+                }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    flexWrap: { xs: 'wrap', sm: 'nowrap' } // Wrap on mobile
+                  }}>
+                    <Typography 
+                      variant="subtitle1" 
+                      sx={{ 
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                    >
+                      {routeShortName}
                     </Typography>
                     {/* Bus/Trolleybus Type Chip */}
                     <Chip
@@ -242,25 +266,41 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
                         bgcolor: alpha(routeTypeInfo.color, 0.1),
                         color: routeTypeInfo.color,
                         fontWeight: 600,
-                        fontSize: '0.7rem',
-                        height: 20,
+                        fontSize: '0.65rem',
+                        height: 18,
+                        flexShrink: 0, // Don't shrink the chip
                       }}
                     />
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary">
+                  </Box>
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary"
+                    sx={{
+                      display: 'block',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
                     {busGroup.length} bus{busGroup.length !== 1 ? 'es' : ''} tracked
                   </Typography>
                 </Box>
 
-                {/* Status Chips */}
-                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                {/* Status Chips - Compact layout */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', sm: 'row' }, // Stack vertically on mobile
+                  gap: 0.5,
+                  flexShrink: 0, // Don't shrink status chips
+                  alignItems: 'flex-end'
+                }}>
                   {statusCounts['at-stop'] && (
                     <Chip
                       label={`${statusCounts['at-stop']} at stop`}
                       size="small"
                       color="warning"
                       variant="filled"
-                      sx={{ fontSize: '0.7rem', height: 20 }}
+                      sx={{ fontSize: '0.65rem', height: 18 }}
                     />
                   )}
                   {statusCounts['arriving'] && (
@@ -269,7 +309,7 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
                       size="small"
                       color="success"
                       variant="filled"
-                      sx={{ fontSize: '0.7rem', height: 20 }}
+                      sx={{ fontSize: '0.65rem', height: 18 }}
                     />
                   )}
                   {statusCounts['missed'] && (
@@ -278,11 +318,11 @@ export const GroupedFavoriteBusDisplay: React.FC<GroupedFavoriteBusDisplayProps>
                       size="small"
                       color="error"
                       variant="outlined"
-                      sx={{ fontSize: '0.7rem', height: 20 }}
+                      sx={{ fontSize: '0.65rem', height: 18 }}
                     />
                   )}
-                </Stack>
-              </Stack>
+                </Box>
+              </Box>
             </AccordionSummary>
 
             <AccordionDetails sx={{ pt: 0 }}>
