@@ -182,7 +182,6 @@ const MaterialBottomNav: React.FC<{
             e.preventDefault();
             e.stopPropagation();
             if (!isFullyConfigured) return;
-            console.log('Buses button clicked');
             handleNavigation('buses');
           }}
           sx={{
@@ -203,7 +202,6 @@ const MaterialBottomNav: React.FC<{
             e.preventDefault();
             e.stopPropagation();
             if (!isFullyConfigured) return;
-            console.log('Favorites button clicked');
             handleNavigation('favorites');
           }}
           sx={{
@@ -222,7 +220,6 @@ const MaterialBottomNav: React.FC<{
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Settings button clicked');
             handleNavigation('settings');
           }}
           sx={{
@@ -507,7 +504,6 @@ function AppMaterial() {
       case 'settings':
         return (
           <Settings onClose={() => {
-            console.log('Settings onClose called, navigating to buses');
             setCurrentView('buses');
           }} />
         );
@@ -553,7 +549,7 @@ function AppMaterial() {
         <UpdateNotification />
 
         {/* Debug Panel (Development Only) */}
-        <DebugPanel />
+        {import.meta.env.DEV && <DebugPanel />}
       </Box>
     </ErrorBoundary>
   );

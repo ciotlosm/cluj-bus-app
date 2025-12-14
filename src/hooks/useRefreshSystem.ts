@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useEnhancedBusStore } from '../stores/enhancedBusStore';
 import { useConfigStore } from '../stores/configStore';
 import { useDebounceCallback } from '../utils/debounce';
+import { logger } from '../utils/loggerFixed';
 
 /**
  * Custom hook to manage the real-time refresh system
@@ -17,7 +18,7 @@ export const useRefreshSystem = () => {
     const currentAutoRefreshState = busStore.isAutoRefreshEnabled;
     
     // Only manage auto refresh if we have a fully configured system
-    console.log('useRefreshSystem check:', { 
+    logger.debug('useRefreshSystem check', { 
       isConfigured, 
       hasConfig: !!config, 
       hasRefreshRate: (config?.refreshRate || 0) > 0, 
@@ -26,16 +27,16 @@ export const useRefreshSystem = () => {
       hasHome: !!config?.homeLocation, 
       hasWork: !!config?.workLocation,
       currentAutoRefreshState 
-    });
+    }, 'REFRESH');
     
     if (isConfigured && config && config.refreshRate > 0 && config.city && config.agencyId && config.homeLocation && config.workLocation) {
-      console.log('Starting auto refresh...');
+      logger.info('Starting auto refresh', {}, 'REFRESH');
       // Start auto refresh if not already enabled
       if (!currentAutoRefreshState) {
         busStore.startAutoRefresh();
       }
     } else {
-      console.log('Stopping auto refresh...');
+      logger.info('Stopping auto refresh', {}, 'REFRESH');
       // Stop auto refresh if configuration is invalid or incomplete
       if (currentAutoRefreshState) {
         busStore.stopAutoRefresh();

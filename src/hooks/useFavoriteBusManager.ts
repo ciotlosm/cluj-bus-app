@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useConfigStore } from '../stores/configStore';
 import { useFavoriteBusStore } from '../stores/favoriteBusStore';
 import { getUniqueRouteTypes } from '../utils/routeUtils';
+import { logger } from '../utils/loggerFixed';
 
 import type { FavoriteRoute } from '../types';
 
@@ -51,7 +52,7 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
   // Load available routes when component mounts
   useEffect(() => {
     if (availableRoutes.length === 0 && config?.city) {
-      console.log('🔄 Loading available routes for city:', config.city);
+      logger.info('Loading available routes for city', { city: config.city }, 'FAVORITES');
       loadAvailableRoutes();
     }
   }, [availableRoutes.length, loadAvailableRoutes, config?.city]);
@@ -126,11 +127,11 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
           };
           const newSelectedRoutes = [...selectedRoutes, favoriteRoute];
           setSelectedRoutes(newSelectedRoutes);
-          console.log('✅ Added route to favorites:', favoriteRoute);
+          logger.info('Added route to favorites', { favoriteRoute }, 'FAVORITES');
         } catch (error) {
-          console.error('❌ Failed to get route mapping for', routeShortName, error);
+          logger.error('Failed to get route mapping for route', { routeShortName, error }, 'FAVORITES');
           // Don't add routes without proper mapping - this prevents API call failures
-          console.warn('⚠️ Skipping route addition - route mapping service failed');
+          logger.warn('Skipping route addition - route mapping service failed', { routeShortName }, 'FAVORITES');
           return;
         }
       }

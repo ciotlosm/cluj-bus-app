@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useFavoriteBusStore } from '../stores/favoriteBusStore';
 import { useConfigStore } from '../stores/configStore';
 import { getRouteLabel, getRouteTypeInfoById } from '../utils/busDisplayUtils';
+import { logger } from '../utils/loggerFixed';
 
 export interface UseFavoriteBusDisplayReturn {
   // Data
@@ -40,7 +41,7 @@ export const useFavoriteBusDisplay = (): UseFavoriteBusDisplayReturn => {
   // Refresh favorites when component mounts or when favorite routes change
   useEffect(() => {
     if (config?.favoriteBuses && config.favoriteBuses.length > 0) {
-      console.log('Refreshing favorites for routes:', config.favoriteBuses);
+      logger.info('Refreshing favorites for routes', { routes: config.favoriteBuses }, 'FAVORITES');
       refreshFavorites();
     }
   }, [config?.favoriteBuses, refreshFavorites]);
