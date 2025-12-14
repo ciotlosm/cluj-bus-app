@@ -181,20 +181,12 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                         }} 
                       />
                     ) : stop.type === 'bus-at-user' ? (
-                      <Stack direction="row" spacing={0.25} alignItems="center">
-                        <DirectionsBus 
-                          sx={{ 
-                            fontSize: 12, 
-                            color: theme.palette.primary.main
-                          }} 
-                        />
-                        <PersonPin 
-                          sx={{ 
-                            fontSize: 12, 
-                            color: theme.palette.info.main
-                          }} 
-                        />
-                      </Stack>
+                      <PersonPin 
+                        sx={{ 
+                          fontSize: 14, 
+                          color: theme.palette.info.main
+                        }} 
+                      />
                     ) : (
                       <LocationOn 
                         sx={{ 
@@ -243,26 +235,50 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                   </Typography>
                 </Box>
                 
-                {/* Final destination chip for user stop */}
-                {(stop.type === 'user' || stop.type === 'bus-at-user') && stop.isFinalDestination && (
-                  <Chip
-                    icon={<LocationOn sx={{ fontSize: '12px !important' }} />}
-                    label="Final"
-                    size="small"
-                    variant="outlined"
-                    sx={{
-                      height: 20,
-                      fontSize: '0.6rem',
-                      '& .MuiChip-label': { px: 0.5 },
-                      '& .MuiChip-icon': { 
-                        fontSize: 12,
-                        color: theme.palette.text.secondary 
-                      },
-                      borderColor: theme.palette.text.disabled,
-                      color: theme.palette.text.secondary,
-                    }}
-                  />
-                )}
+                {/* Chips for user stop */}
+                <Stack direction="row" spacing={0.5}>
+                  {/* Bus at stop chip */}
+                  {stop.type === 'bus-at-user' && (
+                    <Chip
+                      icon={<DirectionsBus sx={{ fontSize: '12px !important' }} />}
+                      label="Bus Here"
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.6rem',
+                        '& .MuiChip-label': { px: 0.5 },
+                        '& .MuiChip-icon': { 
+                          fontSize: 12,
+                          color: theme.palette.primary.main 
+                        },
+                        borderColor: theme.palette.primary.main,
+                        color: theme.palette.primary.main,
+                      }}
+                    />
+                  )}
+                  
+                  {/* Final destination chip */}
+                  {(stop.type === 'user' || stop.type === 'bus-at-user') && stop.isFinalDestination && (
+                    <Chip
+                      icon={<LocationOn sx={{ fontSize: '12px !important' }} />}
+                      label="Final"
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.6rem',
+                        '& .MuiChip-label': { px: 0.5 },
+                        '& .MuiChip-icon': { 
+                          fontSize: 12,
+                          color: theme.palette.text.secondary 
+                        },
+                        borderColor: theme.palette.text.disabled,
+                        color: theme.palette.text.secondary,
+                      }}
+                    />
+                  )}
+                </Stack>
               </Stack>
             </Box>
           );

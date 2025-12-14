@@ -11,6 +11,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  Tooltip,
 } from '@mui/material';
 import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, PersonPin, DirectionsBus } from '@mui/icons-material';
 
@@ -51,6 +52,8 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
     if (timeSinceUpdate <= 5) return 'now';
     return timeSinceUpdate < 60 ? `${timeSinceUpdate}s ago` : `${Math.floor(timeSinceUpdate / 60)}m ago`;
   };
+
+
 
   // Format distance for better readability - show meters for short distances, km for long distances
   const formatDistance = (distanceInMeters: number) => {
@@ -140,7 +143,10 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         message: 'Route information unavailable',
         color: theme.palette.text.secondary,
         isOffline: false,
-        isStale
+        isStale,
+        vehicleId: bus?.vehicleId,
+        vehicleLabel: bus?.routeName,
+        lastUpdate: bus?.lastUpdate
       };
     }
 
@@ -153,7 +159,10 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         message: 'Location information unavailable',
         color: theme.palette.text.secondary,
         isOffline: false,
-        isStale
+        isStale,
+        vehicleId: bus?.vehicleId,
+        vehicleLabel: bus?.routeName,
+        lastUpdate: bus?.lastUpdate
       };
     }
 
@@ -168,7 +177,10 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         message: `You missed this one (${updateText})`,
         color: theme.palette.error.main,
         isOffline: false,
-        isStale
+        isStale,
+        vehicleId: bus.vehicleId,
+        vehicleLabel: bus.routeName,
+        lastUpdate: bus.lastUpdate
       };
     } else if (currentStopIndex < userStopIndex) {
       // Bus is approaching the user's stop - use Google Transit estimate or fallback
@@ -184,7 +196,10 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         message: `Arriving in ${confidenceIndicator}${estimatedMinutes} min (${updateText})`,
         color: theme.palette.success.main,
         isOffline: !hasGoogleMaps || !transitEstimate,
-        isStale
+        isStale,
+        vehicleId: bus.vehicleId,
+        vehicleLabel: bus.routeName,
+        lastUpdate: bus.lastUpdate
       };
     } else {
       // Bus is at the user's stop
@@ -193,7 +208,10 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         message: `Bus is at your stop! (${updateText})`,
         color: theme.palette.warning.main,
         isOffline: false,
-        isStale
+        isStale,
+        vehicleId: bus.vehicleId,
+        vehicleLabel: bus.routeName,
+        lastUpdate: bus.lastUpdate
       };
     }
   };

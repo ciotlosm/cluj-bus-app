@@ -70,7 +70,7 @@ export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = (
             type="number"
             value={staleDataThreshold}
             onChange={(e) => {
-              const minutes = parseInt(e.target.value) || 2;
+              const minutes = parseInt(e.target.value) || 4;
               onStaleDataThresholdChange(minutes);
             }}
             error={!!staleDataError}

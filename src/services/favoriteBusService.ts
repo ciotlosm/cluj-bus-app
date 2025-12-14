@@ -636,8 +636,56 @@ class FavoriteBusService {
         routeCount: favoriteRoutes.length
       });
       
+      // Filter out buses with updates older than 11 minutes
+      const now = new Date();
+      const filteredBuses = favoriteBuses.filter(bus => {
+        const timeSinceUpdate = (now.getTime() - bus.lastUpdate.getTime()) / 1000 / 60; // Convert to minutes
+        return timeSinceUpdate <= 11;
+      });
+      
+      // Sort buses by arrival time (shortest to longest) for arriving buses
+      const sortedBuses = filteredBuses.sort((a, b) => {
+        // Helper function to calculate arrival time based on stop sequence
+        const getArrivalTimeMinutes = (bus: FavoriteBusInfo): number => {
+          if (!bus.stopSequence || bus.stopSequence.length === 0) {
+            return Infinity; // Put buses without route info at the end
+          }
+          
+          const userStop = bus.stopSequence.find(stop => stop.isClosestToUser);
+          const currentStop = bus.stopSequence.find(stop => stop.isCurrent);
+          
+          if (!userStop || !currentStop) {
+            return Infinity; // Put buses without location info at the end
+          }
+          
+          const userStopIndex = bus.stopSequence.findIndex(stop => stop.isClosestToUser);
+          const currentStopIndex = bus.stopSequence.findIndex(stop => stop.isCurrent);
+          
+          if (currentStopIndex > userStopIndex) {
+            return Infinity; // Bus has passed user's stop - put at end
+          } else if (currentStopIndex === userStopIndex) {
+            return 0; // Bus is at user's stop - highest priority
+          } else {
+            // Bus is approaching - estimate time based on stops remaining
+            const stopsRemaining = userStopIndex - currentStopIndex;
+            return stopsRemaining * 1; // Rough estimate: 1 minute per stop
+          }
+        };
+        
+        const aTime = getArrivalTimeMinutes(a);
+        const bTime = getArrivalTimeMinutes(b);
+        
+        return aTime - bTime;
+      });
+      
+      logger.info('Filtered and sorted buses', {
+        originalCount: favoriteBuses.length,
+        filteredCount: filteredBuses.length,
+        finalCount: sortedBuses.length
+      });
+      
       return {
-        favoriteBuses,
+        favoriteBuses: sortedBuses,
         lastUpdate: new Date()
       };
 

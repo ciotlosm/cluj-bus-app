@@ -10,6 +10,7 @@ import {
   IconButton,
   useTheme,
   alpha,
+  Tooltip,
 } from '@mui/material';
 import {
   DirectionsBus as BusIcon,
@@ -39,6 +40,9 @@ interface BusCardProps {
     color: string;
     isOffline?: boolean;
     isStale?: boolean;
+    vehicleId?: string;
+    vehicleLabel?: string;
+    lastUpdate?: Date;
   };
   children?: React.ReactNode;
 }
@@ -150,21 +154,46 @@ export const BusCard: React.FC<BusCardProps> = ({
                     
                     if (timeMatch) {
                       const [, mainMessage, timeText] = timeMatch;
+                      
+                      // Check if we should show tooltip (over 10 minutes)
+                      const shouldShowTooltip = arrivalStatus.lastUpdate && 
+                        Math.floor((Date.now() - arrivalStatus.lastUpdate.getTime()) / 1000 / 60) > 10;
+                      
+                      const timeElement = (
+                        <Box
+                          component="span"
+                          sx={{
+                            // Highlight timestamp in red if data is stale, otherwise gray
+                            color: arrivalStatus.isStale 
+                              ? theme.palette.error.main 
+                              : theme.palette.text.secondary,
+                            fontWeight: arrivalStatus.isStale ? 600 : 400,
+                            textDecoration: shouldShowTooltip ? 'underline dotted' : 'none',
+                            cursor: shouldShowTooltip ? 'help' : 'default',
+                          }}
+                        >
+                          {timeText}
+                        </Box>
+                      );
+                      
                       return (
                         <>
                           {mainMessage}
-                          <Box
-                            component="span"
-                            sx={{
-                              // Highlight timestamp in red if data is stale, otherwise gray
-                              color: arrivalStatus.isStale 
-                                ? theme.palette.error.main 
-                                : theme.palette.text.secondary,
-                              fontWeight: arrivalStatus.isStale ? 600 : 400,
-                            }}
-                          >
-                            {timeText}
-                          </Box>
+                          {shouldShowTooltip ? (
+                            <Tooltip 
+                              title={`Vehicle ID: ${arrivalStatus.vehicleId || 'Unknown'}\nLabel: ${arrivalStatus.vehicleLabel || 'Unknown'}`}
+                              placement="top"
+                              sx={{
+                                '& .MuiTooltip-tooltip': {
+                                  whiteSpace: 'pre-line', // Allow line breaks in tooltip
+                                }
+                              }}
+                            >
+                              {timeElement}
+                            </Tooltip>
+                          ) : (
+                            timeElement
+                          )}
                         </>
                       );
                     }
