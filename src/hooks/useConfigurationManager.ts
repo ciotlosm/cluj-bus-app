@@ -47,7 +47,7 @@ export interface UseConfigurationManagerReturn {
   formatLocationDisplay: (location: Coordinates | undefined) => string | null;
   
   // Data
-  cityOptions: Array<{ label: string; value: string }>;
+  cityOptions: Array<{ label: string; value: string; agencyId: string }>;
   config: UserConfig | null;
   isConfigured: boolean;
 }
