@@ -14,7 +14,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from '
 import L from 'leaflet';
 import { enhancedTranzyApi } from '../../../../services/enhancedTranzyApi';
 import { agencyService } from '../../../../services/agencyService';
-import { logger } from '../../../../utils/logger';
+import { logger } from '../../../../utils/loggerFixed';
 import type { FavoriteBusInfo } from '../../../../services/favoriteBusService';
 
 // Import Leaflet CSS

@@ -13,11 +13,6 @@ import {
   Alert,
   Snackbar,
   Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -27,8 +22,6 @@ import {
   Download as DownloadIcon,
   Upload as UploadIcon,
   Warning as AlertIcon,
-  Favorite as FavoriteIcon,
-  Schedule as ScheduleIcon,
   Backup as BackupIcon,
   DeleteForever as ResetIcon,
 } from '@mui/icons-material';
@@ -153,7 +146,7 @@ export const MaterialSettings: React.FC<MaterialSettingsProps> = ({ onClose }) =
   };
 
   const tabs = [
-    { label: 'Configuration', icon: <SettingsIcon /> },
+    { label: 'Config', icon: <SettingsIcon /> },
     { label: 'Cache', icon: <DatabaseIcon /> },
     { label: 'Backup', icon: <BackupIcon /> },
   ];

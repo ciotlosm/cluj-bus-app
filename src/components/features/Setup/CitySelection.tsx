@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAgencyStore } from '../../../stores/agencyStore';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/loggerFixed';
 
 interface CitySelectionProps {
   onCitySelected: (city: string, agencyId: string) => void;

@@ -3,13 +3,10 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
-  Chip,
   Alert,
   CircularProgress,
   Stack,
-  useTheme,
-  alpha,
+  Divider,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -20,12 +17,15 @@ import {
   CheckCircle as CheckIcon,
   WifiOff as OfflineIcon,
   Wifi as OnlineIcon,
+  SystemUpdate as UpdateIcon,
+  RestartAlt as RestartIcon,
 } from '@mui/icons-material';
 
 import { useEnhancedBusStore } from '../../../stores/enhancedBusStore';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/loggerFixed';
 import { MaterialButton } from '../../ui/Button';
 import { InfoCard } from '../../ui/Card';
+import { appVersionService, type VersionInfo } from '../../../services/appVersionService';
 
 export const SimplifiedCacheManager: React.FC = () => {
   const {
@@ -38,13 +38,24 @@ export const SimplifiedCacheManager: React.FC = () => {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastAction, setLastAction] = useState<string>('');
-  const theme = useTheme();
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [isCheckingVersion, setIsCheckingVersion] = useState(false);
 
   useEffect(() => {
     getCacheStats();
+    loadVersionInfo();
     const interval = setInterval(getCacheStats, 30000);
     return () => clearInterval(interval);
   }, [getCacheStats]);
+
+  const loadVersionInfo = async () => {
+    try {
+      const info = await appVersionService.getVersionInfo();
+      setVersionInfo(info);
+    } catch (error) {
+      logger.error('Failed to load version info', { error }, 'VERSION_CHECK');
+    }
+  };
 
   const handleRefreshData = async () => {
     setIsRefreshing(true);
@@ -88,6 +99,51 @@ export const SimplifiedCacheManager: React.FC = () => {
       setLastAction('Cache cleared');
       logger.info('Cache cleared from simplified UI', {}, 'CACHE_MGMT');
       setTimeout(() => setLastAction(''), 2000);
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingVersion(true);
+    setLastAction('Checking for updates...');
+    try {
+      const info = await appVersionService.checkForUpdates();
+      setVersionInfo(info);
+      
+      if (info.isUpdateAvailable) {
+        setLastAction('Update available!');
+      } else {
+        setLastAction('App is up to date');
+      }
+      
+      logger.info('Version check completed', { versionInfo: info }, 'VERSION_CHECK');
+    } catch (error) {
+      setLastAction('Update check failed');
+      logger.error('Version check failed', { error }, 'VERSION_CHECK');
+    } finally {
+      setTimeout(() => {
+        setIsCheckingVersion(false);
+        setLastAction('');
+      }, 3000);
+    }
+  };
+
+  const handleRefreshApp = async () => {
+    if (!confirm('This will refresh the app and clear all cached data. Continue?')) {
+      return;
+    }
+
+    setIsRefreshing(true);
+    setLastAction('Refreshing app...');
+    try {
+      await appVersionService.refreshApp();
+      // App will reload, so this won't execute
+    } catch (error) {
+      setLastAction('App refresh failed');
+      logger.error('App refresh failed', { error }, 'APP_REFRESH');
+      setTimeout(() => {
+        setIsRefreshing(false);
+        setLastAction('');
+      }, 3000);
     }
   };
 
@@ -229,6 +285,86 @@ export const SimplifiedCacheManager: React.FC = () => {
             >
               {isRefreshing ? 'Updating...' : 'Download Fresh Data'}
             </MaterialButton>
+          </Stack>
+        </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* App Version & Updates */}
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            App Version & Updates
+          </Typography>
+          
+          {/* Version Info */}
+          {versionInfo && (
+            <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
+              <Stack spacing={1}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    App Version
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {versionInfo.current}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Service Worker
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {versionInfo.serviceWorker}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Last Checked
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {formatAge(versionInfo.lastChecked)}
+                  </Typography>
+                </Box>
+                
+                {versionInfo.isUpdateAvailable && (
+                  <Alert severity="info" sx={{ mt: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Update Available!
+                    </Typography>
+                    <Typography variant="body2">
+                      A new version of the app is ready to install.
+                    </Typography>
+                  </Alert>
+                )}
+              </Stack>
+            </Card>
+          )}
+          
+          <Stack spacing={2}>
+            <MaterialButton
+              variant="outlined"
+              color="info"
+              onClick={handleCheckForUpdates}
+              disabled={isCheckingVersion || isRefreshing}
+              icon={<UpdateIcon />}
+              fullWidth
+            >
+              {isCheckingVersion ? 'Checking...' : 'Check for Updates'}
+            </MaterialButton>
+            
+            {versionInfo?.isUpdateAvailable && (
+              <MaterialButton
+                variant="filled"
+                color="success"
+                onClick={handleRefreshApp}
+                disabled={isRefreshing || isCheckingVersion}
+                icon={<RestartIcon />}
+                fullWidth
+              >
+                {isRefreshing ? 'Refreshing...' : 'Install Update & Restart'}
+              </MaterialButton>
+            )}
           </Stack>
         </Box>
 

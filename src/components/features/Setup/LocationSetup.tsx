@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MaterialLocationPicker } from '../LocationPicker/MaterialLocationPicker';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/loggerFixed';
 import type { Coordinates } from '../../../types';
 
 interface LocationSetupProps {

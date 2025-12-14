@@ -9,8 +9,8 @@ import { RouteListItem } from './RouteListItem';
 // Define the route type used by the store
 type StoreRoute = {
   shortName: string; // PRIMARY: What users see and interact with
-  name: string;
-  longName: string;
+  name?: string;
+  longName?: string; // This corresponds to route_long_desc from the API
   description?: string;
   type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 };

@@ -5,7 +5,7 @@ import { tranzyApiService } from '../../../services/tranzyApiService';
 import ApiKeySetup from './ApiKeySetup';
 import CitySelection from './CitySelection';
 import { LocationSetup } from './index';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/loggerFixed';
 import type { Coordinates, UserConfig } from '../../../types';
 
 interface SetupWizardProps {

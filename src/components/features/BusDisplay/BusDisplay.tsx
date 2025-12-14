@@ -1,7 +1,7 @@
 import React from 'react';
 import { useEnhancedBusStore } from '../../../stores/enhancedBusStore';
 import { withPerformanceMonitoring } from '../../../utils/performance';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/loggerFixed';
 import { BusIcon, ClockIcon, LightningIcon, CalendarIcon } from '../../ui/Icons/Icons';
 import { formatTime24 } from '../../../utils/timeFormat';
 
