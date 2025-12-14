@@ -1,3 +1,4 @@
+import { unifiedCache, CacheKeys } from './unifiedCache';
 import { logger } from '../utils/logger';
 import { useConfigStore } from '../stores/configStore';
 
@@ -21,9 +22,6 @@ export interface TransitRequest {
 }
 
 class GoogleTransitService {
-  private cache = new Map<string, TransitEstimate>();
-  private readonly CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-
   constructor() {
     // API key is now retrieved from config store
   }
@@ -40,38 +38,32 @@ class GoogleTransitService {
   async calculateTransitTime(request: TransitRequest): Promise<TransitEstimate> {
     const cacheKey = this.getCacheKey(request);
     
-    // Check cache first
-    const cached = this.getCachedEstimate(cacheKey);
-    if (cached) {
-      logger.debug('Using cached transit estimate', { cacheKey, estimate: cached });
-      return cached;
-    }
+    return unifiedCache.get(
+      cacheKey,
+      async () => {
+        const apiKey = this.getApiKey();
+        if (!apiKey) {
+          logger.warn('Google Maps API key not configured, using fallback calculation');
+          return this.getFallbackEstimate(request);
+        }
 
-    try {
-      const apiKey = this.getApiKey();
-      if (!apiKey) {
-        logger.warn('Google Maps API key not configured, using fallback calculation');
-        return this.getFallbackEstimate(request);
+        try {
+          const estimate = await this.fetchGoogleTransitEstimate(request, apiKey);
+          
+          logger.info('Calculated transit time', {
+            origin: request.origin,
+            destination: request.destination,
+            durationMinutes: estimate.durationMinutes,
+            confidence: estimate.confidence
+          });
+
+          return estimate;
+        } catch (error) {
+          logger.error('Failed to calculate transit time', { error, request });
+          return this.getFallbackEstimate(request);
+        }
       }
-
-      const estimate = await this.fetchGoogleTransitEstimate(request, apiKey);
-      
-      // Cache the result
-      this.cache.set(cacheKey, estimate);
-      
-      logger.info('Calculated transit time', {
-        origin: request.origin,
-        destination: request.destination,
-        durationMinutes: estimate.durationMinutes,
-        confidence: estimate.confidence
-      });
-
-      return estimate;
-
-    } catch (error) {
-      logger.error('Failed to calculate transit time', { error, request });
-      return this.getFallbackEstimate(request);
-    }
+    );
   }
 
   /**
@@ -200,37 +192,10 @@ class GoogleTransitService {
     return `${origin.latitude.toFixed(4)},${origin.longitude.toFixed(4)}-${destination.latitude.toFixed(4)},${destination.longitude.toFixed(4)}`;
   }
 
-  private getCachedEstimate(cacheKey: string): TransitEstimate | null {
-    const cached = this.cache.get(cacheKey);
-    if (!cached) return null;
 
-    const age = Date.now() - cached.lastCalculated.getTime();
-    if (age > this.CACHE_DURATION_MS) {
-      this.cache.delete(cacheKey);
-      return null;
-    }
-
-    return cached;
-  }
-
-  /**
-   * Clear expired cache entries
-   */
-  clearExpiredCache(): void {
-    const now = Date.now();
-    for (const [key, estimate] of this.cache.entries()) {
-      const age = now - estimate.lastCalculated.getTime();
-      if (age > this.CACHE_DURATION_MS) {
-        this.cache.delete(key);
-      }
-    }
-  }
 }
 
 // Export singleton instance
 export const googleTransitService = new GoogleTransitService();
 
-// Clear cache periodically
-setInterval(() => {
-  googleTransitService.clearExpiredCache();
-}, 5 * 60 * 1000); // Every 5 minutes
+// Cache cleanup is now handled by the unified cache system

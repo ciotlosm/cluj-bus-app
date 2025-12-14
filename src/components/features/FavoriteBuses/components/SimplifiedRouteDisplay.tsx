@@ -86,7 +86,7 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
       {/* Bus Stop Sequence */}
       <Stack direction="column" spacing={1}>
         {keyStops.map((stop, index) => (
-          <Box key={stop.id}>
+          <Box key={`simplified-${stop.id}-${stop.type}-${index}`}>
             {/* Stop Item */}
             <Stack direction="row" spacing={1} alignItems="center">
               {/* Icon with connecting line */}
@@ -116,11 +116,8 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    bgcolor: stop.type === 'bus' 
-                      ? theme.palette.primary.main 
-                      : stop.type === 'user' 
-                      ? theme.palette.info.main 
-                      : theme.palette.success.main,
+                    bgcolor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
                     zIndex: 1,
                   }}
                 >
@@ -128,21 +125,21 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                     <DirectionsBus 
                       sx={{ 
                         fontSize: 14, 
-                        color: 'white'
+                        color: theme.palette.primary.main
                       }} 
                     />
                   ) : stop.type === 'user' ? (
                     <PersonPin 
                       sx={{ 
                         fontSize: 14, 
-                        color: 'white'
+                        color: theme.palette.info.main
                       }} 
                     />
                   ) : (
                     <LocationOn 
                       sx={{ 
                         fontSize: 14, 
-                        color: 'white'
+                        color: theme.palette.text.secondary
                       }} 
                     />
                   )}
@@ -160,7 +157,7 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                       ? theme.palette.primary.main 
                       : stop.type === 'user' 
                       ? theme.palette.info.main 
-                      : theme.palette.success.main,
+                      : theme.palette.text.primary,
                     lineHeight: 1.2,
                   }}
                 >

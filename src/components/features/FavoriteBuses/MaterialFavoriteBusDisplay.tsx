@@ -8,7 +8,7 @@ import { RadioButtonChecked as LiveIcon } from '@mui/icons-material';
 
 import { useFavoriteBusDisplay } from '../../../hooks/useFavoriteBusDisplay';
 import { InfoCard } from '../../ui/Card';
-import { FavoriteBusCard } from './components/FavoriteBusCard';
+import { GroupedFavoriteBusDisplay } from './components/GroupedFavoriteBusDisplay';
 import { EmptyStates } from './components/EmptyStates';
 
 interface MaterialFavoriteBusDisplayProps {
@@ -65,15 +65,7 @@ export const MaterialFavoriteBusDisplay: React.FC<MaterialFavoriteBusDisplayProp
         subtitle={lastUpdate && lastUpdate instanceof Date ? `Last cache update ${formatRefreshTime(lastUpdate)}` : 'Real-time updates'}
         icon={<LiveIcon sx={{ color: 'success.main' }} />}
       >
-        <Stack spacing={2}>
-          {(favoriteBusResult?.favoriteBuses || []).map((bus: any, index: number) => (
-            <FavoriteBusCard
-              key={`${bus.routeShortName}-${bus.vehicleId}-${bus.lastUpdate?.getTime() || Date.now()}-${index}`}
-              bus={bus}
-              index={index}
-            />
-          ))}
-        </Stack>
+        <GroupedFavoriteBusDisplay buses={favoriteBusResult?.favoriteBuses || []} />
       </InfoCard>
     </Box>
   );

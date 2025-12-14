@@ -143,7 +143,31 @@ export const BusCard: React.FC<BusCardProps> = ({
                     fontSize: '0.75rem',
                   }}
                 >
-                  {arrivalStatus.message}
+                  {(() => {
+                    // Parse message to style time portion (text in parentheses) in gray
+                    const message = arrivalStatus.message;
+                    const timeMatch = message.match(/^(.+?)(\s*\([^)]+\))$/);
+                    
+                    if (timeMatch) {
+                      const [, mainMessage, timeText] = timeMatch;
+                      return (
+                        <>
+                          {mainMessage}
+                          <Box
+                            component="span"
+                            sx={{
+                              color: theme.palette.text.secondary,
+                              fontWeight: 400,
+                            }}
+                          >
+                            {timeText}
+                          </Box>
+                        </>
+                      );
+                    }
+                    
+                    return message;
+                  })()}
                 </Typography>
                 {arrivalStatus.isOffline && (
                   <OfflineIcon 

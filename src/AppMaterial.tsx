@@ -68,8 +68,14 @@ const MaterialHeader: React.FC<{
     <AppBar 
       position="sticky" 
       sx={{ 
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        boxShadow: theme.shadows[4],
+        // Use theme-aware background - bright gradient for light mode, subdued for dark mode
+        background: theme.palette.mode === 'dark' 
+          ? theme.palette.background.paper
+          : `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+        boxShadow: theme.palette.mode === 'dark' ? 'none' : theme.shadows[4],
+        borderBottom: theme.palette.mode === 'dark' 
+          ? `1px solid ${alpha(theme.palette.outline.main, 0.12)}` 
+          : 'none',
       }}
     >
       <Toolbar sx={{ py: 1 }}>

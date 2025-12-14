@@ -431,8 +431,8 @@ export class EnhancedTranzyApiService {
       const route = routesMap.get(vehicle.routeId);
       if (!route) continue;
 
-      // Find the closest stop for this vehicle
-      const closestStop = this.findClosestStop(vehicle.position, stops);
+      // Find the closest stop for this vehicle using intelligent sequence logic
+      const closestStop = this.findClosestStop(vehicle.position, stops, vehicle, stopTimes);
       if (!closestStop) continue;
 
       // Skip if we're filtering by stop and this isn't it
@@ -548,7 +548,18 @@ export class EnhancedTranzyApiService {
     }
   }
 
-  private findClosestStop(position: { latitude: number; longitude: number }, stops: Station[]): Station | null {
+  private findClosestStop(
+    position: { latitude: number; longitude: number }, 
+    stops: Station[], 
+    vehicle?: LiveVehicle,
+    stopTimes?: StopTime[]
+  ): Station | null {
+    // If we have trip information, use intelligent stop sequence logic
+    if (vehicle?.tripId && stopTimes) {
+      return this.findNextStopInSequence(position, vehicle.tripId, stops, stopTimes);
+    }
+
+    // Fallback to simple distance-based logic
     let closest: Station | null = null;
     let minDistance = Infinity;
 
@@ -561,6 +572,129 @@ export class EnhancedTranzyApiService {
     }
 
     return minDistance < 1000 ? closest : null; // Within 1km
+  }
+
+  /**
+   * Finds the next stop in the trip sequence based on vehicle position and direction of travel
+   * This method implements intelligent stop detection by:
+   * 1. Getting the stop sequence for the vehicle's trip_id
+   * 2. Finding the two closest stops to the vehicle
+   * 3. Determining which stop is next based on sequence and direction
+   */
+  private findNextStopInSequence(
+    vehiclePosition: { latitude: number; longitude: number },
+    tripId: string,
+    allStops: Station[],
+    stopTimes: StopTime[]
+  ): Station | null {
+    // Get stop times for this specific trip, sorted by sequence
+    const tripStopTimes = stopTimes
+      .filter(st => st.tripId === tripId)
+      .sort((a, b) => a.sequence - b.sequence);
+
+    if (tripStopTimes.length === 0) {
+      logger.debug('No stop times found for trip', { tripId });
+      return null;
+    }
+
+    logger.debug('Finding next stop in sequence', { 
+      tripId, 
+      stopCount: tripStopTimes.length,
+      vehiclePosition 
+    });
+
+    // Create a map for quick stop lookup
+    const stopsMap = new Map(allStops.map(stop => [stop.id, stop]));
+
+    // Get coordinates for stops in this trip sequence
+    const tripStopsWithCoords = tripStopTimes
+      .map(stopTime => {
+        const stop = stopsMap.get(stopTime.stopId);
+        return stop ? {
+          stopTime,
+          stop,
+          distance: this.calculateDistance(vehiclePosition, stop.coordinates)
+        } : null;
+      })
+      .filter(item => item !== null);
+
+    if (tripStopsWithCoords.length === 0) {
+      return null;
+    }
+
+    // Find the two closest stops
+    const sortedByDistance = [...tripStopsWithCoords].sort((a, b) => a.distance - b.distance);
+    
+    if (sortedByDistance.length === 1) {
+      return sortedByDistance[0].distance < 1000 ? sortedByDistance[0].stop : null;
+    }
+
+    const closestTwo = sortedByDistance.slice(0, 2);
+    const [first, second] = closestTwo;
+
+    // If both stops are too far, return null
+    if (first.distance > 1000) {
+      return null;
+    }
+
+    // Determine which stop is next in the sequence
+    const firstSequence = first.stopTime.sequence;
+    const secondSequence = second.stopTime.sequence;
+
+    // If the vehicle is between two stops, choose the one with higher sequence (next stop)
+    if (Math.abs(firstSequence - secondSequence) === 1) {
+      // Adjacent stops - choose the one with higher sequence number (next in route)
+      return firstSequence > secondSequence ? first.stop : second.stop;
+    }
+
+    // If stops are not adjacent, use additional logic
+    return this.determineNextStopByDirection(vehiclePosition, closestTwo, tripStopsWithCoords);
+  }
+
+  /**
+   * Determines the next stop by analyzing vehicle movement direction
+   */
+  private determineNextStopByDirection(
+    vehiclePosition: { latitude: number; longitude: number },
+    closestTwo: Array<{ stopTime: StopTime; stop: Station; distance: number }>,
+    allTripStops: Array<{ stopTime: StopTime; stop: Station; distance: number }>
+  ): Station {
+    const [first, second] = closestTwo;
+
+    // If one stop is significantly closer, prefer it
+    if (first.distance < second.distance * 0.5) {
+      return first.stop;
+    }
+
+    // Look at the sequence numbers to determine direction
+    const firstSequence = first.stopTime.sequence;
+    const secondSequence = second.stopTime.sequence;
+
+    // Find the vehicle's approximate position in the sequence
+    const avgSequence = (firstSequence + secondSequence) / 2;
+    
+    // Get stops before and after to understand the route direction
+    const stopsBefore = allTripStops.filter(s => s.stopTime.sequence < avgSequence);
+    const stopsAfter = allTripStops.filter(s => s.stopTime.sequence > avgSequence);
+
+    // If we have stops in both directions, calculate which direction the vehicle is likely heading
+    if (stopsBefore.length > 0 && stopsAfter.length > 0) {
+      const avgDistanceBefore = stopsBefore.reduce((sum, s) => sum + s.distance, 0) / stopsBefore.length;
+      const avgDistanceAfter = stopsAfter.reduce((sum, s) => sum + s.distance, 0) / stopsAfter.length;
+
+      // If the vehicle is closer to stops ahead in sequence, it's likely moving forward
+      if (avgDistanceAfter < avgDistanceBefore) {
+        return firstSequence > secondSequence ? first.stop : second.stop;
+      }
+    }
+
+    // Default to the stop with higher sequence (next in route)
+    const nextStop = firstSequence > secondSequence ? first.stop : second.stop;
+    logger.debug('Selected next stop by sequence', { 
+      selectedStop: nextStop.name,
+      sequence: firstSequence > secondSequence ? firstSequence : secondSequence
+    });
+    return nextStop;
   }
 
   private calculateDistance(

@@ -200,6 +200,17 @@ export const darkMaterialTheme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          borderRadius: '0 0 16px 16px',
+          // Override the bright gradient in dark mode with a more subdued background
+          background: '#1D1B20', // Use the dark surface color instead of bright gradient
+          borderBottom: '1px solid rgba(147, 143, 153, 0.12)', // Subtle border for definition
+        },
+      },
+    },
   },
   palette: {
     ...materialTheme.palette,

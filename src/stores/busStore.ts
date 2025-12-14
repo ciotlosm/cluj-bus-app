@@ -5,12 +5,8 @@ import { useConfigStore } from './configStore';
 import { useLocationStore } from './locationStore';
 import { useOfflineStore } from './offlineStore';
 import { withRetry, isRetryableError, RetryError } from '../utils/retryUtils';
-import { DataCache } from '../utils/cacheUtils';
+import { unifiedCache, CacheKeys } from '../services/unifiedCache';
 import { logger } from '../utils/logger';
-
-// Create cache instances for different data types
-const busCache = new DataCache<BusInfo[]>();
-const stationCache = new DataCache<Station[]>();
 
 // Global refresh interval management
 let refreshIntervalId: number | null = null;
@@ -25,7 +21,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
   error: null,
   isAutoRefreshEnabled: false,
 
-  refreshBuses: async () => {
+  refreshBuses: async (forceRefresh = false) => {
     set({ isLoading: true, error: null });
     
     try {
@@ -49,70 +45,52 @@ export const useBusStore = create<BusStore>((set, get) => ({
       };
 
       let buses: BusInfo[];
-      let isUsingCachedData = false;
 
       try {
-        // Attempt to fetch fresh data with retry
-        buses = await withRetry(fetchBusData, {
-          maxRetries: 3,
-          baseDelay: 1000,
-          maxDelay: 8000,
-        });
+        // Use unified cache with automatic stale data fallback
+        buses = await unifiedCache.get(
+          CacheKeys.busInfo(config.city),
+          async () => {
+            // Fetch fresh data with retry
+            return await withRetry(fetchBusData, {
+              maxRetries: 3,
+              baseDelay: 1000,
+              maxDelay: 8000,
+            });
+          },
+          forceRefresh
+        );
         
-        // Cache the fresh data
-        busCache.set(config.city, buses);
-        
-        // Update timestamps for fresh API data
+        // Update timestamps
         const now = new Date();
         set({ 
           lastApiUpdate: now,
           lastCacheUpdate: now
         });
-      } catch (error) {
-        // If fetch fails, try to use cached data for graceful degradation
-        const cachedResult = busCache.getStale(config.city);
         
-        if (cachedResult) {
-          buses = cachedResult.data;
-          isUsingCachedData = true;
-          
-          // Update offline store to indicate we're using cached data
-          const offlineStore = useOfflineStore.getState();
-          const cacheTimestamp = new Date(Date.now() - cachedResult.age);
-          offlineStore.setUsingCachedData(true, cachedResult.data.length > 0 ? cacheTimestamp : undefined);
-          
-          // Update cache timestamp (but not API timestamp since this is cached data)
-          set({ lastCacheUpdate: cacheTimestamp });
-          
-          // Create appropriate error state
-          const errorState: ErrorState = {
-            type: error instanceof RetryError ? 'network' : 'partial',
-            message: isUsingCachedData 
-              ? `Using cached data (${Math.round(cachedResult.age / 1000)}s old): ${error instanceof Error ? error.message : 'Unknown error'}`
-              : error instanceof Error ? error.message : 'Unknown error occurred',
-            timestamp: new Date(),
-            retryable: isRetryableError(error instanceof Error ? error : new Error(String(error))),
-          };
-          
-          set({ error: errorState });
-        } else {
-          // No cached data available
-          const offlineStore = useOfflineStore.getState();
-          offlineStore.setUsingCachedData(false);
-          
-          const errorState: ErrorState = {
-            type: 'noData',
-            message: error instanceof Error ? error.message : 'No data available',
-            timestamp: new Date(),
-            retryable: isRetryableError(error instanceof Error ? error : new Error(String(error))),
-          };
-          
-          set({
-            error: errorState,
-            isLoading: false,
-          });
-          return;
-        }
+        // Update offline store
+        const offlineStore = useOfflineStore.getState();
+        offlineStore.setUsingCachedData(false);
+        
+      } catch (error) {
+        // Both fresh fetch and stale data failed
+        logger.error('Failed to fetch bus data and no stale data available', { error });
+        
+        const offlineStore = useOfflineStore.getState();
+        offlineStore.setUsingCachedData(false);
+        
+        const errorState: ErrorState = {
+          type: 'noData',
+          message: error instanceof Error ? error.message : 'No data available',
+          timestamp: new Date(),
+          retryable: isRetryableError(error instanceof Error ? error : new Error(String(error))),
+        };
+        
+        set({
+          error: errorState,
+          isLoading: false,
+        });
+        return;
       }
 
       // Classify bus directions using intelligence

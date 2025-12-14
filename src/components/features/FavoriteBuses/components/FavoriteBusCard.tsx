@@ -6,14 +6,13 @@ import {
   Stack,
   useTheme,
   alpha,
-  Collapse,
   IconButton,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
 } from '@mui/material';
-import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, PersonPin, CloudOff } from '@mui/icons-material';
+import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, PersonPin } from '@mui/icons-material';
 import { getRouteTypeInfo } from '../../../../utils/busDisplayUtils';
 import { BusCard } from '../../../ui/Card';
 import { BusRouteMapModal } from './BusRouteMapModal';
@@ -42,13 +41,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
   const displayRouteName = String(bus?.routeShortName || ''); // Just show the route number, not the full description
   const avatarRouteNumber = String(bus?.routeShortName || 'N/A');
 
-  // Format coordinates for display with proper validation
-  const formatCoordinate = (coord: number | undefined) => {
-    if (typeof coord === 'number' && !isNaN(coord)) {
-      return coord.toFixed(4);
-    }
-    return 'N/A';
-  };
+
   
   // Calculate time since last update with validation
   const getUpdateText = () => {
@@ -110,7 +103,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         } catch (error) {
           console.warn('Failed to calculate transit estimate:', error);
           // Fall back to simple calculation
-          const fallbackMinutes = Math.max(1, (userStopIndex - currentStopIndex) * 2);
+          const fallbackMinutes = Math.max(1, (userStopIndex - currentStopIndex) * 1);
           setTransitEstimate({
             durationMinutes: fallbackMinutes,
             confidence: 'low'
@@ -139,6 +132,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
   // Calculate arrival status based on bus direction and user location
   const getArrivalStatus = () => {
     const isStale = isDataStale();
+    const updateText = getUpdateText();
     
     if (!bus?.stopSequence || bus.stopSequence.length === 0) {
       return { 
@@ -171,7 +165,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
       // Bus has passed the user's stop
       return { 
         status: 'missed', 
-        message: 'You missed this one',
+        message: `You missed this one (${updateText})`,
         color: theme.palette.error.main,
         isOffline: false,
         isStale
@@ -187,7 +181,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
       
       return { 
         status: 'arriving', 
-        message: `Arriving in ${confidenceIndicator}${estimatedMinutes} min`,
+        message: `Arriving in ${confidenceIndicator}${estimatedMinutes} min (${updateText})`,
         color: theme.palette.success.main,
         isOffline: !hasGoogleMaps || !transitEstimate,
         isStale
@@ -196,7 +190,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
       // Bus is at the user's stop
       return { 
         status: 'at-stop', 
-        message: 'Bus is at your stop!',
+        message: `Bus is at your stop! (${updateText})`,
         color: theme.palette.warning.main,
         isOffline: false,
         isStale
@@ -227,176 +221,179 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         onMapClick={() => setShowMap(true)}
         arrivalStatus={arrivalStatus}
         customContent={
-          <SimplifiedRouteDisplay 
-            stopSequence={bus.stopSequence || []}
-            destination={bus.destination}
-          />
+          <Box>
+            {/* Route display - either simplified or expanded */}
+            {!showStops ? (
+              <Box>
+                <SimplifiedRouteDisplay 
+                  stopSequence={bus.stopSequence || []}
+                  destination={bus.destination}
+                />
+                
+                {/* Route Stops button right under final destination */}
+                {bus.stopSequence && bus.stopSequence.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowStops(true)}
+                        sx={{ p: 0.5 }}
+                      >
+                        <ExpandMore fontSize="small" />
+                      </IconButton>
+                      <Typography variant="caption" color="text.secondary">
+                        Route Stops ({bus.stopSequence.length})
+                        {bus.direction && ` • ${bus.direction === 'inbound' ? 'Inbound' : 'Outbound'}`}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )}
+              </Box>
+            ) : (
+              <Box>
+                {/* Collapse button to return to simplified view */}
+                <Box sx={{ mb: 2 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowStops(false)}
+                      sx={{ p: 0.5 }}
+                    >
+                      <ExpandLess fontSize="small" />
+                    </IconButton>
+                    <Typography variant="subtitle2" color="text.primary">
+                      Route Stops ({bus.stopSequence?.length || 0})
+                      {bus.direction && ` • ${bus.direction === 'inbound' ? 'Inbound' : 'Outbound'}`}
+                    </Typography>
+                  </Stack>
+                </Box>
+
+                {/* Expanded route stops list */}
+                <List dense sx={{ py: 0 }}>
+                  {bus.stopSequence?.map((stop) => {
+                    const isCurrent = stop.isCurrent;
+                    const isClosestToUser = stop.isClosestToUser;
+                    
+                    return (
+                      <ListItem
+                        key={`expanded-${bus.routeShortName}-${stop.id}-${stop.sequence}`}
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          borderRadius: 1,
+                          bgcolor: isCurrent
+                            ? alpha(theme.palette.primary.main, 0.1)
+                            : isClosestToUser
+                            ? alpha(theme.palette.info.main, 0.1)
+                            : 'transparent',
+                          border: isCurrent
+                            ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
+                            : isClosestToUser
+                            ? `1px solid ${alpha(theme.palette.info.main, 0.3)}`
+                            : '1px solid transparent',
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          {isCurrent ? (
+                            <LocationOn 
+                              fontSize="small" 
+                              color="primary"
+                            />
+                          ) : isClosestToUser ? (
+                            <PersonPin 
+                              fontSize="small" 
+                              color="info"
+                            />
+                          ) : (
+                            <RadioButtonUnchecked 
+                              fontSize="small" 
+                              sx={{ color: theme.palette.text.disabled }}
+                            />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography 
+                              variant="caption" 
+                              color={isCurrent ? 'primary' : isClosestToUser ? 'info' : 'text.secondary'}
+                              sx={{ fontWeight: (isCurrent || isClosestToUser) ? 600 : 400 }}
+                            >
+                              {stop.name}
+                            </Typography>
+                          }
+                          secondary={
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                              {stop.arrivalTime && (
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                  {stop.arrivalTime}
+                                </Typography>
+                              )}
+                              {isCurrent && stop.distanceFromBus && (
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                  • {formatDistance(stop.distanceFromBus)} from bus
+                                </Typography>
+                              )}
+                              {isClosestToUser && stop.distanceToUser && (
+                                <Typography variant="caption" color="info.main" sx={{ fontSize: '0.65rem' }}>
+                                  • {formatDistance(stop.distanceToUser)} from you
+                                </Typography>
+                              )}
+                              {isCurrent && (
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                  • Last update {updateText}
+                                </Typography>
+                              )}
+                            </Stack>
+                          }
+                          slotProps={{
+                            secondary: {
+                              component: 'div'
+                            }
+                          }}
+                        />
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          {isCurrent && (
+                            <Chip
+                              label={bus.currentStation?.isAtStation ? "At Station" : "Current"}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              clickable
+                              onClick={() => setShowMap(true)}
+                              sx={{
+                                height: 16,
+                                fontSize: '0.6rem',
+                                '& .MuiChip-label': { px: 0.5 },
+                                cursor: 'pointer',
+                                '&:hover': {
+                                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                }
+                              }}
+                            />
+                          )}
+                          {isClosestToUser && (
+                            <Chip
+                              label="Closest to You"
+                              size="small"
+                              color="info"
+                              variant="outlined"
+                              sx={{
+                                height: 16,
+                                fontSize: '0.6rem',
+                                '& .MuiChip-label': { px: 0.5 }
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Box>
+            )}
+          </Box>
         }
       >
-        {/* Route type information */}
-        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
-            <Chip
-              label={routeTypeInfo.label}
-              size="small"
-              sx={{
-                bgcolor: alpha(routeTypeInfo.color, 0.1),
-                color: routeTypeInfo.color,
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 20,
-              }}
-            />
-          </Stack>
-          {/* Stop sequence toggle */}
-          {bus.stopSequence && bus.stopSequence.length > 0 && (
-            <Box sx={{ mt: 0.5 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <IconButton
-                  size="small"
-                  onClick={() => setShowStops(!showStops)}
-                  sx={{ p: 0.5 }}
-                >
-                  {showStops ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                </IconButton>
-                <Typography variant="caption" color="text.secondary">
-                  Route Stops ({bus.stopSequence.length})
-                  {bus.direction && ` • ${bus.direction === 'inbound' ? 'Inbound' : 'Outbound'}`}
-                </Typography>
-              </Stack>
-            </Box>
-          )}
-        </Box>
-
-        {/* Stop sequence list */}
-        {bus.stopSequence && bus.stopSequence.length > 0 && (
-          <Collapse in={showStops}>
-            <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
-              <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1 }}>
-                Route Stops
-              </Typography>
-              <List dense sx={{ py: 0 }}>
-                {/* Show route stops */}
-                {bus.stopSequence.map((stop) => {
-                  const isCurrent = stop.isCurrent;
-                  const isClosestToUser = stop.isClosestToUser;
-                  
-                  return (
-                    <ListItem
-                      key={stop.id}
-                      sx={{
-                        py: 0.5,
-                        px: 1,
-                        borderRadius: 1,
-                        bgcolor: isCurrent
-                          ? alpha(theme.palette.primary.main, 0.1)
-                          : isClosestToUser
-                          ? alpha(theme.palette.info.main, 0.1)
-                          : 'transparent',
-                        border: isCurrent
-                          ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
-                          : isClosestToUser
-                          ? `1px solid ${alpha(theme.palette.info.main, 0.3)}`
-                          : '1px solid transparent',
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 32 }}>
-                        {isCurrent ? (
-                          <LocationOn 
-                            fontSize="small" 
-                            color="primary"
-                          />
-                        ) : isClosestToUser ? (
-                          <PersonPin 
-                            fontSize="small" 
-                            color="info"
-                          />
-                        ) : (
-                          <RadioButtonUnchecked 
-                            fontSize="small" 
-                            sx={{ color: theme.palette.text.disabled }}
-                          />
-                        )}
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Typography 
-                            variant="caption" 
-                            color={isCurrent ? 'primary' : isClosestToUser ? 'info' : 'text.secondary'}
-                            sx={{ fontWeight: (isCurrent || isClosestToUser) ? 600 : 400 }}
-                          >
-                            {stop.name}
-                          </Typography>
-                        }
-                        secondary={
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                            {stop.arrivalTime && (
-                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                                {stop.arrivalTime}
-                              </Typography>
-                            )}
-                            {isCurrent && stop.distanceFromBus && (
-                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                                • {formatDistance(stop.distanceFromBus)} from bus
-                              </Typography>
-                            )}
-                            {isClosestToUser && stop.distanceToUser && (
-                              <Typography variant="caption" color="info.main" sx={{ fontSize: '0.65rem' }}>
-                                • {formatDistance(stop.distanceToUser)} from you
-                              </Typography>
-                            )}
-                            {isCurrent && (
-                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                                • Last update {updateText}
-                              </Typography>
-                            )}
-                          </Stack>
-                        }
-                        secondaryTypographyProps={{
-                          component: 'div'
-                        }}
-                      />
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                        {isCurrent && (
-                          <Chip
-                            label={bus.currentStation?.isAtStation ? "At Station" : "Current"}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            clickable
-                            onClick={() => setShowMap(true)}
-                            sx={{
-                              height: 16,
-                              fontSize: '0.6rem',
-                              '& .MuiChip-label': { px: 0.5 },
-                              cursor: 'pointer',
-                              '&:hover': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                              }
-                            }}
-                          />
-                        )}
-                        {isClosestToUser && (
-                          <Chip
-                            label="Closest to You"
-                            size="small"
-                            color="info"
-                            variant="outlined"
-                            sx={{
-                              height: 16,
-                              fontSize: '0.6rem',
-                              '& .MuiChip-label': { px: 0.5 }
-                            }}
-                          />
-                        )}
-                      </Stack>
-                    </ListItem>
-                  );
-                })}
-              </List>
-            </Box>
-          </Collapse>
-        )}
       </BusCard>
 
       {/* Map Modal */}
