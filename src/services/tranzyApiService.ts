@@ -100,6 +100,7 @@ export class TranzyApiServiceImpl implements TranzyApiService {
         if (this.apiKey) {
           config.headers.Authorization = `Bearer ${this.apiKey}`;
           config.headers['X-API-Key'] = this.apiKey;
+          config.headers['X-Agency-Id'] = '2'; // CTP Cluj agency ID
         }
         return config;
       },
@@ -195,6 +196,7 @@ export class TranzyApiServiceImpl implements TranzyApiService {
         headers: {
           'Authorization': `Bearer ${key}`,
           'X-API-Key': key,
+          'X-Agency-Id': '2', // Required for CTP Cluj
           'Content-Type': 'application/json',
         },
       });
@@ -211,9 +213,14 @@ export class TranzyApiServiceImpl implements TranzyApiService {
         return false;
       }
     } catch (error) {
-      logger.warn('API key validation failed', { error: error instanceof Error ? error.message : String(error) }, 'API');
+      logger.error('API key validation failed', { 
+        error: error instanceof Error ? error.message : String(error),
+        status: error instanceof AxiosError ? error.response?.status : 'unknown'
+      }, 'API');
+      
       if (error instanceof AxiosError) {
         if (error.response?.status === 401 || error.response?.status === 403) {
+          logger.warn('API key is invalid or expired', { status: error.response.status }, 'API');
           return false;
         }
       }

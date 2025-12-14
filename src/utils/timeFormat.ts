@@ -52,3 +52,26 @@ export const formatRelativeTime = (date: Date): string => {
     return formatTime24(date);
   }
 };
+
+/**
+ * Format relative time with more granular precision for refresh indicators
+ */
+export const formatRefreshTime = (date: Date | null): string => {
+  if (!date) return 'Never';
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  
+  if (diffSeconds < 5) {
+    return 'now';
+  } else if (diffSeconds < 60) {
+    return `${diffSeconds}s ago`;
+  } else if (diffSeconds < 3600) {
+    return `${Math.floor(diffSeconds / 60)}m ago`;
+  } else if (diffSeconds < 86400) {
+    return `${Math.floor(diffSeconds / 3600)}h ago`;
+  } else {
+    return formatTime24(date);
+  }
+};

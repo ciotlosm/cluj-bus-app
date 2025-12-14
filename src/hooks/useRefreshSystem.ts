@@ -70,7 +70,14 @@ export const useRefreshSystem = () => {
   const debouncedManualRefresh = useDebounceCallback(
     async () => {
       const busStore = useEnhancedBusStore.getState();
-      await busStore.manualRefresh();
+      const { useFavoriteBusStore } = await import('../stores/favoriteBusStore');
+      const favoriteBusStore = useFavoriteBusStore.getState();
+      
+      // Refresh both enhanced buses and favorite buses
+      await Promise.all([
+        busStore.manualRefresh(),
+        favoriteBusStore.manualRefresh()
+      ]);
     },
     1000, // 1 second debounce
     [] // Empty deps to prevent infinite loop

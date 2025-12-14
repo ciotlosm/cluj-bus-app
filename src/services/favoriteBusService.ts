@@ -1,6 +1,7 @@
 import { enhancedTranzyApi } from './enhancedTranzyApi';
 import { agencyService } from './agencyService';
 import { routeMappingService } from './routeMappingService';
+import { vehicleCacheService } from './vehicleCacheService';
 import { logger } from '../utils/logger';
 
 export interface BusStopInfo {
@@ -13,9 +14,10 @@ export interface BusStopInfo {
   };
   arrivalTime?: string; // Scheduled arrival time (HH:MM:SS)
   departureTime?: string; // Scheduled departure time (HH:MM:SS)
-  isNearest?: boolean; // True if this is the nearest station to the vehicle
-  isClosestRouteStop?: boolean; // True if this is the closest route stop when bus is off-route
-  isOffRoute?: boolean; // True if the bus is not near any route stops
+  isCurrent?: boolean; // True if this is the current/next station in the route path
+  isClosestToUser?: boolean; // True if this is the closest stop to the user's current location
+  distanceToUser?: number; // Distance from user's location in meters
+  distanceFromBus?: number; // Distance from bus to this station in meters
 }
 
 export interface FavoriteBusInfo {
@@ -31,13 +33,15 @@ export interface FavoriteBusInfo {
   speed?: number; // Vehicle speed if available
   bearing?: number; // Vehicle direction if available
   lastUpdate: Date; // When this vehicle data was last updated
-  nearestStation: {
+  currentStation: {
     id: string;
     name: string;
     distance: number; // Distance in meters
+    isAtStation: boolean; // True if bus is considered "at" the station (< 100m and speed = 0)
   } | null;
   stopSequence?: BusStopInfo[]; // Ordered list of stops for this trip
   direction?: 'inbound' | 'outbound'; // Trip direction
+  distanceFromUser?: number; // Distance from user along the route shape in meters
 }
 
 export interface FavoriteBusResult {
@@ -69,47 +73,183 @@ class FavoriteBusService {
   }
 
   /**
-   * Find the nearest station to a vehicle position
+   * Calculate distance from user to bus along the route shape
+   * Uses trip_id to find shape_id, then calculates progressive distance along shape points
    */
-  private findNearestStation(
-    vehiclePosition: { latitude: number; longitude: number },
-    stations: any[]
-  ): { id: string; name: string; distance: number } | null {
-    if (!stations || stations.length === 0) return null;
-
-    let nearest: { id: string; name: string; distance: number } | null = null;
-    let minDistance = Infinity;
-
-    for (const station of stations) {
-      if (!station.coordinates) continue;
+  private async calculateDistanceAlongRoute(
+    userLocation: { latitude: number; longitude: number },
+    busLocation: { latitude: number; longitude: number },
+    tripId: string,
+    agencyId: number
+  ): Promise<number | null> {
+    try {
+      // Get trip data to find shape_id
+      const trips = await enhancedTranzyApi.getTrips(agencyId);
+      const trip = trips.find(t => t.id === tripId);
       
-      const distance = this.calculateDistance(vehiclePosition, station.coordinates);
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearest = {
-          id: station.id,
-          name: station.name,
-          distance: Math.round(distance)
-        };
+      if (!trip || !trip.shapeId) {
+        logger.warn('No shape_id found for trip', { tripId });
+        return null;
       }
-    }
 
-    // Only return stations within 2km
-    return nearest && nearest.distance <= 2000 ? nearest : null;
+      // Get shape points for this trip
+      const shapePoints = await enhancedTranzyApi.getShapes(agencyId, trip.shapeId);
+      
+      if (!shapePoints || shapePoints.length === 0) {
+        logger.warn('No shape points found for shape', { shapeId: trip.shapeId });
+        return null;
+      }
+
+      // Sort shape points by sequence to ensure correct order
+      const sortedShapePoints = shapePoints.sort((a, b) => a.sequence - b.sequence);
+
+      // Find closest shape point to user location
+      let userShapeIndex = -1;
+      let minUserDistance = Infinity;
+      
+      for (let i = 0; i < sortedShapePoints.length; i++) {
+        const shapePoint = sortedShapePoints[i];
+        const distance = this.calculateDistance(userLocation, {
+          latitude: shapePoint.latitude,
+          longitude: shapePoint.longitude
+        });
+        
+        if (distance < minUserDistance) {
+          minUserDistance = distance;
+          userShapeIndex = i;
+        }
+      }
+
+      // Find closest shape point to bus location
+      let busShapeIndex = -1;
+      let minBusDistance = Infinity;
+      
+      for (let i = 0; i < sortedShapePoints.length; i++) {
+        const shapePoint = sortedShapePoints[i];
+        const distance = this.calculateDistance(busLocation, {
+          latitude: shapePoint.latitude,
+          longitude: shapePoint.longitude
+        });
+        
+        if (distance < minBusDistance) {
+          minBusDistance = distance;
+          busShapeIndex = i;
+        }
+      }
+
+      if (userShapeIndex === -1 || busShapeIndex === -1) {
+        logger.warn('Could not find closest shape points', { 
+          userShapeIndex, 
+          busShapeIndex, 
+          tripId 
+        });
+        return null;
+      }
+
+      // Calculate progressive distance along shape between user and bus
+      let totalDistance = 0;
+      const startIndex = Math.min(userShapeIndex, busShapeIndex);
+      const endIndex = Math.max(userShapeIndex, busShapeIndex);
+
+      for (let i = startIndex; i < endIndex; i++) {
+        const currentPoint = sortedShapePoints[i];
+        const nextPoint = sortedShapePoints[i + 1];
+        
+        if (currentPoint && nextPoint) {
+          const segmentDistance = this.calculateDistance(
+            { latitude: currentPoint.latitude, longitude: currentPoint.longitude },
+            { latitude: nextPoint.latitude, longitude: nextPoint.longitude }
+          );
+          totalDistance += segmentDistance;
+        }
+      }
+
+      logger.debug('Calculated distance along route', {
+        tripId,
+        shapeId: trip.shapeId,
+        userShapeIndex,
+        busShapeIndex,
+        totalDistance: Math.round(totalDistance),
+        shapePointsCount: sortedShapePoints.length
+      });
+
+      return totalDistance;
+
+    } catch (error) {
+      logger.error('Failed to calculate distance along route', { 
+        tripId, 
+        agencyId, 
+        error: error instanceof Error ? error.message : error 
+      });
+      return null;
+    }
   }
 
   /**
-   * Build stop sequence for a trip with nearest station highlighted
+   * Find the current/next station in the route path based on bus position and direction
+   */
+  private findCurrentStation(
+    vehiclePosition: { latitude: number; longitude: number },
+    speed: number | undefined,
+    stopTimes: any[],
+    stations: any[]
+  ): { id: string; name: string; distance: number; isAtStation: boolean } | null {
+    if (!stopTimes || stopTimes.length === 0 || !stations || stations.length === 0) return null;
+
+    // Create a map for quick station lookup
+    const stationsMap = new Map(stations.map(station => [station.id, station]));
+    
+    // Sort stop times by sequence to ensure correct order
+    const sortedStopTimes = stopTimes.sort((a, b) => a.sequence - b.sequence);
+    
+    // Find distances to all route stops
+    const stopDistances = sortedStopTimes.map(stopTime => {
+      const station = stationsMap.get(stopTime.stopId);
+      if (!station?.coordinates) return null;
+      
+      const distance = this.calculateDistance(vehiclePosition, station.coordinates);
+      return {
+        stopId: stopTime.stopId,
+        name: station.name,
+        sequence: stopTime.sequence,
+        distance: Math.round(distance),
+        coordinates: station.coordinates
+      };
+    }).filter(Boolean);
+
+    if (stopDistances.length === 0) return null;
+
+    // Find the closest stop
+    const closestStop = stopDistances.reduce((closest, current) => 
+      current!.distance < closest!.distance ? current : closest
+    );
+
+    if (!closestStop) return null;
+
+    // Check if bus is "at" the station (< 100m and speed = 0)
+    const isAtStation = closestStop.distance < 100 && (speed === undefined || speed === 0);
+
+    // Always return the closest stop - this is the most accurate representation
+    // of where the bus actually is, not where we think it should be going
+    return {
+      id: closestStop.stopId,
+      name: closestStop.name,
+      distance: closestStop.distance,
+      isAtStation
+    };
+  }
+
+  /**
+   * Build stop sequence for a trip with current station highlighted
    */
   private buildStopSequence(
     tripId: string,
     stopTimes: any[],
     stations: any[],
     vehiclePosition: { latitude: number; longitude: number },
-    nearestStation: { id: string; name: string; distance: number } | null,
-    allRouteStopTimes: Map<string, any[]>,
-    routeId: string,
-    _tripDirection?: 'inbound' | 'outbound'
+    currentStation: { id: string; name: string; distance: number; isAtStation: boolean } | null,
+    userLocation?: { latitude: number; longitude: number } | null,
+    speed?: number
   ): BusStopInfo[] {
     if (!stopTimes || stopTimes.length === 0) return [];
 
@@ -119,7 +259,19 @@ class FavoriteBusService {
     // Build stop sequence
     const stopSequence: BusStopInfo[] = stopTimes.map(stopTime => {
       const station = stationsMap.get(stopTime.stopId);
-      const isNearest = nearestStation?.id === stopTime.stopId;
+      const isCurrent = currentStation?.id === stopTime.stopId;
+      
+      // Calculate distance to user location if available
+      let distanceToUser: number | undefined;
+      if (userLocation && station?.coordinates && station.coordinates.latitude !== 0 && station.coordinates.longitude !== 0) {
+        distanceToUser = this.calculateDistance(userLocation, station.coordinates);
+      }
+
+      // Calculate distance from bus to this station
+      let distanceFromBus: number | undefined;
+      if (station?.coordinates && station.coordinates.latitude !== 0 && station.coordinates.longitude !== 0) {
+        distanceFromBus = this.calculateDistance(vehiclePosition, station.coordinates);
+      }
 
       return {
         id: stopTime.stopId,
@@ -128,85 +280,49 @@ class FavoriteBusService {
         coordinates: station?.coordinates || { latitude: 0, longitude: 0 },
         arrivalTime: stopTime.arrivalTime,
         departureTime: stopTime.departureTime,
-        isNearest,
-        isClosestRouteStop: false,
-        isOffRoute: false
+        isCurrent,
+        isClosestToUser: false,
+        distanceToUser,
+        distanceFromBus
       };
     });
 
     // Sort by sequence (should already be sorted, but ensure it)
     stopSequence.sort((a, b) => a.sequence - b.sequence);
 
-    // Check if the nearest station is part of the current trip stops
-    const nearestStationInCurrentTrip = stopSequence.some(stop => stop.isNearest);
-    
-    if (!nearestStationInCurrentTrip && nearestStation) {
-      // Check if the nearest station exists in ANY trip for this route
-      let nearestStationInAnyRouteTrip = false;
-      
-      // Get all trips for this route (extract route ID from trip ID pattern like "40_0", "40_1")
-      const routeTrips = Array.from(allRouteStopTimes.keys()).filter(tId => 
-        tId.startsWith(routeId + '_')
-      );
-      
-      for (const routeTripId of routeTrips) {
-        const routeTripStopTimes = allRouteStopTimes.get(routeTripId) || [];
-        const stationInThisTrip = routeTripStopTimes.some(st => st.stopId === nearestStation.id);
-        if (stationInThisTrip) {
-          nearestStationInAnyRouteTrip = true;
-          break;
-        }
-      }
-
-      // Find the closest route stop to the vehicle's GPS position
-      let closestRouteStop: BusStopInfo | null = null;
-      let minDistance = Infinity;
+    // Find the closest stop to user location
+    if (userLocation) {
+      let closestToUser: BusStopInfo | null = null;
+      let minUserDistance = Infinity;
 
       for (const stop of stopSequence) {
-        if (stop.coordinates.latitude !== 0 && stop.coordinates.longitude !== 0) {
-          const distance = this.calculateDistance(vehiclePosition, stop.coordinates);
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestRouteStop = stop;
-          }
+        if (stop.distanceToUser !== undefined && stop.distanceToUser < minUserDistance) {
+          minUserDistance = stop.distanceToUser;
+          closestToUser = stop;
         }
       }
 
-      if (closestRouteStop) {
-        closestRouteStop.isClosestRouteStop = true;
-        
-        if (nearestStationInAnyRouteTrip) {
-          // Station exists in route but not current trip - likely opposite direction
-          closestRouteStop.isOffRoute = false; // Don't mark as off-route
-          console.log('🟡 BUS NEAR OPPOSITE DIRECTION STOP:', {
-            vehiclePosition,
-            nearestStation: nearestStation.name,
-            nearestStationDistance: nearestStation.distance,
-            closestRouteStop: closestRouteStop.name,
-            closestRouteStopDistance: Math.round(minDistance),
-            status: 'opposite_direction'
-          });
-        } else {
-          // Station doesn't exist in any route trip - truly off-route
-          closestRouteStop.isOffRoute = true;
-          console.log('🔴 BUS OFF-ROUTE:', {
-            vehiclePosition,
-            nearestStation: nearestStation.name,
-            nearestStationDistance: nearestStation.distance,
-            closestRouteStop: closestRouteStop.name,
-            closestRouteStopDistance: Math.round(minDistance),
-            status: 'off_route'
-          });
-        }
+      // Mark the closest stop to user
+      if (closestToUser) {
+        closestToUser.isClosestToUser = true;
       }
     }
+
+    console.log('🚏 BUILT STOP SEQUENCE:', {
+      tripId,
+      stopCount: stopSequence.length,
+      currentStation: currentStation?.name,
+      currentStationDistance: currentStation?.distance,
+      isAtStation: currentStation?.isAtStation
+    });
 
     return stopSequence;
   }
 
   async getFavoriteBusInfo(
     favoriteRoutes: Array<{id: string, shortName: string}>,
-    cityName: string
+    cityName: string,
+    userLocation?: { latitude: number; longitude: number } | null
   ): Promise<FavoriteBusResult> {
     try {
       logger.info('Getting live vehicles for favorite routes', {
@@ -256,14 +372,42 @@ class FavoriteBusService {
         };
       }
 
-      // Get route mappings for display info
+      // Get route mappings for display info and correct route IDs
       const routeMappings = new Map<string, any>();
+      const correctedFavoriteRoutes: Array<{id: string, shortName: string}> = [];
+      
       for (const favoriteRoute of favoriteRoutes) {
         const mapping = await routeMappingService.getRouteMappingFromShortName(favoriteRoute.shortName, cityName);
         if (mapping) {
-          routeMappings.set(favoriteRoute.id, mapping);
+          // Use the correct route ID from the mapping, not the one from favorites config
+          const correctedRoute = {
+            id: mapping.routeId, // This is the correct API route ID
+            shortName: favoriteRoute.shortName // Keep the user-friendly short name
+          };
+          correctedFavoriteRoutes.push(correctedRoute);
+          routeMappings.set(mapping.routeId, mapping);
+          
+          console.log('🔄 ROUTE MAPPING:', {
+            userShortName: favoriteRoute.shortName,
+            configRouteId: favoriteRoute.id,
+            correctApiRouteId: mapping.routeId,
+            corrected: favoriteRoute.id !== mapping.routeId
+          });
+        } else {
+          logger.warn('No route mapping found for favorite route', { 
+            shortName: favoriteRoute.shortName, 
+            configId: favoriteRoute.id 
+          });
+          // Keep original if no mapping found
+          correctedFavoriteRoutes.push(favoriteRoute);
         }
       }
+      
+      console.log('📋 CORRECTED FAVORITE ROUTES:', {
+        original: favoriteRoutes,
+        corrected: correctedFavoriteRoutes,
+        mappingCount: routeMappings.size
+      });
 
       // Get stations for finding nearest stations to vehicles
       let stations: any[] = [];
@@ -318,77 +462,61 @@ class FavoriteBusService {
         // Continue without stop times - will not show stop sequences
       }
 
-      // Get live vehicles for each favorite route
-      for (const favoriteRoute of favoriteRoutes) {
+      // Get vehicles using the caching service
+      const favoriteRouteIds = correctedFavoriteRoutes.map(route => route.id);
+      let vehiclesByRoute: Map<string, any[]>;
+      
+      try {
+        vehiclesByRoute = await vehicleCacheService.getVehiclesForRoutes(agencyId, favoriteRouteIds);
+        
+        const cacheStats = vehicleCacheService.getCacheStats();
+        console.log('📊 VEHICLE CACHE STATS:', cacheStats);
+        
+        console.log('🔍 VEHICLES FOR FAVORITE ROUTES:', {
+          requestedRoutes: favoriteRouteIds,
+          routesWithVehicles: Array.from(vehiclesByRoute.keys()),
+          vehicleBreakdown: Array.from(vehiclesByRoute.entries()).map(([routeId, vehicles]) => ({
+            routeId,
+            vehicleCount: vehicles.length
+          }))
+        });
+        
+      } catch (error) {
+        console.log('❌ FAILED to get cached vehicles:', error);
+        logger.error('Failed to get cached vehicles', { agencyId, favoriteRouteIds, error });
+        return {
+          favoriteBuses: [],
+          lastUpdate: new Date()
+        };
+      }
+
+      // Process favorite routes using cached vehicles
+      for (const favoriteRoute of correctedFavoriteRoutes) {
         const routeShortName = favoriteRoute.shortName;
         const routeId = favoriteRoute.id;
         
         try {
-          logger.debug('Getting live vehicles for route', { routeShortName, routeId });
+          logger.debug('Processing cached vehicles for route', { routeShortName, routeId });
           
-          // Validate route ID before making API call
-          const parsedRouteId = parseInt(routeId);
-          if (isNaN(parsedRouteId)) {
-            logger.error('Invalid route ID - cannot parse as integer', { 
-              routeShortName, 
-              routeId, 
-              parsedRouteId 
-            });
-            console.log('❌ SKIPPING ROUTE: Invalid route ID', { routeShortName, routeId });
-            continue; // Skip this route instead of making API call without route_id
-          }
+          // Get vehicles for this route from cache
+          const routeVehicles = vehiclesByRoute.get(routeId) || [];
           
-          console.log('🚌 FETCHING vehicles for route:', { routeShortName, routeId: parsedRouteId });
-          
-          // Get live vehicles for this route ONLY
-          const liveVehiclesRaw = await enhancedTranzyApi.getVehicles(agencyId, parsedRouteId);
-          const liveVehicles = Array.isArray(liveVehiclesRaw) ? liveVehiclesRaw : [];
-          
-          // Double-check: Filter vehicles to ensure they match the requested route AND have active trip_id
-          const filteredVehicles = liveVehicles.filter(vehicle => {
-            const vehicleRouteId = vehicle.routeId;
-            const routeMatches = vehicleRouteId === routeId || vehicleRouteId === parsedRouteId.toString();
-            const hasActiveTripId = vehicle.tripId !== null && vehicle.tripId !== undefined;
-            
-            if (!routeMatches) {
-              console.log('⚠️ FILTERING OUT vehicle from wrong route:', {
-                vehicleId: vehicle.id,
-                vehicleRouteId,
-                expectedRouteId: routeId,
-                expectedParsedId: parsedRouteId.toString()
-              });
-            }
-            
-            if (routeMatches && !hasActiveTripId) {
-              console.log('⚠️ FILTERING OUT vehicle without active trip_id:', {
-                vehicleId: vehicle.id,
-                tripId: vehicle.tripId,
-                reason: 'Vehicle not actively traveling (trip_id is null)'
-              });
-            }
-            
-            return routeMatches && hasActiveTripId;
-          });
-          
-          console.log('📊 VEHICLE DATA for route:', { 
+          console.log('🔍 CACHE LOOKUP for route:', { 
             routeShortName, 
             routeId, 
-            rawVehicleCount: liveVehicles.length,
-            filteredVehicleCount: filteredVehicles.length,
-            activeVehiclesWithTripId: liveVehicles.filter(v => v.tripId !== null && v.tripId !== undefined).length,
-            sampleVehicle: liveVehicles[0] // Log first vehicle for debugging
+            cachedVehicleCount: routeVehicles.length
           });
           
-          if (filteredVehicles.length === 0) {
-            console.log('⚠️ NO VEHICLES after filtering for route:', { routeShortName, routeId });
+          if (routeVehicles.length === 0) {
+            console.log('⚠️ NO CACHED VEHICLES for route:', { routeShortName, routeId });
             continue;
           }
 
           // Get route mapping for display info
           const routeMapping = routeMappings.get(routeId);
           
-          // Convert each filtered live vehicle to FavoriteBusInfo
-          for (const vehicle of filteredVehicles) {
+          // Convert each cached vehicle to FavoriteBusInfo
+          for (const vehicle of routeVehicles) {
             logger.debug('Processing vehicle', { 
               vehicleId: vehicle.id,
               hasPosition: !!vehicle.position,
@@ -397,20 +525,6 @@ class FavoriteBusService {
               speed: vehicle.speed
             });
 
-            // Find nearest station
-            const nearestStation = this.findNearestStation(
-              { latitude: vehicle.position.latitude, longitude: vehicle.position.longitude },
-              stations
-            );
-            
-            if (nearestStation) {
-              console.log('🚏 FOUND nearest station for vehicle:', {
-                vehicleId: vehicle.id,
-                stationName: nearestStation.name,
-                distance: nearestStation.distance
-              });
-            }
-
             // Get destination from trip data
             const tripData = tripsMap.get(vehicle.tripId!);
             const destination = tripData?.headsign || undefined;
@@ -418,16 +532,46 @@ class FavoriteBusService {
 
             // Get stop sequence for this trip
             const tripStopTimes = stopTimesMap.get(vehicle.tripId!) || [];
+            
+            // Find current/next station in route path
+            const currentStation = this.findCurrentStation(
+              { latitude: vehicle.position.latitude, longitude: vehicle.position.longitude },
+              vehicle.speed,
+              tripStopTimes,
+              stations
+            );
+            
+            if (currentStation) {
+              console.log('🚏 FOUND current station for vehicle:', {
+                vehicleId: vehicle.id,
+                stationName: currentStation.name,
+                distance: currentStation.distance,
+                isAtStation: currentStation.isAtStation,
+                speed: vehicle.speed
+              });
+            }
+
             const stopSequence = this.buildStopSequence(
               vehicle.tripId!,
               tripStopTimes,
               stations,
               { latitude: vehicle.position.latitude, longitude: vehicle.position.longitude },
-              nearestStation,
-              stopTimesMap,
-              routeId,
-              direction
+              currentStation,
+              userLocation,
+              vehicle.speed
             );
+
+            // Calculate distance from user along route shape if user location is available
+            let distanceFromUser: number | undefined;
+            if (userLocation) {
+              const routeDistance = await this.calculateDistanceAlongRoute(
+                userLocation,
+                { latitude: vehicle.position.latitude, longitude: vehicle.position.longitude },
+                vehicle.tripId!,
+                agencyId
+              );
+              distanceFromUser = routeDistance || undefined;
+            }
 
             // Use the actual timestamp from the vehicle data, fallback to current time if not available
             const vehicleTimestamp = vehicle.timestamp instanceof Date 
@@ -447,9 +591,10 @@ class FavoriteBusService {
               speed: vehicle.speed,
               bearing: vehicle.position.bearing,
               lastUpdate: vehicleTimestamp,
-              nearestStation,
+              currentStation,
               stopSequence,
-              direction
+              direction,
+              distanceFromUser
             };
             
             logger.debug('Created favorite bus info', {
@@ -472,10 +617,10 @@ class FavoriteBusService {
             favoriteBuses.push(favoriteBus);
           }
           
-          console.log('✅ ADDED vehicles for route:', { 
+          console.log('✅ PROCESSED cached vehicles for route:', { 
             routeShortName, 
             routeId, 
-            vehicleCount: filteredVehicles.length 
+            vehicleCount: routeVehicles.length 
           });
           
         } catch (error) {

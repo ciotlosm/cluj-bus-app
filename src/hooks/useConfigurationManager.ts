@@ -9,6 +9,7 @@ interface ValidationErrors {
   homeLocation?: string;
   workLocation?: string;
   apiKey?: string;
+  googleMapsApiKey?: string;
   refreshRate?: string;
 }
 

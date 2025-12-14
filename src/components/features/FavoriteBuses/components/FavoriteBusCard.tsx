@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -13,9 +13,14 @@ import {
   ListItemText,
   ListItemIcon,
 } from '@mui/material';
-import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, Warning } from '@mui/icons-material';
+import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, PersonPin, CloudOff } from '@mui/icons-material';
 import { getRouteTypeInfo } from '../../../../utils/busDisplayUtils';
 import { BusCard } from '../../../ui/Card';
+import { BusRouteMapModal } from './BusRouteMapModal';
+import { SimplifiedRouteDisplay } from './SimplifiedRouteDisplay';
+import { useConfigStore } from '../../../../stores/configStore';
+import { useLocationStore } from '../../../../stores/locationStore';
+import { googleTransitService } from '../../../../services/googleTransitService';
 import type { FavoriteBusInfo } from '../../../../services/favoriteBusService';
 
 interface FavoriteBusCardProps {
@@ -26,15 +31,16 @@ interface FavoriteBusCardProps {
 export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
   const theme = useTheme();
   const [showStops, setShowStops] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [transitEstimate, setTransitEstimate] = useState<{ durationMinutes: number; confidence: string } | null>(null);
   
-  // Validate bus data
-  if (!bus) {
-    return null;
-  }
+  // Get user location and city from stores
+  const { config } = useConfigStore();
+  const { currentLocation } = useLocationStore();
   
-  const routeTypeInfo = getRouteTypeInfo(bus.routeType, theme);
-  const displayRouteName = bus.routeName || `Route ${bus.routeShortName}`;
-  const avatarRouteNumber = bus.routeShortName || 'N/A';
+  const routeTypeInfo = getRouteTypeInfo(String(bus?.routeType || 'bus'), theme);
+  const displayRouteName = String(bus?.routeShortName || ''); // Just show the route number, not the full description
+  const avatarRouteNumber = String(bus?.routeShortName || 'N/A');
 
   // Format coordinates for display with proper validation
   const formatCoordinate = (coord: number | undefined) => {
@@ -46,7 +52,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
   
   // Calculate time since last update with validation
   const getUpdateText = () => {
-    if (!bus.lastUpdate || !(bus.lastUpdate instanceof Date)) {
+    if (!bus?.lastUpdate || !(bus.lastUpdate instanceof Date)) {
       return 'Unknown';
     }
     const timeSinceUpdate = Math.floor((Date.now() - bus.lastUpdate.getTime()) / 1000);
@@ -61,38 +67,175 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
     }
     return `${(distanceInMeters / 1000).toFixed(1)}km`;
   };
+
+  // Calculate Google Transit estimate when bus is approaching
+  useEffect(() => {
+    const calculateTransitEstimate = async () => {
+      if (!bus.stopSequence || bus.stopSequence.length === 0) return;
+
+      const userStop = bus.stopSequence.find(stop => stop.isClosestToUser);
+      const currentStop = bus.stopSequence.find(stop => stop.isCurrent);
+      
+      if (!userStop || !currentStop || !userStop.coordinates || !currentStop.coordinates) return;
+
+      const userStopIndex = bus.stopSequence.findIndex(stop => stop.isClosestToUser);
+      const currentStopIndex = bus.stopSequence.findIndex(stop => stop.isCurrent);
+
+      // Only calculate if bus is approaching (not missed or at stop)
+      if (currentStopIndex < userStopIndex) {
+        try {
+          const estimate = await googleTransitService.calculateTransitTime({
+            origin: {
+              latitude: currentStop.coordinates.latitude,
+              longitude: currentStop.coordinates.longitude,
+            },
+            destination: {
+              latitude: userStop.coordinates.latitude,
+              longitude: userStop.coordinates.longitude,
+            },
+            departureTime: new Date(),
+            mode: 'transit'
+          });
+
+          // Adjust for vehicle's last update time
+          const adjustedEstimate = googleTransitService.calculateAdjustedETA(
+            estimate,
+            bus.lastUpdate
+          );
+
+          setTransitEstimate({
+            durationMinutes: adjustedEstimate.durationMinutes,
+            confidence: adjustedEstimate.confidence
+          });
+        } catch (error) {
+          console.warn('Failed to calculate transit estimate:', error);
+          // Fall back to simple calculation
+          const fallbackMinutes = Math.max(1, (userStopIndex - currentStopIndex) * 2);
+          setTransitEstimate({
+            durationMinutes: fallbackMinutes,
+            confidence: 'low'
+          });
+        }
+      }
+    };
+
+    calculateTransitEstimate();
+  }, [bus?.stopSequence, bus?.lastUpdate]);
+
+  // Check if Google Maps API key is configured
+  const isGoogleMapsConfigured = () => {
+    return !!(config.googleMapsApiKey || import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+  };
+
+  // Check if vehicle data is stale (older than 2 minutes)
+  const isDataStale = () => {
+    if (!bus?.lastUpdate || !(bus.lastUpdate instanceof Date)) {
+      return true; // Consider unknown update time as stale
+    }
+    const timeSinceUpdate = (Date.now() - bus.lastUpdate.getTime()) / 1000 / 60; // Convert to minutes
+    return timeSinceUpdate > 2;
+  };
+
+  // Calculate arrival status based on bus direction and user location
+  const getArrivalStatus = () => {
+    const isStale = isDataStale();
+    
+    if (!bus?.stopSequence || bus.stopSequence.length === 0) {
+      return { 
+        status: 'unknown', 
+        message: 'Route information unavailable',
+        color: theme.palette.text.secondary,
+        isOffline: false,
+        isStale
+      };
+    }
+
+    const userStop = bus.stopSequence.find(stop => stop.isClosestToUser);
+    const currentStop = bus.stopSequence.find(stop => stop.isCurrent);
+    
+    if (!userStop || !currentStop) {
+      return { 
+        status: 'unknown', 
+        message: 'Location information unavailable',
+        color: theme.palette.text.secondary,
+        isOffline: false,
+        isStale
+      };
+    }
+
+    // Compare stop sequences to determine if bus is coming or going
+    const userStopIndex = bus.stopSequence.findIndex(stop => stop.isClosestToUser);
+    const currentStopIndex = bus.stopSequence.findIndex(stop => stop.isCurrent);
+
+    if (currentStopIndex > userStopIndex) {
+      // Bus has passed the user's stop
+      return { 
+        status: 'missed', 
+        message: 'You missed this one',
+        color: theme.palette.error.main,
+        isOffline: false,
+        isStale
+      };
+    } else if (currentStopIndex < userStopIndex) {
+      // Bus is approaching the user's stop - use Google Transit estimate or fallback
+      const hasGoogleMaps = isGoogleMapsConfigured();
+      const estimatedMinutes = transitEstimate?.durationMinutes || Math.max(1, (userStopIndex - currentStopIndex) * 1); // 1 min per stop fallback
+      const confidence = transitEstimate?.confidence || 'low';
+      
+      // Add confidence indicator to message
+      const confidenceIndicator = confidence === 'high' ? '' : confidence === 'medium' ? '~' : '≈';
+      
+      return { 
+        status: 'arriving', 
+        message: `Arriving in ${confidenceIndicator}${estimatedMinutes} min`,
+        color: theme.palette.success.main,
+        isOffline: !hasGoogleMaps || !transitEstimate,
+        isStale
+      };
+    } else {
+      // Bus is at the user's stop
+      return { 
+        status: 'at-stop', 
+        message: 'Bus is at your stop!',
+        color: theme.palette.warning.main,
+        isOffline: false,
+        isStale
+      };
+    }
+  };
   
+  // Validate bus data
+  if (!bus) {
+    return null;
+  }
+
   const updateText = getUpdateText();
+  const arrivalStatus = getArrivalStatus();
 
   return (
     <Box sx={{ position: 'relative' }}>
       <BusCard
         routeId={avatarRouteNumber}
-        routeName={`${routeTypeInfo.icon} ${displayRouteName}`}
-        destination={bus.destination || ''}
-        arrivalTime={updateText}
+        routeName={displayRouteName}
+        arrivalTime=""
         isRealTime={true}
         delay={0}
-        location={bus.nearestStation ? `Near ${bus.nearestStation.name}` : `${formatCoordinate(bus.latitude)}, ${formatCoordinate(bus.longitude)}`}
         isFavorite={true}
         onToggleFavorite={() => {
           console.log('Toggle favorite for route:', bus.routeShortName);
         }}
+        onMapClick={() => setShowMap(true)}
+        arrivalStatus={arrivalStatus}
+        customContent={
+          <SimplifiedRouteDisplay 
+            stopSequence={bus.stopSequence || []}
+            destination={bus.destination}
+          />
+        }
       >
-        {/* Additional vehicle information */}
-        <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                Vehicle {bus.vehicleId || 'N/A'}
-              </Typography>
-              {bus.nearestStation && (
-                <Typography variant="caption" color="text.secondary">
-                  • {formatDistance(bus.nearestStation.distance)}
-                </Typography>
-              )}
-            </Stack>
-            
+        {/* Route type information */}
+        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+          <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
             <Chip
               label={routeTypeInfo.label}
               size="small"
@@ -105,18 +248,9 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
               }}
             />
           </Stack>
-          
-          {(bus.speed !== undefined && bus.speed !== null && bus.speed > 0) && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                Speed: {bus.speed} km/h
-              </Typography>
-            </Box>
-          )}
-
           {/* Stop sequence toggle */}
           {bus.stopSequence && bus.stopSequence.length > 0 && (
-            <Box sx={{ mt: 1 }}>
+            <Box sx={{ mt: 0.5 }}>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <IconButton
                   size="small"
@@ -142,59 +276,10 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                 Route Stops
               </Typography>
               <List dense sx={{ py: 0 }}>
-                {/* Show off-route nearest station if bus is off-route */}
-                {bus.nearestStation && bus.stopSequence.some(stop => stop.isOffRoute) && (
-                  <ListItem
-                    sx={{
-                      py: 0.5,
-                      px: 1,
-                      borderRadius: 1,
-                      bgcolor: alpha(theme.palette.error.main, 0.1),
-                      border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
-                      mb: 1
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <Warning 
-                        fontSize="small" 
-                        color="error"
-                      />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography 
-                          variant="caption" 
-                          color="error"
-                          sx={{ fontWeight: 600 }}
-                        >
-                          {bus.nearestStation.name} (Off-Route)
-                        </Typography>
-                      }
-                      secondary={
-                        <Typography variant="caption" color="error" sx={{ fontSize: '0.65rem' }}>
-                          {formatDistance(bus.nearestStation.distance)} from bus
-                        </Typography>
-                      }
-                    />
-                    <Chip
-                      label="Off-Route"
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      sx={{
-                        height: 16,
-                        fontSize: '0.6rem',
-                        '& .MuiChip-label': { px: 0.5 }
-                      }}
-                    />
-                  </ListItem>
-                )}
-
                 {/* Show route stops */}
                 {bus.stopSequence.map((stop) => {
-                  const isOffRouteClosest = stop.isClosestRouteStop && stop.isOffRoute;
-                  const isOppositeDirectionClosest = stop.isClosestRouteStop && !stop.isOffRoute;
-                  const isNormalCurrent = stop.isNearest && !stop.isOffRoute;
+                  const isCurrent = stop.isCurrent;
+                  const isClosestToUser = stop.isClosestToUser;
                   
                   return (
                     <ListItem
@@ -203,28 +288,28 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                         py: 0.5,
                         px: 1,
                         borderRadius: 1,
-                        bgcolor: (isNormalCurrent || isOppositeDirectionClosest)
+                        bgcolor: isCurrent
                           ? alpha(theme.palette.primary.main, 0.1)
-                          : isOffRouteClosest
-                          ? alpha(theme.palette.error.main, 0.1)
+                          : isClosestToUser
+                          ? alpha(theme.palette.info.main, 0.1)
                           : 'transparent',
-                        border: (isNormalCurrent || isOppositeDirectionClosest)
+                        border: isCurrent
                           ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
-                          : isOffRouteClosest
-                          ? `1px solid ${alpha(theme.palette.error.main, 0.3)}`
+                          : isClosestToUser
+                          ? `1px solid ${alpha(theme.palette.info.main, 0.3)}`
                           : '1px solid transparent',
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 32 }}>
-                        {(isNormalCurrent || isOppositeDirectionClosest) ? (
+                        {isCurrent ? (
                           <LocationOn 
                             fontSize="small" 
                             color="primary"
                           />
-                        ) : isOffRouteClosest ? (
-                          <LocationOn 
+                        ) : isClosestToUser ? (
+                          <PersonPin 
                             fontSize="small" 
-                            color="error"
+                            color="info"
                           />
                         ) : (
                           <RadioButtonUnchecked 
@@ -237,59 +322,74 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                         primary={
                           <Typography 
                             variant="caption" 
-                            color={(isNormalCurrent || isOppositeDirectionClosest) ? 'primary' : isOffRouteClosest ? 'error' : 'text.secondary'}
-                            sx={{ fontWeight: (isNormalCurrent || isOppositeDirectionClosest || isOffRouteClosest) ? 600 : 400 }}
+                            color={isCurrent ? 'primary' : isClosestToUser ? 'info' : 'text.secondary'}
+                            sx={{ fontWeight: (isCurrent || isClosestToUser) ? 600 : 400 }}
                           >
                             {stop.name}
                           </Typography>
                         }
                         secondary={
-                          stop.arrivalTime && (
-                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                              {stop.arrivalTime}
-                            </Typography>
-                          )
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                            {stop.arrivalTime && (
+                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                {stop.arrivalTime}
+                              </Typography>
+                            )}
+                            {isCurrent && stop.distanceFromBus && (
+                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                • {formatDistance(stop.distanceFromBus)} from bus
+                              </Typography>
+                            )}
+                            {isClosestToUser && stop.distanceToUser && (
+                              <Typography variant="caption" color="info.main" sx={{ fontSize: '0.65rem' }}>
+                                • {formatDistance(stop.distanceToUser)} from you
+                              </Typography>
+                            )}
+                            {isCurrent && (
+                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+                                • Last update {updateText}
+                              </Typography>
+                            )}
+                          </Stack>
                         }
+                        secondaryTypographyProps={{
+                          component: 'div'
+                        }}
                       />
-                      {isNormalCurrent && (
-                        <Chip
-                          label="Current"
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{
-                            height: 16,
-                            fontSize: '0.6rem',
-                            '& .MuiChip-label': { px: 0.5 }
-                          }}
-                        />
-                      )}
-                      {isOppositeDirectionClosest && (
-                        <Chip
-                          label="Current"
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{
-                            height: 16,
-                            fontSize: '0.6rem',
-                            '& .MuiChip-label': { px: 0.5 }
-                          }}
-                        />
-                      )}
-                      {isOffRouteClosest && (
-                        <Chip
-                          label="Closest"
-                          size="small"
-                          color="error"
-                          variant="outlined"
-                          sx={{
-                            height: 16,
-                            fontSize: '0.6rem',
-                            '& .MuiChip-label': { px: 0.5 }
-                          }}
-                        />
-                      )}
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                        {isCurrent && (
+                          <Chip
+                            label={bus.currentStation?.isAtStation ? "At Station" : "Current"}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            clickable
+                            onClick={() => setShowMap(true)}
+                            sx={{
+                              height: 16,
+                              fontSize: '0.6rem',
+                              '& .MuiChip-label': { px: 0.5 },
+                              cursor: 'pointer',
+                              '&:hover': {
+                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                              }
+                            }}
+                          />
+                        )}
+                        {isClosestToUser && (
+                          <Chip
+                            label="Closest to You"
+                            size="small"
+                            color="info"
+                            variant="outlined"
+                            sx={{
+                              height: 16,
+                              fontSize: '0.6rem',
+                              '& .MuiChip-label': { px: 0.5 }
+                            }}
+                          />
+                        )}
+                      </Stack>
                     </ListItem>
                   );
                 })}
@@ -298,6 +398,15 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
           </Collapse>
         )}
       </BusCard>
+
+      {/* Map Modal */}
+      <BusRouteMapModal
+        open={showMap}
+        onClose={() => setShowMap(false)}
+        bus={bus}
+        userLocation={currentLocation}
+        cityName={config.city}
+      />
     </Box>
   );
 };

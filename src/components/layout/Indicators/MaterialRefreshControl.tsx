@@ -40,7 +40,7 @@ export const MaterialRefreshControl: React.FC = () => {
   };
 
   return (
-    <Tooltip title={`Last updated: ${getLastRefreshText()}`} arrow>
+    <Tooltip title={`Cache updated: ${getLastRefreshText()}`} arrow>
       <IconButton
         onClick={refresh}
         disabled={isRefreshing}

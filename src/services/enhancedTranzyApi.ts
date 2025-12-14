@@ -41,6 +41,16 @@ export class EnhancedTranzyApiService {
         if (this.apiKey) {
           config.headers.Authorization = `Bearer ${this.apiKey}`;
           config.headers['X-API-Key'] = this.apiKey;
+          config.headers['X-Agency-Id'] = '2'; // CTP Cluj agency ID
+          logger.debug('API request with auth headers', {
+            url: config.url,
+            hasAuth: !!config.headers.Authorization,
+            hasApiKey: !!config.headers['X-API-Key'],
+            hasAgencyId: !!config.headers['X-Agency-Id'],
+            keyLength: this.apiKey.length
+          }, 'API');
+        } else {
+          logger.warn('API request without authentication', { url: config.url }, 'API');
         }
         return config;
       },

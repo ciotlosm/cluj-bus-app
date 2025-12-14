@@ -86,18 +86,21 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
           // Get favorite bus info (simplified - just live vehicles)
           const result = await favoriteBusService.getFavoriteBusInfo(
             config.favoriteBuses,
-            config.city
+            config.city,
+            location // Pass user's current location for closest stop calculation
           );
 
+          const updateTime = new Date();
           set({
             favoriteBusResult: result,
-            lastUpdate: new Date(),
+            lastUpdate: updateTime,
             isLoading: false,
             error: null
           });
 
-          logger.info('Favorite buses refreshed', {
-            count: result.favoriteBuses.length
+          logger.info('Favorite buses refreshed successfully', {
+            count: result.favoriteBuses.length,
+            updateTime: updateTime.toISOString()
           });
 
         } catch (error) {
@@ -114,9 +117,83 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
         }
       },
 
-      // Load available routes - removed (simplified functionality)
+      // Load available routes
       loadAvailableRoutes: async () => {
-        logger.info('Available routes loading disabled in simplified mode');
+        const { config } = useConfigStore.getState();
+        
+        if (!config?.city || !config?.apiKey) {
+          logger.warn('Cannot load available routes - missing city or API key');
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+
+        try {
+          // Set API key in enhanced API service
+          enhancedTranzyApi.setApiKey(config.apiKey);
+
+          // Get agency ID for the city
+          const agencies = await enhancedTranzyApi.getAgencies();
+          const agency = agencies.find(a => a.name.toLowerCase().includes(config.city.toLowerCase()));
+          
+          if (!agency) {
+            throw new Error(`No agency found for city: ${config.city}`);
+          }
+
+          logger.info('Loading available routes for agency', { 
+            agencyId: agency.id, 
+            city: config.city,
+            hasApiKey: !!config.apiKey,
+            apiKeyLength: config.apiKey?.length || 0
+          });
+
+          // Get routes for the agency
+          const routes = await enhancedTranzyApi.getRoutes(parseInt(agency.id));
+          
+          // Transform routes to the expected format (using only short names as requested)
+          const availableRoutes = routes.map(route => ({
+            shortName: route.shortName, // PRIMARY: What users see and interact with
+            name: route.shortName, // Use short name instead of long name
+            longName: route.shortName, // Simplified - no need for long descriptions
+            description: route.description,
+            type: route.type as 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other'
+          }));
+
+          set({
+            availableRoutes,
+            isLoading: false,
+            error: null
+          });
+
+          logger.info('Available routes loaded successfully', { 
+            count: availableRoutes.length,
+            city: config.city 
+          });
+
+        } catch (error) {
+          logger.error('Failed to load available routes', error);
+          
+          // Check if it's an authentication error
+          const isAuthError = error instanceof Error && 
+            (error.message.includes('403') || 
+             error.message.includes('Unauthorized') || 
+             error.message.includes('Forbidden'));
+          
+          const errorMessage = isAuthError 
+            ? 'API key is invalid or expired. Please get a new API key from tranzy.ai and update it in Settings.'
+            : (error instanceof Error ? error.message : 'Failed to load available routes');
+          
+          set({
+            isLoading: false,
+            availableRoutes: [],
+            error: {
+              type: isAuthError ? 'authentication' : 'network',
+              message: errorMessage,
+              timestamp: new Date(),
+              retryable: false // Don't retry with invalid API key
+            }
+          });
+        }
       },
 
       // Clear error state

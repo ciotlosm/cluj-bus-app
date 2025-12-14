@@ -52,9 +52,20 @@ export const StatusMessages: React.FC<StatusMessagesProps> = ({
   // No Routes Available
   if (!isLoading && !hasRoutes) {
     return (
-      <Alert severity="warning" sx={{ borderRadius: 2 }}>
+      <Alert severity="error" sx={{ borderRadius: 2 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+          ❌ API Key Invalid or Expired
+        </Typography>
         <Typography variant="body2">
-          No routes available for {cityName}. This might be a temporary issue or the city might not be supported yet.
+          Your Tranzy API key is no longer valid. Please:
+        </Typography>
+        <Typography variant="body2" component="ol" sx={{ mt: 1, pl: 2 }}>
+          <li>Visit <strong>tranzy.ai</strong> to get a new API key</li>
+          <li>Go to <strong>Settings</strong> in this app</li>
+          <li>Update your API key with the new one</li>
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 1, fontSize: '0.875rem', opacity: 0.8 }}>
+          Current key ending in: ...{cityName ? 'gtxqgAJTej' : 'expired'}
         </Typography>
       </Alert>
     );

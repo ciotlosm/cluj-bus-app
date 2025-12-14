@@ -43,6 +43,7 @@ export interface UserConfig {
   homeLocation: Coordinates;
   workLocation: Coordinates;
   apiKey: string;
+  googleMapsApiKey?: string; // Optional Google Maps API key for enhanced ETA calculations
   refreshRate: number; // milliseconds
   favoriteBuses?: FavoriteRoute[]; // Array of complete route objects (1-3 buses)
 }
@@ -81,6 +82,8 @@ export interface BusStore {
   buses: BusInfo[];
   stations: Station[];
   lastUpdate: Date | null;
+  lastApiUpdate: Date | null; // When we last received fresh data from API
+  lastCacheUpdate: Date | null; // When we last updated cache
   isLoading: boolean;
   error: ErrorState | null;
   refreshBuses: () => Promise<void>;

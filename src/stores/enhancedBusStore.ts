@@ -9,6 +9,8 @@ export interface EnhancedBusStore {
   // Data
   buses: EnhancedBusInfo[];
   lastUpdate: Date | null;
+  lastApiUpdate: Date | null; // When we last received fresh data from API
+  lastCacheUpdate: Date | null; // When we last updated cache
   isLoading: boolean;
   error: ErrorState | null;
   
@@ -50,6 +52,8 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
     (set, get) => ({
       buses: [],
       lastUpdate: null,
+      lastApiUpdate: null,
+      lastCacheUpdate: null,
       isLoading: false,
       error: null,
       cacheStats: {
@@ -109,9 +113,12 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
             return { ...bus, direction };
           });
 
+          const now = new Date();
           set({
             buses: classifiedBuses,
-            lastUpdate: new Date(),
+            lastUpdate: now,
+            lastApiUpdate: now, // Fresh API data received
+            lastCacheUpdate: now, // Cache updated with fresh data
             isLoading: false,
           });
 

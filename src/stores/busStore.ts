@@ -19,6 +19,8 @@ export const useBusStore = create<BusStore>((set, get) => ({
   buses: [],
   stations: [],
   lastUpdate: null,
+  lastApiUpdate: null, // When we last received fresh data from API
+  lastCacheUpdate: null, // When we last updated cache
   isLoading: false,
   error: null,
   isAutoRefreshEnabled: false,
@@ -59,6 +61,13 @@ export const useBusStore = create<BusStore>((set, get) => ({
         
         // Cache the fresh data
         busCache.set(config.city, buses);
+        
+        // Update timestamps for fresh API data
+        const now = new Date();
+        set({ 
+          lastApiUpdate: now,
+          lastCacheUpdate: now
+        });
       } catch (error) {
         // If fetch fails, try to use cached data for graceful degradation
         const cachedResult = busCache.getStale(config.city);
@@ -69,7 +78,11 @@ export const useBusStore = create<BusStore>((set, get) => ({
           
           // Update offline store to indicate we're using cached data
           const offlineStore = useOfflineStore.getState();
-          offlineStore.setUsingCachedData(true, cachedResult.data.length > 0 ? new Date(Date.now() - cachedResult.age) : undefined);
+          const cacheTimestamp = new Date(Date.now() - cachedResult.age);
+          offlineStore.setUsingCachedData(true, cachedResult.data.length > 0 ? cacheTimestamp : undefined);
+          
+          // Update cache timestamp (but not API timestamp since this is cached data)
+          set({ lastCacheUpdate: cacheTimestamp });
           
           // Create appropriate error state
           const errorState: ErrorState = {

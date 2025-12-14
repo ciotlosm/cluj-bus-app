@@ -72,10 +72,20 @@ export default defineConfig({
             console.log('Proxy error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Log headers being sent
             console.log('Proxying request:', req.method, req.url, '→', proxyReq.getHeader('host') + proxyReq.path);
+            console.log('Headers:', {
+              'Authorization': proxyReq.getHeader('Authorization'),
+              'X-API-Key': proxyReq.getHeader('X-API-Key'),
+              'X-Agency-Id': proxyReq.getHeader('X-Agency-Id'),
+              'Content-Type': proxyReq.getHeader('Content-Type')
+            });
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Proxy response:', proxyRes.statusCode, req.url);
+            if (proxyRes.statusCode === 403) {
+              console.log('403 Error - Authentication failed. Check API key.');
+            }
           });
         },
       },

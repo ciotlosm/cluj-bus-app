@@ -25,6 +25,7 @@ import { ApiKeySection } from './sections/ApiKeySection';
 import { CitySelectionSection } from './sections/CitySelectionSection';
 import { LocationSettingsSection } from './sections/LocationSettingsSection';
 import { AdvancedSettingsSection } from './sections/AdvancedSettingsSection';
+import { GoogleMapsApiKeySection } from './sections/GoogleMapsApiKeySection';
 
 interface MaterialConfigurationManagerProps {
   onConfigComplete?: () => void;
@@ -96,6 +97,13 @@ export const MaterialConfigurationManager: React.FC<MaterialConfigurationManager
           onCityChange={(city) => setFormData(prev => ({ ...prev, city }))}
           cityOptions={cityOptions}
           error={errors.city}
+        />
+
+        {/* Google Maps API Key */}
+        <GoogleMapsApiKeySection
+          googleMapsApiKey={formData.googleMapsApiKey || ''}
+          onGoogleMapsApiKeyChange={(key) => setFormData(prev => ({ ...prev, googleMapsApiKey: key }))}
+          error={errors.googleMapsApiKey}
         />
 
         {/* Location Settings */}
