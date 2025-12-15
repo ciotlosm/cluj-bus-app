@@ -1,107 +1,58 @@
-# Cluj Bus App - Documentation
+# Cluj Bus App Documentation
 
-This directory contains all project documentation organized by category.
+Welcome to the Cluj Bus App documentation! This is a real-time bus tracking application for Cluj-Napoca, Romania.
 
-## 📁 Directory Structure
+## 📖 Quick Start
 
+- **[Getting Started](getting-started.md)** - Setup, installation, and first run
+- **[User Guide](user-guide.md)** - How to use the app effectively
+- **[Developer Guide](developer-guide.md)** - Technical details for developers
+
+## 📚 Main Documentation
+
+### For Users
+- **[App Overview](user-guide.md#overview)** - What the app does and key features
+- **[Setup Instructions](getting-started.md)** - Get the app running locally
+- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+
+### For Developers
+- **[Technical Architecture](developer-guide.md#architecture)** - How the app is built
+- **[API Integration](developer-guide.md#api-integration)** - Tranzy API and CTP Cluj integration
+- **[Development Workflow](developer-guide.md#development)** - Building and testing
+- **[Recent Changes](changelog.md)** - What's been updated recently
+
+## 🎯 Key Features
+
+- **Real-time bus tracking** with live GPS positions
+- **Official CTP Cluj schedules** fetched directly from their website
+- **Smart favorites** that adapt to your location
+- **Mobile-first design** optimized for phones
+- **Offline support** for core functionality
+
+## 🚀 Quick Commands
+
+```bash
+# Start development server
+npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
 ```
-docs/
-├── README.md                    # This file - documentation index
-├── OVERVIEW.md                  # High-level project overview
-├── PROJECT_STRUCTURE.md         # Detailed project structure
-├── architecture/                # Architecture decisions and component design
-├── design/                      # UI/UX design documentation
-├── development/                 # Development guides and processes
-├── implementation/              # Feature implementation summaries
-├── testing/                     # Testing strategies and guides
-└── troubleshooting/             # Bug fixes and issue resolution
-```
 
-## 📋 Documentation Categories
+## 📁 Documentation Structure
 
-### **Root Level** (`docs/`)
-- **OVERVIEW.md** - High-level project summary
-- **PROJECT_STRUCTURE.md** - Detailed codebase organization
+This documentation is organized to be human-friendly and easy to navigate:
 
-### **Architecture** (`docs/architecture/`)
-- Component structure decisions
-- System architecture documentation
-- Code organization patterns
-- Legacy component analysis
-- **Cache Refresh System** - Real-time data updates with UI feedback
-
-### **Design** (`docs/design/`)
-- Material Design implementation
-- UI component specifications
-- Design system documentation
-- Visual design decisions
-
-### **Development** (`docs/development/`)
-- Development setup guides
-- Coding standards and conventions
-- Build and deployment processes
-- Development workflows
-
-### **Implementation** (`docs/implementation/`)
-- Feature implementation summaries
-- API integration guides
-- Technical implementation details
-- Performance optimization notes
-
-### **Testing** (`docs/testing/`)
-- Testing strategies
-- Test setup and configuration
-- Testing best practices
-- Test coverage reports
-
-### **Troubleshooting** (`docs/troubleshooting/`)
-- Bug fix documentation
-- Common issues and solutions
-- Debugging guides
-- Performance issue resolution
-
-## 🚫 **IMPORTANT: Root Directory Policy**
-
-**DO NOT create markdown files in the project root directory.**
-
-### ✅ **Correct Approach:**
-- Place documentation in appropriate `docs/` subdirectories
-- Use descriptive filenames that indicate content
-- Follow the established category structure
-
-### ❌ **Incorrect Approach:**
-- Creating `.md` files in project root (except README.md)
-- Mixing documentation with source code
-- Creating ad-hoc documentation without organization
-
-## 📝 **Documentation Guidelines**
-
-### **File Naming Convention:**
-- Use UPPERCASE for major documents (e.g., `OVERVIEW.md`)
-- Use descriptive names that indicate content
-- Include dates for time-sensitive documentation
-
-### **Content Structure:**
-- Start with a clear title and purpose
-- Use consistent markdown formatting
-- Include code examples where relevant
-- Add links to related documentation
-
-### **Maintenance:**
-- Keep documentation up-to-date with code changes
-- Archive outdated documentation rather than deleting
-- Use clear commit messages when updating docs
-
-## 🔗 **Quick Links**
-
-- [Project Overview](./OVERVIEW.md)
-- [Project Structure](./PROJECT_STRUCTURE.md)
-- [Architecture Decisions](./architecture/)
-- [Design System](./design/)
-- [Development Guide](./development/)
-- [Implementation Notes](./implementation/)
-- [Troubleshooting](./troubleshooting/)
+- **[getting-started.md](getting-started.md)** - Everything you need to get running
+- **[user-guide.md](user-guide.md)** - How to use the app (for end users)  
+- **[developer-guide.md](developer-guide.md)** - Technical details (for developers)
+- **[troubleshooting.md](troubleshooting.md)** - Solutions to common problems
+- **[changelog.md](changelog.md)** - Recent updates and changes
+- **[archive/](archive/)** - Older detailed documentation (kept for reference)
 
 ---
 
-**Remember**: All project documentation belongs in the `docs/` directory. Keep the root clean!
+**Need help?** Check the [troubleshooting guide](troubleshooting.md) or look through the [developer guide](developer-guide.md) for technical details.

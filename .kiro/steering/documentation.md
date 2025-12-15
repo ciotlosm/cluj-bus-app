@@ -6,82 +6,106 @@
 
 **❌ NEVER create markdown files in the project root directory (except README.md)**
 
-### **✅ Correct Documentation Placement:**
+### **✅ NEW CONSOLIDATED STRUCTURE (December 2024):**
 
-All documentation MUST go in the `docs/` directory structure:
+All documentation MUST go in the `docs/` directory using our **human-friendly consolidated structure**:
 
 ```
 docs/
-├── README.md                    # Documentation index
-├── OVERVIEW.md                  # Project overview
-├── PROJECT_STRUCTURE.md         # Codebase structure
-├── architecture/                # Architecture decisions
-├── design/                      # UI/UX documentation
-├── development/                 # Development guides
-├── implementation/              # Feature implementation
-├── testing/                     # Testing documentation
-└── troubleshooting/             # Bug fixes and solutions
+├── README.md              # Documentation index and navigation
+├── getting-started.md     # Setup, installation, first run
+├── user-guide.md         # How to use the app (for end users)
+├── developer-guide.md    # Technical details (for developers)
+├── troubleshooting.md    # Common problems and solutions
+├── changelog.md          # Recent updates and changes
+└── archive/              # Historical detailed documentation
+    ├── README.md         # Archive index
+    └── [old files]       # Previous docs (kept for reference)
 ```
 
-### **Documentation Categories:**
+### **Documentation Categories (NEW):**
 
-- **`docs/architecture/`** - Component structure, system design, architectural decisions
-- **`docs/design/`** - Material Design specs, UI components, visual design
-- **`docs/development/`** - Setup guides, coding standards, workflows
-- **`docs/implementation/`** - Feature summaries, API integration, technical details
-- **`docs/testing/`** - Testing strategies, setup, best practices
-- **`docs/troubleshooting/`** - Bug fixes, debugging guides, issue resolution
+- **`docs/getting-started.md`** - Setup guides, installation, API key configuration
+- **`docs/user-guide.md`** - App usage, features, mobile tips, daily workflows
+- **`docs/developer-guide.md`** - Architecture, API integration, testing, debugging
+- **`docs/troubleshooting.md`** - Bug fixes, common issues, debug tools
+- **`docs/changelog.md`** - Recent changes, breaking changes, migration guides
+- **`docs/archive/`** - Historical documentation (50+ old files preserved for reference)
 
-### **File Naming Conventions:**
+### **Where to Add New Information:**
 
-- **UPPERCASE.md** for major documents (e.g., `OVERVIEW.md`)
-- **descriptive-names.md** for specific topics
-- **Include dates** for time-sensitive docs (e.g., `feature-implementation-2024-12.md`)
+**For Setup/Installation Issues:**
+- ✅ Add to `docs/getting-started.md`
+- Include prerequisites, commands, verification steps
 
-### **When Creating Documentation:**
+**For User-Facing Features:**
+- ✅ Add to `docs/user-guide.md` 
+- Include how-to guides, tips, feature explanations
 
-1. **Determine the category** (architecture, design, development, etc.)
-2. **Place in appropriate subdirectory** under `docs/`
-3. **Use descriptive filename** that indicates content
-4. **Update `docs/README.md`** if adding new categories
+**For Technical Details:**
+- ✅ Add to `docs/developer-guide.md`
+- Include architecture, APIs, code patterns, debugging
+
+**For Bug Fixes/Issues:**
+- ✅ Add to `docs/troubleshooting.md`
+- Include problem description, root cause, solution
+
+**For Recent Changes:**
+- ✅ Add to `docs/changelog.md`
+- Include what changed, why, and migration notes
 
 ### **Examples:**
 
-✅ **Correct:**
-- `docs/architecture/component-structure.md`
-- `docs/implementation/tranzy-api-integration.md`
-- `docs/troubleshooting/route-mapping-fix.md`
+✅ **Correct Approach:**
+- Setup issue → Update `docs/getting-started.md`
+- New feature → Update `docs/user-guide.md` + `docs/changelog.md`
+- API change → Update `docs/developer-guide.md` + `docs/changelog.md`
+- Bug fix → Update `docs/troubleshooting.md` + `docs/changelog.md`
 
-❌ **Incorrect:**
-- `COMPONENT_STRUCTURE.md` (in root)
-- `API_INTEGRATION.md` (in root)
-- `BUG_FIX_SUMMARY.md` (in root)
+❌ **Old Approach (Don't Do):**
+- Creating `SETUP_ISSUE_FIX.md` in root
+- Creating new files in `docs/implementation/`
+- Scattering information across multiple small files
 
-## 🎯 **AI Assistant Guidelines**
+## 🎯 **AI Assistant Guidelines (UPDATED)**
 
 When working on this project:
 
-1. **Never suggest creating markdown files in root**
-2. **Always place documentation in `docs/` subdirectories**
-3. **Reference existing documentation structure**
-4. **Update `docs/README.md` when adding new categories**
-5. **Keep root directory clean and organized**
+1. **Never create new markdown files** - Update existing consolidated docs instead
+2. **Use the 5 main documents** - All information goes into one of the 5 main files
+3. **Update the right document** - Follow the "Where to Add New Information" guide above
+4. **Keep it consolidated** - Don't fragment information across multiple files
+5. **Archive old approach** - Historical detailed docs are in `docs/archive/` for reference
+6. **Update changelog** - Always document significant changes in `docs/changelog.md`
 
-## 📝 **Content Guidelines**
+## 📝 **Content Guidelines (UPDATED)**
 
-### **Documentation Structure:**
-- Clear title and purpose statement
-- Consistent markdown formatting
-- Code examples where relevant
-- Links to related documentation
-- Date stamps for time-sensitive content
+### **Writing Style:**
+- **Human-friendly** - Write for actual users, not just developers
+- **Practical focus** - Include actionable steps and real examples
+- **Clear navigation** - Use consistent headings and cross-references
+- **Comprehensive but concise** - Cover everything needed without redundancy
+
+### **Update Process:**
+1. **Identify the right document** - Use the guide above
+2. **Update existing sections** - Don't create new files
+3. **Cross-reference** - Link between related sections
+4. **Update changelog** - Document what changed and why
+5. **Test instructions** - Verify setup/troubleshooting steps work
 
 ### **Maintenance:**
-- Keep docs synchronized with code changes
-- Archive outdated docs rather than deleting
-- Use descriptive commit messages for doc updates
-- Review and update quarterly
+- **Keep consolidated docs current** - Update the 5 main files regularly
+- **Archive detailed history** - Move old detailed docs to `docs/archive/`
+- **Version updates** - Run `node scripts/update-version.js` for major doc changes
+- **Review quarterly** - Ensure information stays accurate and useful
+
+### **Quality Checks:**
+- ✅ Information is in the right consolidated document
+- ✅ Instructions are tested and work
+- ✅ Cross-references are accurate
+- ✅ Changelog reflects the changes
+- ✅ No new scattered files created
 
 ---
 
-**Remember: A clean root directory = better project organization!**
+**Remember: Consolidated, human-friendly documentation is better than scattered technical files!**
