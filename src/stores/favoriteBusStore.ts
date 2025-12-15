@@ -31,7 +31,7 @@ export interface FavoriteBusStore {
   // Actions
   refreshFavorites: () => Promise<void>;
   loadAvailableRoutes: () => Promise<void>;
-  loadCachedData: () => void;
+  loadCachedData: () => Promise<void>;
   clearError: () => void;
   
   // Simple favorites actions
