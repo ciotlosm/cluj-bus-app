@@ -52,6 +52,57 @@
 
 **Prevention**: Always use consistent export patterns (prefer named exports)
 
+#### Console Log Level Not Updating
+**Problem**: Changing console log level in configuration doesn't affect actual console output
+
+**Root Cause**: Log level was only applied locally in component but not persisted to config store until entire configuration was submitted
+
+**Solution**: Fixed immediate log level application
+- Added `handleLogLevelChange` function that immediately updates both form data and config store
+- Log level changes are now applied instantly when dropdown value changes
+- Removed redundant useEffect that was trying to sync log level
+
+**Prevention**: Ensure configuration changes that affect global state are persisted immediately, not just on form submission
+
+#### Console Log Level Not Respected by Debug Messages
+**Problem**: Setting console log level to WARN still shows DEBUG and INFO messages in console
+
+**Root Cause**: Many debug messages were using `console.log()` directly instead of the logger system, bypassing log level filtering
+
+**Solution**: Replaced direct console.log calls with proper logger calls
+- Converted `console.log()` calls to `logger.debug()`, `logger.info()`, or `logger.warn()` as appropriate
+- Debug messages now respect the configured log level setting
+- Console output is now properly filtered based on user's log level preference
+
+**Prevention**: Always use the logger system (`logger.debug()`, `logger.info()`, etc.) instead of direct `console.log()` calls
+
+#### Repeated Google Maps API Key Warnings
+**Problem**: Console shows repeated "Google Maps API key not configured" warnings every time transit calculations are performed
+
+**Root Cause**: The Google Transit Service was checking for API key on every calculation and logging a warning each time, instead of checking once and remembering the result
+
+**Solution**: Implemented smart API key checking with state caching
+- Added `apiKeyChecked` and `hasApiKey` flags to remember API key status
+- Only logs the warning once when first checking API key availability
+- Subsequent calls use cached result without logging
+- API key check resets when Google Maps API key configuration changes
+- Changed warning level from WARN to INFO for less intrusive logging
+
+**Prevention**: Cache expensive checks and avoid repeated logging of the same condition
+
+#### Multiple Log Level Change Messages
+**Problem**: Console shows repeated "Log level changed to: WARN" messages when managing favorite buses or other configuration changes
+
+**Root Cause**: The config store was calling `setLogLevel()` on every `updateConfig()` call, even when the log level hadn't actually changed
+
+**Solution**: Added log level change detection
+- Only call `setLogLevel()` when the log level actually changes
+- Check `currentConfig?.logLevel !== updatedConfig.logLevel` before setting
+- Removed duplicate log level initialization from logger.ts
+- Config store now handles all log level management
+
+**Prevention**: Always check if a value has actually changed before triggering side effects
+
 ### App Won't Start
 
 #### Port Already in Use

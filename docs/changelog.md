@@ -51,6 +51,10 @@
 - **Fixed Setup Wizard completion** - Complete Setup button now properly transitions to main app
 - **Fixed MUI Menu Fragment warning** - Replaced Fragment children with arrays in VersionControl Menu component
 - **Fixed Settings component export error** - Resolved "Indirectly exported binding name 'Settings' is not found" build issue
+- **Fixed console log level not updating** - Log level changes now apply immediately instead of requiring form submission
+- **Fixed console log level not respected** - Replaced direct console.log calls with proper logger calls that respect log level settings
+- **Fixed repeated Google Maps API key warnings** - Now checks API key availability once and caches result instead of logging warning on every transit calculation
+- **Fixed multiple log level change messages** - Log level only changes when actually modified, not on every configuration update
 - **Fixed "No schedule data available" error** - Station name mismatch between CTP Cluj and Tranzy API resolved
 - **Added CTP Cluj proxy** - Direct integration with official CTP Cluj schedules via `/api/ctp-cluj`
 - **Fixed Route 42 timing** - Now correctly shows 15:45 departure from official CTP Cluj data

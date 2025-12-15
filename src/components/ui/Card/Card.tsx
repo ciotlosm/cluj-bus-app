@@ -98,7 +98,6 @@ export const BusCard: React.FC<BusCardProps> = ({
         transition: 'all 0.2s ease-in-out',
         '&:hover': {
           boxShadow: theme.shadows[4],
-          transform: 'translateY(-2px)',
         },
       }}
     >

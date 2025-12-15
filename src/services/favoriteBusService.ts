@@ -307,7 +307,7 @@ class FavoriteBusService {
       }
     }
 
-    console.log('🚏 BUILT STOP SEQUENCE:', {
+    logger.debug('Built stop sequence', {
       tripId,
       stopCount: stopSequence.length,
       currentStation: currentStation?.name,
@@ -330,11 +330,10 @@ class FavoriteBusService {
       });
       
       // Debug: Log the actual favorite routes structure
-      console.log('🔍 DEBUG: Favorite routes received:', favoriteRoutes);
-      console.log('🔍 DEBUG: Favorite routes count:', favoriteRoutes.length);
+      logger.debug('Favorite routes received', { favoriteRoutes, count: favoriteRoutes.length });
       
       if (favoriteRoutes.length === 0) {
-        console.log('⚠️ WARNING: No favorite routes provided - this will show no vehicles');
+        logger.warn('No favorite routes provided - this will show no vehicles');
         return {
           favoriteBuses: [],
           lastUpdate: new Date()
@@ -342,7 +341,7 @@ class FavoriteBusService {
       }
       
       favoriteRoutes.forEach((route, index) => {
-        console.log(`🔍 Route ${index}:`, {
+        logger.debug(`Route ${index}`, {
           id: route.id,
           shortName: route.routeName,
           idType: typeof route.id,
@@ -387,7 +386,7 @@ class FavoriteBusService {
           correctedFavoriteRoutes.push(correctedRoute);
           routeMappings.set(mapping.routeId, mapping);
           
-          console.log('🔄 ROUTE MAPPING:', {
+          logger.debug('Route mapping', {
             userRouteName: favoriteRoute.routeName,
             configRouteId: favoriteRoute.id,
             correctApiRouteId: mapping.routeId,
@@ -403,7 +402,7 @@ class FavoriteBusService {
         }
       }
       
-      console.log('📋 CORRECTED FAVORITE ROUTES:', {
+      logger.debug('Corrected favorite routes', {
         original: favoriteRoutes,
         corrected: correctedFavoriteRoutes,
         mappingCount: routeMappings.size
@@ -412,12 +411,12 @@ class FavoriteBusService {
       // Get stations for finding nearest stations to vehicles
       let stations: any[] = [];
       try {
-        console.log('🚏 FETCHING stations for nearest station lookup...');
+        logger.debug('Fetching stations for nearest station lookup');
         stations = await enhancedTranzyApi.getStops(agencyId);
-        console.log('✅ RETRIEVED stations:', { stationCount: stations.length });
+        logger.debug('Retrieved stations', { stationCount: stations.length });
         logger.info('Retrieved stations for nearest station lookup', { stationCount: stations.length });
       } catch (error) {
-        console.log('❌ FAILED to get stations:', error);
+        logger.warn('Failed to get stations', { error });
         logger.error('Failed to get stations for nearest station lookup', { agencyId, error });
         // Continue without station data - will show coordinates instead
       }
@@ -425,15 +424,15 @@ class FavoriteBusService {
       // Get trips data for destination information
       let tripsMap = new Map<string, any>();
       try {
-        console.log('🚌 FETCHING trips for destination lookup...');
+        logger.debug('Fetching trips for destination lookup');
         const trips = await enhancedTranzyApi.getTrips(agencyId);
         trips.forEach(trip => {
           tripsMap.set(trip.id, trip);
         });
-        console.log('✅ RETRIEVED trips:', { tripCount: trips.length });
+        logger.debug('Retrieved trips', { tripCount: trips.length });
         logger.info('Retrieved trips for destination lookup', { tripCount: trips.length });
       } catch (error) {
-        console.log('❌ FAILED to get trips:', error);
+        logger.warn('Failed to get trips', { error });
         logger.error('Failed to get trips for destination lookup', { agencyId, error });
         // Continue without trip data - will show direction numbers instead
       }
@@ -441,7 +440,7 @@ class FavoriteBusService {
       // Get stop times for building stop sequences
       let stopTimesMap = new Map<string, any[]>();
       try {
-        console.log('🕐 FETCHING stop times for stop sequences...');
+        logger.debug('Fetching stop times for stop sequences');
         const stopTimes = await enhancedTranzyApi.getStopTimes(agencyId);
         // Group stop times by trip_id
         stopTimes.forEach(stopTime => {
@@ -454,10 +453,10 @@ class FavoriteBusService {
         stopTimesMap.forEach(tripStopTimes => {
           tripStopTimes.sort((a, b) => a.sequence - b.sequence);
         });
-        console.log('✅ RETRIEVED stop times:', { tripCount: stopTimesMap.size });
+        logger.debug('Retrieved stop times', { tripCount: stopTimesMap.size });
         logger.info('Retrieved stop times for stop sequences', { tripCount: stopTimesMap.size });
       } catch (error) {
-        console.log('❌ FAILED to get stop times:', error);
+        logger.warn('Failed to get stop times', { error });
         logger.error('Failed to get stop times for stop sequences', { agencyId, error });
         // Continue without stop times - will not show stop sequences
       }
@@ -470,9 +469,9 @@ class FavoriteBusService {
         vehiclesByRoute = await liveVehicleService.getVehiclesForRoutes(agencyId, favoriteRouteIds);
         
         const cacheStats = liveVehicleService.getCacheStats();
-        console.log('📊 VEHICLE CACHE STATS:', cacheStats);
+        logger.debug('Vehicle cache stats', cacheStats);
         
-        console.log('🔍 VEHICLES FOR FAVORITE ROUTES:', {
+        logger.debug('Vehicles for favorite routes', {
           requestedRoutes: favoriteRouteIds,
           routesWithVehicles: Array.from(vehiclesByRoute.keys()),
           vehicleBreakdown: Array.from(vehiclesByRoute.entries()).map(([routeId, vehicles]) => ({
@@ -482,7 +481,7 @@ class FavoriteBusService {
         });
         
       } catch (error) {
-        console.log('❌ FAILED to get cached vehicles:', error);
+        logger.error('Failed to get cached vehicles', { error });
         logger.error('Failed to get cached vehicles', { agencyId, favoriteRouteIds, error });
         return {
           favoriteBuses: [],
@@ -501,14 +500,14 @@ class FavoriteBusService {
           // Get vehicles for this route from cache
           const routeVehicles = vehiclesByRoute.get(routeId) || [];
           
-          console.log('🔍 CACHE LOOKUP for route:', { 
+          logger.debug('Cache lookup for route', { 
             routeShortName, 
             routeId, 
             cachedVehicleCount: routeVehicles.length
           });
           
           if (routeVehicles.length === 0) {
-            console.log('⚠️ NO CACHED VEHICLES for route:', { routeShortName, routeId });
+            logger.info('No cached vehicles for route', { routeShortName, routeId });
             continue;
           }
 
@@ -542,7 +541,7 @@ class FavoriteBusService {
             );
             
             if (currentStation) {
-              console.log('🚏 FOUND current station for vehicle:', {
+              logger.debug('Found current station for vehicle', {
                 vehicleId: vehicle.id,
                 stationName: currentStation.name,
                 distance: currentStation.distance,
@@ -602,8 +601,8 @@ class FavoriteBusService {
               longitude: favoriteBus.longitude
             });
             
-            // Temporary console log for debugging
-            console.log('🚌 Vehicle Data:', {
+            // Debug vehicle data
+            logger.debug('Processing vehicle data', {
               id: vehicle.id,
               tripId: vehicle.tripId,
               direction: vehicle.tripId?.split('_')[1] || 'unknown',
@@ -616,7 +615,7 @@ class FavoriteBusService {
             favoriteBuses.push(favoriteBus);
           }
           
-          console.log('✅ PROCESSED cached vehicles for route:', { 
+          logger.debug('Processed cached vehicles for route', { 
             routeShortName, 
             routeId, 
             vehicleCount: routeVehicles.length 

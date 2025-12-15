@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -7,6 +7,10 @@ import {
   CardContent,
   Stack,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   useTheme,
   alpha,
   Chip,
@@ -17,6 +21,7 @@ import {
   CheckCircle as CheckIcon,
   Palette as PaletteIcon,
   LocationOn as LocationOnIcon,
+  BugReport as BugReportIcon,
 } from '@mui/icons-material';
 
 import { useConfigurationManager } from '../../../hooks/useConfigurationManager';
@@ -24,6 +29,7 @@ import { Button } from '../../ui/Button';
 import LocationPicker from '../LocationPicker/LocationPicker';
 import ThemeToggle from '../../ui/ThemeToggle';
 import { LocationSettingsSection } from './sections/LocationSettingsSection';
+import { logger, LogLevel } from '../../../utils/logger';
 
 interface ConfigurationManagerProps {
   onConfigComplete?: () => void;
@@ -56,6 +62,7 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
     // Actions
     handleApiKeyChange,
     handleCityChange,
+    handleLogLevelChange,
     validateApiKey,
     handleLocationPicker,
     handleLocationSelected,
@@ -172,6 +179,64 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
               }}
               sx={{ flex: 1 }}
             />
+            <FormControl sx={{ flex: 1 }}>
+              <InputLabel id="log-level-label">Console Log Level</InputLabel>
+              <Select
+                labelId="log-level-label"
+                value={formData.logLevel ?? 1}
+                label="Console Log Level"
+                onChange={(e) => {
+                  const level = Number(e.target.value);
+                  handleLogLevelChange(level);
+                }}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <BugReportIcon color="action" />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value={0}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      DEBUG
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Show all logs (very verbose)
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={1}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      INFO
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Show info, warnings, and errors
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={2}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      WARN
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Show only warnings and errors
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={3}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      ERROR
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Show only errors
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
           </Box>
 
         </Box>

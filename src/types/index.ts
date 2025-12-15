@@ -49,6 +49,7 @@ export interface UserConfig {
   staleDataThreshold: number; // minutes - when to consider vehicle data as stale
   defaultLocation?: Coordinates; // Default fallback location for direction detection
   favoriteBuses?: FavoriteRoute[]; // Array of complete route objects (1-3 buses)
+  logLevel?: number; // Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
 }
 
 export interface Favorites {

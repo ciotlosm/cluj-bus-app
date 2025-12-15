@@ -28,7 +28,7 @@ const BusDisplayComponent: React.FC<BusDisplayProps> = ({ direction, maxBuses })
       busDirections: buses.map(b => ({ id: b.id, route: b.route, direction: b.direction }))
     }, 'COMPONENT');
     
-    console.log('BusDisplay filtering:', {
+    logger.debug('BusDisplay filtering', {
       direction,
       totalBuses: buses.length,
       filteredCount: filtered.length,

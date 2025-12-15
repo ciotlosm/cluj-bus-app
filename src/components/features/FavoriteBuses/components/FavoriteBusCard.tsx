@@ -13,6 +13,7 @@ import {
   ListItemIcon,
   Tooltip,
 } from '@mui/material';
+import { logger } from '../../../../utils/logger';
 import { ExpandMore, ExpandLess, LocationOn, RadioButtonUnchecked, PersonPin, DirectionsBus } from '@mui/icons-material';
 
 import { BusCard } from '../../../ui/Card';
@@ -241,7 +242,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         delay={0}
         isFavorite={true}
         onToggleFavorite={() => {
-          console.log('Toggle favorite for route:', bus.routeName);
+          logger.debug('Toggle favorite for route', { routeName: bus.routeName });
         }}
         onMapClick={() => setShowMap(true)}
         arrivalStatus={arrivalStatus}

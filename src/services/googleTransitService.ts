@@ -22,6 +22,10 @@ export interface TransitRequest {
 }
 
 class GoogleTransitService {
+  private apiKeyChecked = false;
+  private hasApiKey = false;
+  private lastCheckedApiKey: string | null = null;
+
   constructor() {
     // API key is now retrieved from config store
   }
@@ -30,6 +34,28 @@ class GoogleTransitService {
     // Try config store first, then environment variable as fallback
     const configStore = useConfigStore.getState();
     return configStore.config?.googleMapsApiKey || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || null;
+  }
+
+  private checkApiKeyOnce(): boolean {
+    const currentApiKey = this.getApiKey();
+    
+    // Reset check if API key has changed
+    if (this.lastCheckedApiKey !== currentApiKey) {
+      this.apiKeyChecked = false;
+      this.lastCheckedApiKey = currentApiKey;
+    }
+    
+    if (!this.apiKeyChecked) {
+      this.hasApiKey = !!currentApiKey;
+      this.apiKeyChecked = true;
+      
+      if (!this.hasApiKey) {
+        logger.info('Google Maps API key not configured, using fallback distance calculations for transit estimates');
+      } else {
+        logger.debug('Google Maps API key configured, using Google Transit API');
+      }
+    }
+    return this.hasApiKey;
   }
 
   /**
@@ -41,11 +67,11 @@ class GoogleTransitService {
     return unifiedCache.getLive(
       cacheKey,
       async () => {
-        const apiKey = this.getApiKey();
-        if (!apiKey) {
-          logger.warn('Google Maps API key not configured, using fallback calculation');
+        if (!this.checkApiKeyOnce()) {
           return this.getFallbackEstimate(request);
         }
+
+        const apiKey = this.getApiKey();
 
         try {
           const estimate = await this.fetchGoogleTransitEstimate(request, apiKey);
@@ -191,6 +217,7 @@ class GoogleTransitService {
     const { origin, destination } = request;
     return `${origin.latitude.toFixed(4)},${origin.longitude.toFixed(4)}-${destination.latitude.toFixed(4)},${destination.longitude.toFixed(4)}`;
   }
+
 
 
 }

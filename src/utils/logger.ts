@@ -32,6 +32,7 @@ class FixedLogger {
 
   constructor() {
     this.sessionId = this.generateSessionId();
+    // Note: Using console.log directly here since this IS the logger system
     console.log('🔧 FixedLogger constructor called - userId will be SYSTEM');
   }
 
@@ -41,6 +42,22 @@ class FixedLogger {
 
   setLogLevel(level: LogLevel): void {
     this.currentLogLevel = level;
+    // Note: Using console.log directly here since this IS the logger system
+    console.log(`🔧 Log level changed to: ${this.getLogLevelName(level)}`);
+  }
+
+  getLogLevel(): LogLevel {
+    return this.currentLogLevel;
+  }
+
+  getLogLevelName(level: LogLevel): string {
+    const names = {
+      [LogLevel.DEBUG]: 'DEBUG',
+      [LogLevel.INFO]: 'INFO', 
+      [LogLevel.WARN]: 'WARN',
+      [LogLevel.ERROR]: 'ERROR'
+    };
+    return names[level] || 'UNKNOWN';
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -272,12 +289,7 @@ class FixedLogger {
 // Singleton instance
 export const logger = new FixedLogger();
 
-// Set log level based on environment
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-  logger.setLogLevel(LogLevel.DEBUG);
-} else {
-  logger.setLogLevel(LogLevel.WARN);
-}
+// Note: Log level is set by configStore initialization to respect user preferences
 
 // Test log to verify new logger is working
 logger.info('NEW Fixed Logger initialized successfully', { 

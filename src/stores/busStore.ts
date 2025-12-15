@@ -97,7 +97,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
       const { calculateDistance } = useLocationStore.getState();
       const { classifyBusesWithIntelligence } = useDirectionStore.getState();
       
-      console.log('Bus data fetched:', { 
+      logger.debug('Bus data fetched', { 
         busCount: buses.length, 
         config: config?.city,
         hasHomeLocation: !!config?.homeLocation,
@@ -109,7 +109,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
       
       if (config && buses.length > 0) {
         const classifiedBuses = classifyBusesWithIntelligence(buses, config, calculateDistance);
-        console.log('Classified buses:', { 
+        logger.debug('Classified buses', { 
           classifiedCount: classifiedBuses.length,
           workBuses: classifiedBuses.filter(b => b.direction === 'work').length,
           homeBuses: classifiedBuses.filter(b => b.direction === 'home').length,
@@ -123,7 +123,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
         });
         set({ buses: classifiedBuses });
       } else {
-        console.log('Setting buses directly:', { busCount: buses.length });
+        logger.debug('Setting buses directly', { busCount: buses.length });
         set({ buses });
       }
       
@@ -182,7 +182,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
     }, config.refreshRate);
 
     set({ isAutoRefreshEnabled: true });
-    console.log(`Auto refresh started with interval: ${config.refreshRate}ms`);
+    logger.info('Auto refresh started', { intervalMs: config.refreshRate });
   },
 
   stopAutoRefresh: () => {
@@ -191,7 +191,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
       refreshIntervalId = null;
     }
     set({ isAutoRefreshEnabled: false });
-    console.log('Auto refresh stopped');
+    logger.info('Auto refresh stopped');
   },
 
   manualRefresh: async () => {
@@ -204,6 +204,6 @@ export const useBusStore = create<BusStore>((set, get) => ({
     // Perform the refresh
     await currentState.refreshBuses();
     
-    console.log('Manual refresh completed');
+    logger.info('Manual refresh completed');
   },
 }));

@@ -1,4 +1,5 @@
 import React from 'react';
+import { logger } from './logger';
 
 /**
  * Performance monitoring and metrics utilities
@@ -227,6 +228,6 @@ export function logPerformanceMetrics(): void {
 export function measureWebVitals(): void {
   if (import.meta.env.DEV && 'web-vitals' in window) {
     // This would integrate with web-vitals library if installed
-    console.log('Web Vitals measurement would be implemented here');
+    logger.debug('Web Vitals measurement would be implemented here');
   }
 }

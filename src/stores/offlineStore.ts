@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getServiceWorkerService, type ServiceWorkerStatus, type CacheInfo } from '../services/serviceWorkerService';
+import { logger } from '../utils/logger';
 
 export interface OfflineStore {
   // Connection state
@@ -51,7 +52,7 @@ export const useOfflineStore = create<OfflineStore>((set, get) => ({
   // Actions
   updateConnectionStatus: (isOnline: boolean) => {
     set({ isOnline });
-    console.log(`Connection status changed: ${isOnline ? 'online' : 'offline'}`);
+    logger.info('Connection status changed', { isOnline });
   },
 
   updateServiceWorkerStatus: (status: ServiceWorkerStatus) => {
@@ -59,7 +60,7 @@ export const useOfflineStore = create<OfflineStore>((set, get) => ({
       serviceWorkerStatus: status,
       isOfflineCapable: status.isActive,
     });
-    console.log('Service Worker status updated:', status);
+    logger.debug('Service Worker status updated', status);
   },
 
   refreshCacheInfo: async () => {
@@ -91,9 +92,9 @@ export const useOfflineStore = create<OfflineStore>((set, get) => ({
         });
       }
       
-      console.log(`Cache cleared: ${cacheType || 'all'}`);
+      logger.info('Cache cleared', { cacheType: cacheType || 'all' });
     } catch (error) {
-      console.error('Failed to clear cache:', error);
+      logger.error('Failed to clear cache', error);
       throw error;
     }
   },
@@ -127,7 +128,7 @@ export const useOfflineStore = create<OfflineStore>((set, get) => ({
       get().refreshCacheInfo().catch(console.error);
     }
     
-    console.log('Offline store initialized');
+    logger.debug('Offline store initialized');
   },
 
   cleanup: () => {
@@ -141,6 +142,6 @@ export const useOfflineStore = create<OfflineStore>((set, get) => ({
       serviceWorkerCleanup = null;
     }
     
-    console.log('Offline store cleaned up');
+    logger.debug('Offline store cleaned up');
   },
 }));

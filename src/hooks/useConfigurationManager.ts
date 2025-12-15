@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useConfigStore } from '../stores/configStore';
 import { useAgencyStore } from '../stores/agencyStore';
 import { tranzyApiService } from '../services/tranzyApiService';
+import { logger, LogLevel } from '../utils/logger';
 import type { UserConfig, Coordinates } from '../types';
 
 interface ValidationErrors {
@@ -37,6 +38,7 @@ export interface UseConfigurationManagerReturn {
   // Actions
   handleApiKeyChange: (value: string) => void;
   handleCityChange: (city: string, agencyId: string) => void;
+  handleLogLevelChange: (level: number) => void;
   validateApiKey: (apiKey: string) => Promise<void>;
   handleLocationPicker: (type: 'home' | 'work' | 'offline') => void;
   handleLocationSelected: (location: Coordinates) => void;
@@ -67,6 +69,7 @@ export const useConfigurationManager = (
     apiKey: config?.apiKey || '',
     refreshRate: config?.refreshRate || 30000,
     staleDataThreshold: config?.staleDataThreshold || 2,
+    logLevel: config?.logLevel ?? 1, // Default to INFO level
   });
   
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -152,6 +155,12 @@ export const useConfigurationManager = (
     setFormData(prev => ({ ...prev, city, agencyId }));
   };
 
+  const handleLogLevelChange = (level: number): void => {
+    setFormData(prev => ({ ...prev, logLevel: level }));
+    // Immediately update the logger and persist to config
+    updateConfig({ logLevel: level });
+  };
+
   const handleLocationPicker = (type: 'home' | 'work' | 'offline'): void => {
     setLocationPickerType(type);
     setLocationPickerOpen(true);
@@ -223,6 +232,7 @@ export const useConfigurationManager = (
     // Actions
     handleApiKeyChange,
     handleCityChange,
+    handleLogLevelChange,
     validateApiKey,
     handleLocationPicker,
     handleLocationSelected,

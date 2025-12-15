@@ -7,16 +7,22 @@ import {
   Typography,
   TextField,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   useTheme,
   alpha,
 } from '@mui/material';
-import { Timer as TimerIcon } from '@mui/icons-material';
+import { Timer as TimerIcon, BugReport as BugReportIcon } from '@mui/icons-material';
 
 interface AdvancedSettingsSectionProps {
   refreshRate: number;
   onRefreshRateChange: (rate: number) => void;
   staleDataThreshold: number;
   onStaleDataThresholdChange: (threshold: number) => void;
+  logLevel: number;
+  onLogLevelChange: (level: number) => void;
   refreshRateError?: string;
   staleDataError?: string;
 }
@@ -26,6 +32,8 @@ export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = (
   onRefreshRateChange,
   staleDataThreshold,
   onStaleDataThresholdChange,
+  logLevel,
+  onLogLevelChange,
   refreshRateError,
   staleDataError,
 }) => {
@@ -87,6 +95,62 @@ export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = (
             }}
             sx={{ maxWidth: 300 }}
           />
+
+          <FormControl sx={{ maxWidth: 300 }}>
+            <InputLabel id="log-level-label">Console Log Level</InputLabel>
+            <Select
+              labelId="log-level-label"
+              value={logLevel}
+              label="Console Log Level"
+              onChange={(e) => onLogLevelChange(Number(e.target.value))}
+              startAdornment={
+                <InputAdornment position="start">
+                  <BugReportIcon color="action" />
+                </InputAdornment>
+              }
+            >
+              <MenuItem value={0}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    DEBUG
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Show all logs (very verbose)
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value={1}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    INFO
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Show info, warnings, and errors
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value={2}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    WARN
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Show only warnings and errors
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value={3}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    ERROR
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Show only errors
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
         </Stack>
       </CardContent>
     </Card>

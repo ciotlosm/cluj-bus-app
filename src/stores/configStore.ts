@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ConfigStore, UserConfig } from '../types';
 import { routeMappingService } from '../services/routeMappingService';
+import { logger, LogLevel } from '../utils/logger';
 
 // Simple encryption/decryption for sensitive data
 const encryptData = (data: string): string => {
@@ -87,6 +88,14 @@ export const useConfigStore = create<ConfigStore>()(
         if (refreshRateChanged) {
           routeMappingService.updateCacheDuration();
         }
+
+        // Note: Google Maps API key check reset is handled automatically by the service
+
+        // Sync log level with logger only if it changed
+        const logLevelChanged = currentConfig?.logLevel !== updatedConfig.logLevel;
+        if (logLevelChanged && updatedConfig.logLevel !== undefined) {
+          logger.setLogLevel(updatedConfig.logLevel as LogLevel);
+        }
       },
 
       resetConfig: () => {
@@ -121,3 +130,16 @@ export const useConfigStore = create<ConfigStore>()(
     }
   )
 );
+
+// Initialize log level from config when store is loaded
+if (typeof window !== 'undefined') {
+  // Set initial log level from config or default
+  const initialState = useConfigStore.getState();
+  if (initialState.config?.logLevel !== undefined) {
+    logger.setLogLevel(initialState.config.logLevel as LogLevel);
+  } else {
+    // Set default log level based on environment
+    const defaultLevel = (window.location.hostname === 'localhost' ? 1 : 2) as LogLevel; // INFO for dev, WARN for prod
+    logger.setLogLevel(defaultLevel);
+  }
+}

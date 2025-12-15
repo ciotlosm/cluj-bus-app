@@ -12,6 +12,7 @@ import {
 
 import { useEnhancedBusStore } from '../../../stores/enhancedBusStore';
 import { useRefreshSystem } from '../../../hooks/useRefreshSystem';
+import { logger } from '../../../utils/logger';
 
 export const RefreshStatusFooter: React.FC = () => {
   const theme = useTheme();
@@ -21,7 +22,7 @@ export const RefreshStatusFooter: React.FC = () => {
 
   // Debug: log available timestamps
   useEffect(() => {
-    console.log('RefreshStatusFooter - Available timestamps:', {
+    logger.debug('RefreshStatusFooter - Available timestamps', {
       'cacheStats.lastRefresh': cacheStats.lastRefresh,
       'lastUpdate': lastUpdate,
       'lastApiUpdate': lastApiUpdate,

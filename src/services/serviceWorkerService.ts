@@ -1,4 +1,6 @@
 // Service Worker registration and management
+import { logger } from '../utils/logger';
+
 export interface ServiceWorkerStatus {
   isSupported: boolean;
   isRegistered: boolean;
@@ -46,7 +48,7 @@ export class ServiceWorkerService {
 
     // Skip service worker registration in development mode
     if (import.meta.env.DEV) {
-      console.log('Service Worker registration skipped in development mode');
+      logger.info('Service Worker registration skipped in development mode');
       return null;
     }
 
@@ -55,11 +57,11 @@ export class ServiceWorkerService {
         scope: '/',
       });
 
-      console.log('Service Worker registered successfully:', this.registration);
+      logger.info('Service Worker registered successfully', { registration: !!this.registration });
 
       // Listen for updates
       this.registration.addEventListener('updatefound', () => {
-        console.log('Service Worker update found');
+        logger.info('Service Worker update found');
         this.notifyStatusChange();
       });
 
@@ -87,7 +89,7 @@ export class ServiceWorkerService {
       const result = await this.registration.unregister();
       if (result) {
         this.registration = null;
-        console.log('Service Worker unregistered successfully');
+        logger.info('Service Worker unregistered successfully');
         this.notifyStatusChange();
       }
       return result;
