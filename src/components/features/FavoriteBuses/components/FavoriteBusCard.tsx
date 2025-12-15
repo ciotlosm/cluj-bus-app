@@ -254,6 +254,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                 <SimplifiedRouteDisplay 
                   stopSequence={bus.stopSequence || []}
                   destination={bus.destination}
+                  onMapClick={() => setShowMap(true)}
                 />
               ) : (
                 <Box>
@@ -386,14 +387,19 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
                           )}
                           {isClosestToUser && (
                             <Chip
-                              label="Closest to You"
+                              icon={<PersonPin sx={{ fontSize: '12px !important' }} />}
+                              label="Your Stop"
                               size="small"
                               color="info"
                               variant="outlined"
                               sx={{
                                 height: 16,
                                 fontSize: '0.6rem',
-                                '& .MuiChip-label': { px: 0.5 }
+                                '& .MuiChip-label': { px: 0.5 },
+                                '& .MuiChip-icon': { 
+                                  fontSize: 12,
+                                  color: theme.palette.info.main 
+                                }
                               }}
                             />
                           )}
@@ -408,22 +414,34 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
               {/* Consistent toggle control - always in the same position */}
               {bus.stopSequence && bus.stopSequence.length > 0 && (
                 <Box sx={{ mt: 1 }}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowStops(!showStops)}
-                      sx={{ p: 0.5 }}
-                    >
+                  <Box
+                    onClick={() => setShowStops(!showStops)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      p: 0.5,
+                      borderRadius: 1,
+                      transition: 'background-color 0.2s',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.action.hover, 0.5),
+                      },
+                      '&:active': {
+                        bgcolor: alpha(theme.palette.action.selected, 0.5),
+                      }
+                    }}
+                  >
+                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
                       {showStops ? (
                         <ExpandLess fontSize="small" />
                       ) : (
                         <ExpandMore fontSize="small" />
                       )}
-                    </IconButton>
+                    </Box>
                     <Typography variant="caption" color="text.secondary">
                       {showStops ? 'Hide' : 'Show'} stops ({bus.stopSequence.length})
                     </Typography>
-                  </Stack>
+                  </Box>
                 </Box>
               )}
             </Box>

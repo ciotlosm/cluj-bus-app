@@ -6,11 +6,13 @@ import type { BusStopInfo } from '../../../../services/favoriteBusService';
 interface SimplifiedRouteDisplayProps {
   stopSequence: BusStopInfo[];
   destination?: string;
+  onMapClick?: () => void;
 }
 
 export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
   stopSequence,
   destination,
+  onMapClick,
 }) => {
   const theme = useTheme();
 
@@ -244,6 +246,8 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                       label="Bus Here"
                       size="small"
                       variant="outlined"
+                      clickable
+                      onClick={onMapClick}
                       sx={{
                         height: 20,
                         fontSize: '0.6rem',
@@ -254,6 +258,10 @@ export const SimplifiedRouteDisplay: React.FC<SimplifiedRouteDisplayProps> = ({
                         },
                         borderColor: theme.palette.primary.main,
                         color: theme.palette.primary.main,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        }
                       }}
                     />
                   )}

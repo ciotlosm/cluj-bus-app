@@ -751,7 +751,7 @@ export class TranzyApiService {
     const distance = this.calculateDistance(vehicle.position, stop.coordinates);
     const estimatedMinutes = vehicle.speed > 0 
       ? Math.max(1, distance / (vehicle.speed * 16.67)) // speed in m/s
-      : Math.random() * 15 + 5; // 5-20 minutes random
+      : Math.max(2, distance / (15 * 16.67)); // Assume 15 km/h average city speed when no speed data
 
     return new Date(now.getTime() + estimatedMinutes * 60000);
   }

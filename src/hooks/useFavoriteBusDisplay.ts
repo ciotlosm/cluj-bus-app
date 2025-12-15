@@ -32,19 +32,24 @@ export const useFavoriteBusDisplay = (): UseFavoriteBusDisplayReturn => {
     error, 
     lastUpdate, 
     refreshFavorites, 
+    loadCachedData,
     availableRoutes 
   } = useFavoriteBusStore();
   const { config } = useConfigStore();
 
   // Note: Available routes loading disabled in simplified mode
 
-  // Refresh favorites when component mounts or when favorite routes change
+  // Load cached data immediately on mount (no automatic refresh)
   useEffect(() => {
     if (config?.favoriteBuses && config.favoriteBuses.length > 0) {
-      logger.info('Refreshing favorites for routes', { routes: config.favoriteBuses }, 'FAVORITES');
-      refreshFavorites();
+      // Only load cached data - no automatic refresh
+      loadCachedData().catch((error) => {
+        logger.warn('Failed to load cached data', error);
+      });
+      
+      logger.info('Loaded cached data for favorite routes', { routes: config.favoriteBuses }, 'FAVORITES');
     }
-  }, [config?.favoriteBuses, refreshFavorites]);
+  }, [config?.favoriteBuses, loadCachedData]);
 
   // Check if we have favorite buses configured
   const hasFavoriteRoutes = config?.favoriteBuses && config.favoriteBuses.length > 0;

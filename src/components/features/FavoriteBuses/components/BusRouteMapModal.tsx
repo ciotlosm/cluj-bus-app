@@ -10,7 +10,7 @@ import {
   Alert,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { enhancedTranzyApi } from '../../../../services/tranzyApiService';
 import { agencyService } from '../../../../services/agencyService';
@@ -95,6 +95,19 @@ interface ShapePoint {
   sequence: number;
 }
 
+// Component to handle map bounds updates
+const MapBoundsUpdater: React.FC<{ bounds: [[number, number], [number, number]] | null }> = ({ bounds }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }, [map, bounds]);
+  
+  return null;
+};
+
 export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
   open,
   onClose,
@@ -163,6 +176,22 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
     }
   };
 
+  // Calculate distance between two coordinates in meters
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lng2-lng1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  };
+
   // Calculate map bounds to fit all points
   const getMapBounds = (): [[number, number], [number, number]] | null => {
     const points: [number, number][] = [];
@@ -182,6 +211,39 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
 
     if (points.length === 0) return null;
 
+    // Check if bus and user are very close (within 200 meters)
+    const busUserDistance = userLocation ? 
+      calculateDistance(bus.latitude, bus.longitude, userLocation.latitude, userLocation.longitude) : 
+      Infinity;
+
+    const isVeryClose = busUserDistance < 200; // 200 meters threshold
+
+    if (isVeryClose && userLocation) {
+      // When very close, create a tight bounds around bus and user with fixed padding
+      const centerLat = (bus.latitude + userLocation.latitude) / 2;
+      const centerLng = (bus.longitude + userLocation.longitude) / 2;
+      
+      // Use a fixed padding of ~100 meters in degrees (approximately 0.001 degrees = ~111 meters)
+      const padding = 0.002; // ~220 meters padding to ensure symbols don't overlap
+      
+      logger.info('Bus and user are very close, applying zoom', {
+        distance: busUserDistance,
+        busLat: bus.latitude,
+        busLng: bus.longitude,
+        userLat: userLocation.latitude,
+        userLng: userLocation.longitude,
+        centerLat,
+        centerLng,
+        padding
+      });
+      
+      return [
+        [centerLat - padding, centerLng - padding],
+        [centerLat + padding, centerLng + padding],
+      ];
+    }
+
+    // Normal bounds calculation for when they're not very close
     const lats = points.map(p => p[0]);
     const lngs = points.map(p => p[1]);
     
@@ -190,13 +252,18 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
     const minLng = Math.min(...lngs);
     const maxLng = Math.max(...lngs);
 
-    // Add some padding
+    // Add some padding (10% of the range)
     const latPadding = (maxLat - minLat) * 0.1;
     const lngPadding = (maxLng - minLng) * 0.1;
 
+    // Ensure minimum padding for very small ranges
+    const minPadding = 0.001; // ~111 meters
+    const finalLatPadding = Math.max(latPadding, minPadding);
+    const finalLngPadding = Math.max(lngPadding, minPadding);
+
     return [
-      [minLat - latPadding, minLng - lngPadding],
-      [maxLat + latPadding, maxLng + lngPadding],
+      [minLat - finalLatPadding, minLng - finalLngPadding],
+      [maxLat + finalLatPadding, maxLng + finalLngPadding],
     ];
   };
 
@@ -242,10 +309,12 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
 
         {!loading && !error && mapBounds && (
           <MapContainer
-            bounds={mapBounds}
+            center={[bus.latitude, bus.longitude]}
+            zoom={13}
             style={{ height: '100%', width: '100%' }}
             scrollWheelZoom={true}
           >
+            <MapBoundsUpdater bounds={mapBounds} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

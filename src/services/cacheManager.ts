@@ -228,6 +228,45 @@ export class CacheManager {
   }
 
   /**
+   * Get cached data immediately without triggering fetch (synchronous)
+   * Returns null if no data is cached or if data is expired
+   */
+  getCached<T>(key: string, config: CacheConfig = CACHE_CONFIGS.liveData): T | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    const now = Date.now();
+    
+    // Return data if it's still within max age (even if stale)
+    if (this.isValid(cached, now, config)) {
+      logger.debug('Cache hit (immediate)', { key, age: now - cached.timestamp });
+      return cached.data;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get cached data even if stale (synchronous)
+   * Returns null only if no data is cached at all
+   */
+  getCachedStale<T>(key: string): { data: T; age: number; isStale: boolean } | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    const now = Date.now();
+    const age = now - cached.timestamp;
+    const isStale = age > cached.config.ttl;
+    
+    logger.debug('Cache hit (stale allowed)', { key, age, isStale });
+    return {
+      data: cached.data,
+      age,
+      isStale
+    };
+  }
+
+  /**
    * Clear specific cache entry
    */
   clear(key: string): void {

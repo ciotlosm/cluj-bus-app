@@ -5,6 +5,7 @@ import { favoriteBusService, type FavoriteBusResult } from '../services/favorite
 import { enhancedTranzyApi } from '../services/tranzyApiService';
 import { useConfigStore } from './configStore';
 import { useLocationStore } from './locationStore';
+import { cacheManager, CacheKeys } from '../services/cacheManager';
 import { logger } from '../utils/logger';
 
 export interface FavoriteBusStore {
@@ -30,6 +31,7 @@ export interface FavoriteBusStore {
   // Actions
   refreshFavorites: () => Promise<void>;
   loadAvailableRoutes: () => Promise<void>;
+  loadCachedData: () => void;
   clearError: () => void;
   
   // Simple favorites actions
@@ -45,10 +47,16 @@ export interface FavoriteBusStore {
   stopAutoRefresh: () => void;
   manualRefresh: () => Promise<void>;
   updateRefreshRate: () => void;
+  
+  // Cache subscription system
+  subscribeToCacheChanges: () => void;
+  unsubscribeFromCacheChanges: () => void;
 }
 
 // Global refresh interval
 let autoRefreshInterval: number | null = null;
+// Cache subscription cleanup functions
+let cacheUnsubscribers: (() => void)[] = [];
 
 export const useFavoriteBusStore = create<FavoriteBusStore>()(
   persist(
@@ -143,6 +151,81 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
               retryable: true
             }
           });
+        }
+      },
+
+      // Load cached data immediately without triggering fetch
+      loadCachedData: async () => {
+        const { config } = useConfigStore.getState();
+        const { currentLocation } = useLocationStore.getState();
+        
+        if (!config?.favoriteBuses || config.favoriteBuses.length === 0) {
+          return;
+        }
+
+        // Set up cache subscriptions for reactive updates
+        get().subscribeToCacheChanges();
+
+        try {
+          // Check if we have cached vehicle data that we can use
+          const agencyId = parseInt(config.agencyId || '2'); // Default to CTP Cluj
+          const vehicleCacheKey = CacheKeys.vehicles(agencyId);
+          
+          // Try to get cached data (even if stale)
+          const cachedResult = cacheManager.getCachedStale(vehicleCacheKey);
+          
+          if (cachedResult) {
+            logger.info('Found cached vehicle data on startup, processing immediately', {
+              cacheAge: cachedResult.age,
+              isStale: cachedResult.isStale,
+              agencyId,
+              cacheKey: vehicleCacheKey
+            });
+            
+            // Process cached data immediately using the same service
+            try {
+              // Use fallback location if current location not available
+              let location = currentLocation;
+              if (!location) {
+                if (config.homeLocation) {
+                  location = config.homeLocation;
+                } else if (config.workLocation) {
+                  location = config.workLocation;
+                } else {
+                  location = config.defaultLocation || { latitude: 46.7712, longitude: 23.6236 };
+                }
+              }
+
+              // Process cached data through favoriteBusService
+              const result = await favoriteBusService.getFavoriteBusInfo(
+                config.favoriteBuses,
+                config.city,
+                location
+              );
+
+              // Set the result immediately
+              set({
+                favoriteBusResult: result,
+                lastUpdate: new Date(Date.now() - cachedResult.age),
+                error: null
+              });
+
+              logger.info('Cached favorite bus data processed and displayed', {
+                count: result.favoriteBuses.length,
+                cacheAge: cachedResult.age
+              });
+
+            } catch (error) {
+              logger.warn('Failed to process cached data, will wait for fresh fetch', error);
+              // Set timestamp to indicate we tried to load cached data
+              set({
+                lastUpdate: new Date(Date.now() - cachedResult.age),
+                error: null
+              });
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to load cached vehicle data', error);
         }
       },
 
@@ -326,6 +409,82 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
           state.stopAutoRefresh();
           state.startAutoRefresh();
         }
+      },
+
+      // Subscribe to cache changes to update components when cache is updated externally
+      subscribeToCacheChanges: () => {
+        const { config } = useConfigStore.getState();
+        
+        if (!config?.favoriteBuses || config.favoriteBuses.length === 0) {
+          return;
+        }
+
+        // Clean up existing subscriptions
+        get().unsubscribeFromCacheChanges();
+
+        const agencyId = parseInt(config.agencyId || '2');
+        const vehicleCacheKey = CacheKeys.vehicles(agencyId);
+
+        // Subscribe to vehicle cache updates
+        const unsubscribe = cacheManager.subscribe(vehicleCacheKey, async (event) => {
+          if (event.type === 'updated' && event.data) {
+            logger.info('Cache updated externally, processing new data', {
+              cacheKey: vehicleCacheKey,
+              timestamp: event.timestamp
+            });
+
+            try {
+              // Process the updated cache data
+              const { currentLocation } = useLocationStore.getState();
+              let location = currentLocation;
+              
+              if (!location) {
+                if (config.homeLocation) {
+                  location = config.homeLocation;
+                } else if (config.workLocation) {
+                  location = config.workLocation;
+                } else {
+                  location = config.defaultLocation || { latitude: 46.7712, longitude: 23.6236 };
+                }
+              }
+
+              // Process the new cache data
+              const result = await favoriteBusService.getFavoriteBusInfo(
+                config.favoriteBuses,
+                config.city,
+                location
+              );
+
+              // Update the store with new data
+              set({
+                favoriteBusResult: result,
+                lastUpdate: new Date(event.timestamp),
+                error: null,
+                isLoading: false
+              });
+
+              logger.info('Components updated from cache change', {
+                count: result.favoriteBuses.length,
+                timestamp: event.timestamp
+              });
+
+            } catch (error) {
+              logger.warn('Failed to process cache update', error);
+            }
+          }
+        });
+
+        // Store the unsubscriber
+        cacheUnsubscribers.push(unsubscribe);
+
+        logger.info('Subscribed to cache changes', { cacheKey: vehicleCacheKey });
+      },
+
+      // Unsubscribe from cache changes
+      unsubscribeFromCacheChanges: () => {
+        cacheUnsubscribers.forEach(unsubscribe => unsubscribe());
+        cacheUnsubscribers = [];
+        logger.info('Unsubscribed from cache changes');
       }
     }),
     {
@@ -348,5 +507,8 @@ if (typeof window !== 'undefined') {
     if (autoRefreshInterval) {
       clearInterval(autoRefreshInterval);
     }
+    // Clean up cache subscriptions
+    cacheUnsubscribers.forEach(unsubscribe => unsubscribe());
+    cacheUnsubscribers = [];
   });
 }
