@@ -49,7 +49,7 @@ export const useBusStore = create<BusStore>((set, get) => ({
       try {
         // Use unified cache with automatic stale data fallback
         buses = await unifiedCache.getLive(
-          CacheKeys.busInfo(config.city),
+          CacheKeys.vehicleInfo(config.city),
           async () => {
             // Fetch fresh data with retry
             return await withRetry(fetchBusData, {

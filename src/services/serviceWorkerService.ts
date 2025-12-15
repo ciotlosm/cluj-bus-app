@@ -25,7 +25,7 @@ export class ServiceWorkerService {
 
   private async init(): Promise<void> {
     if (!this.isSupported()) {
-      console.warn('Service Workers are not supported in this browser');
+      logger.warn('Service Workers are not supported in this browser', {}, 'SERVICE_WORKER');
       this.notifyStatusChange();
       return;
     }
@@ -33,7 +33,7 @@ export class ServiceWorkerService {
     try {
       await this.register();
     } catch (error) {
-      console.error('Failed to register service worker:', error);
+      logger.error('Failed to register service worker', { error }, 'SERVICE_WORKER');
     }
   }
 
@@ -75,7 +75,7 @@ export class ServiceWorkerService {
       this.notifyStatusChange();
       return this.registration;
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      logger.error('Service Worker registration failed', { error }, 'SERVICE_WORKER');
       throw error;
     }
   }
@@ -94,7 +94,7 @@ export class ServiceWorkerService {
       }
       return result;
     } catch (error) {
-      console.error('Failed to unregister service worker:', error);
+      logger.error('Failed to unregister service worker', { error }, 'SERVICE_WORKER');
       return false;
     }
   }

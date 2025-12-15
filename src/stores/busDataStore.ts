@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BusInfo, Station, ErrorState, EnhancedBusInfo } from '../types';
+import type { VehicleInfo, Station, ErrorState, EnhancedVehicleInfo } from '../types';
 import { useAppStore } from './appStore';
 import { useLocationStore } from './locationStore';
 import { useOfflineStore } from './offlineStore';
@@ -9,12 +9,12 @@ import { enhancedTranzyApi } from '../services/tranzyApiService';
 import { logger } from '../utils/logger';
 
 export interface BusDataStore {
-  // Basic bus data
-  buses: BusInfo[];
+  // Basic vehicle data
+  buses: VehicleInfo[]; // Note: keeping 'buses' name for UI compatibility
   stations: Station[];
   
-  // Enhanced bus data
-  enhancedBuses: EnhancedBusInfo[];
+  // Enhanced vehicle data
+  enhancedBuses: EnhancedVehicleInfo[]; // Note: keeping 'buses' name for UI compatibility
   
   // State
   lastUpdate: Date | null;
@@ -108,7 +108,7 @@ export const useBusDataStore = create<BusDataStore>((set, get) => ({
       let buses: BusInfo[];
 
       try {
-        const cacheKey = CacheKeys.busInfo(config.city);
+        const cacheKey = CacheKeys.vehicleInfo(config.city);
         buses = forceRefresh
           ? await unifiedCache.forceRefresh(cacheKey, fetchBusData, CACHE_CONFIGS.liveData)
           : await unifiedCache.getLive(cacheKey, fetchBusData);
@@ -137,7 +137,7 @@ export const useBusDataStore = create<BusDataStore>((set, get) => ({
         logger.warn('Primary bus fetch failed, trying fallback', { error });
         
         const fallbackBuses = await unifiedCache.getLive(
-          CacheKeys.busInfo(config.city),
+          CacheKeys.vehicleInfo(config.city),
           fetchBusData,
           true
         );
@@ -213,7 +213,7 @@ export const useBusDataStore = create<BusDataStore>((set, get) => ({
       }
 
       const agencyId = parseInt(config.agencyId);
-      const enhancedBuses = await enhancedTranzyApi.getEnhancedBusInfo(
+      const enhancedVehicles = await enhancedTranzyApi.getEnhancedVehicleInfo(
         agencyId,
         undefined, // stopId
         undefined, // routeId
@@ -222,15 +222,15 @@ export const useBusDataStore = create<BusDataStore>((set, get) => ({
 
       const now = new Date();
       set({
-        enhancedBuses,
+        enhancedBuses: enhancedVehicles,
         lastUpdate: now,
         lastApiUpdate: now,
         isLoading: false,
         error: null,
       });
 
-      logger.info('Enhanced buses refreshed successfully', {
-        busCount: enhancedBuses.length,
+      logger.info('Enhanced vehicles refreshed successfully', {
+        vehicleCount: enhancedVehicles.length,
         agencyId,
       });
 

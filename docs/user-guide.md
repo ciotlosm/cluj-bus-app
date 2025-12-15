@@ -19,6 +19,9 @@ Get departure times from GTFS-compliant schedule data via Tranzy API.
 ### 🏠 Smart Favorites
 The app learns your patterns and suggests relevant routes based on your location.
 
+### 📍 Nearby Station View
+Shows buses arriving at the station closest to your current location, with intelligent work/home direction detection.
+
 ### 📱 Mobile Optimized
 Designed for your phone with touch-friendly controls and fast loading.
 
@@ -37,10 +40,53 @@ Designed for your phone with touch-friendly controls and fast loading.
 
 ### Daily Usage
 
+#### Main Navigation
+The app has four main views accessible via bottom navigation:
+
+1. **Buses** - Your favorite routes and personalized bus tracking
+2. **Station** - Buses arriving at the station closest to your current location
+3. **Favorites** - Manage your favorite routes and settings
+4. **Settings** - Configure API keys, locations, and app preferences
+
+#### Using Each View
+
+**Buses View:**
 1. **Check your favorites** - routes you use regularly
 2. **See live buses** - red dots show real-time positions
 3. **Check departure times** - schedule data from Tranzy API
 4. **Get directions** - tap routes for detailed information
+5. **View on map** - tap the small map icon in the bottom-right corner to see the route on an interactive map
+
+**Station View:**
+1. **Multi-station detection** - finds all stations within 100m of your closest station
+2. **Smart station prioritization** - when near home/work, prioritizes stations with relevant buses
+3. **Station identification** - each station clearly labeled with name and distance chips
+4. **Direction indicators** - see if buses are arriving at or departing from stations:
+   - 🟢 **"Arriving in Xmin"** - bus is coming to this station
+   - 🟠 **"Departed Xmin ago"** - bus recently left this station
+5. **Expandable route stops** - tap "Show stops" to see the complete route:
+   - 🚌 **Current position** - where the bus is now
+   - 🏁 **Final destination** - end of the route
+   - 📍 **All stops** - complete sequence in order
+6. **Interactive route map** - tap the map icon 🗺️ next to "Show stops":
+   - **Full route visualization** - see the complete bus route on a map
+   - **Live bus position** - real-time vehicle location with direction
+   - **Target station highlight** - special marker for the station you're viewing
+   - **Route shape** - actual path the bus follows, not just straight lines
+   - **Destination marker** - clear indication of where the route ends
+6. **Real-world optimization** - perfect for main streets with stations on opposite sides
+7. **Route diversity** - shows different bus routes per station (avoids duplicates)
+8. **Comprehensive coverage** - see buses from multiple nearby stations in one view
+
+**Favorites View:**
+1. **Manage favorite routes** - add/remove routes you use frequently
+2. **Quick access** - easily toggle routes on/off
+3. **Route information** - see details about each saved route
+
+**Settings View:**
+1. **API configuration** - manage your Tranzy API key
+2. **Location settings** - set home, work, and fallback locations
+3. **App preferences** - adjust refresh rates, data thresholds, and display limits
 
 ### Understanding the Interface
 
@@ -67,6 +113,28 @@ The app header shows your current status with colored chips:
 #### Confidence Indicators
 - **🔴 LIVE** - Real-time GPS tracking (most accurate)
 - **⏱️ ESTIMATED** - GTFS schedule data from Tranzy API (less reliable when no live data)
+
+### Interactive Map Features
+
+#### Accessing the Map
+Each bus route card now has a compact **map icon** in the bottom-right corner:
+
+- **Compact Design** - Small, unobtrusive map icon that doesn't interfere with card content
+- **Smart Tooltips** - Shows "View on map" plus vehicle information when available
+- **Easy Access** - Simply tap the map icon to open the interactive route view
+
+#### Map Functionality
+When you tap "View on Map":
+1. **Interactive Route Display** - See the complete bus route with all stops
+2. **Live Vehicle Positions** - Real-time bus locations if available
+3. **Stop Information** - Detailed information about each bus stop along the route
+4. **User Location** - Your current position relative to the route
+5. **Destination Markers** - Clear indicators for route endpoints
+
+#### Map Tips
+- **Landscape Mode** - Rotate your phone for a better map viewing experience
+- **Zoom Controls** - Pinch to zoom in/out for detailed or overview perspectives
+- **Stop Details** - Tap on stops for more information
 
 ### Adding Favorite Routes
 
@@ -173,6 +241,49 @@ The app uses locations in this priority order for route suggestions:
 - **Tranzy API Key** - for live bus tracking data
 - **Google Maps API Key** - for enhanced location features
 - **City info** - visible in version menu for troubleshooting (set during initial setup)
+
+## ⚙️ Settings & Configuration
+
+### Advanced Settings
+Access these settings in the Configuration tab under "Advanced Settings":
+
+#### **Refresh Rate (5-300 seconds)**
+- **Default**: 30 seconds
+- **Purpose**: How often the app fetches new bus data
+- **Tip**: Lower values (5-15s) for real-time tracking, higher values (60-300s) to save battery
+
+#### **Stale Data Threshold (1-30 minutes)**
+- **Default**: 2 minutes
+- **Purpose**: When to consider vehicle data as outdated
+- **Tip**: Increase if you have slow internet, decrease for more accurate live tracking
+
+#### **Max Vehicles Per Station (1-20)**
+- **Default**: 5 vehicles
+- **Purpose**: Maximum number of buses shown per station in Station view
+- **Smart Filtering**: Shows the best vehicle per route (at station → arriving → departed)
+- **Tip**: Lower values (1-3) for cleaner display, higher values (10-20) for comprehensive view
+
+#### **Console Log Level**
+- **Default**: INFO
+- **Options**: DEBUG, INFO, WARN, ERROR
+- **Purpose**: Controls how much technical information appears in browser console
+- **Tip**: Use DEBUG for troubleshooting, ERROR for minimal logging
+
+### Location Settings
+Configure your locations for smart route suggestions:
+
+#### **Home Location**
+- **Purpose**: Helps prioritize relevant routes when you're near home
+- **Usage**: Station view shows buses going toward work when you're at home
+
+#### **Work Location**
+- **Purpose**: Helps prioritize relevant routes when you're near work
+- **Usage**: Station view shows buses going toward home when you're at work
+
+#### **Offline Location**
+- **Purpose**: Fallback location when GPS is unavailable
+- **Default**: Cluj-Napoca city center
+- **Tip**: Set to your most common location for better offline experience
 
 ## 📱 Mobile Tips
 

@@ -12,16 +12,20 @@ export interface Station {
   isFavorite: boolean;
 }
 
-export interface BusInfo {
+// Vehicle information (live vehicle instance with computed data)
+export interface VehicleInfo {
   id: string;
-  route: string;
-  destination: string;
+  route: string; // Display name (route_short_name like "42", "43B") 
+  destination: string; // From trip_headsign or route_long_name
   arrivalTime: Date;
   isLive: boolean;
   minutesAway: number;
   station: Station;
   direction: 'work' | 'home' | 'unknown';
 }
+
+// Legacy alias for backward compatibility (will be removed)
+export type BusInfo = VehicleInfo;
 
 export interface Agency {
   id: string;
@@ -34,7 +38,7 @@ export interface Agency {
 export interface FavoriteRoute {
   id: string; // API route ID for queries
   routeName: string; // route_short_name ("42", "43B", "100")
-  longName: string; // route_long_name (e.g., "Piața Unirii - Mănăștur")
+  longName: string; // route_long_name (e.g., "Piața Unirii - Mănăștur") - kept for backward compatibility
   type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 }
 
@@ -50,6 +54,7 @@ export interface UserConfig {
   defaultLocation?: Coordinates; // Default fallback location for direction detection
   favoriteBuses?: FavoriteRoute[]; // Array of complete route objects (1-3 buses)
   logLevel?: number; // Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
+  maxVehiclesPerStation?: number; // Maximum vehicles to show per station (default: 5)
 }
 
 export interface Favorites {

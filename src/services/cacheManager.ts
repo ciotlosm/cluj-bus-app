@@ -586,7 +586,7 @@ export const cacheManager = new CacheManager();
 export const CacheKeys = {
   // Live data keys (30-second TTL)
   vehicles: (agencyId: number) => `vehicles:${agencyId}`,
-  busInfo: (city: string) => `busInfo:${city}`,
+  vehicleInfo: (city: string) => `vehicleInfo:${city}`,
   stations: (city: string) => `stations:${city}`,
   
   // Route-specific data

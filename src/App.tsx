@@ -26,6 +26,7 @@ import {
   Check as CheckIcon,
   LiveTv as LiveIcon,
   Favorite as FavoriteIcon,
+  LocationOn as StationIcon,
 } from '@mui/icons-material';
 
 
@@ -42,12 +43,14 @@ import StatusIndicators from './components/layout/Indicators/StatusIndicators';
 import { useConfigStore, useOfflineStore, useAgencyStore } from './stores';
 import { useRefreshSystem } from './hooks/useRefreshSystem';
 import { useErrorHandler } from './hooks/useErrorHandler';
+import { useAppInitialization } from './hooks/useAppInitialization';
 
 import { useComponentLifecycle, logPerformanceMetrics } from './utils/performance';
 import { logger } from './utils/logger';
 import { DebugPanel } from './components/features/Debug/DebugPanel';
 import FavoriteBusDisplay from './components/features/FavoriteBuses/FavoriteBusDisplay';
 import FavoriteBusManager from './components/features/FavoriteBuses/FavoriteBusManager';
+import { StationDisplay } from './components/features/StationDisplay';
 import UpdateNotification from './components/layout/UpdateNotification';
 import { useFavoriteBusStore } from './stores/favoriteBusStore';
 import { initializeServiceWorker } from './utils/serviceWorkerManager';
@@ -120,14 +123,14 @@ const MaterialHeader: React.FC<{
 
 // Material Design Bottom Navigation
 const MaterialBottomNav: React.FC<{ 
-  currentView: 'buses' | 'favorites' | 'settings'; 
-  onViewChange: (view: 'buses' | 'favorites' | 'settings') => void;
+  currentView: 'buses' | 'station' | 'favorites' | 'settings'; 
+  onViewChange: (view: 'buses' | 'station' | 'favorites' | 'settings') => void;
   isConfigured: boolean;
   isFromSetupFlowRef: React.MutableRefObject<boolean>;
 }> = React.memo(({ currentView, onViewChange, isConfigured: isFullyConfigured, isFromSetupFlowRef }) => {
   const theme = useTheme();
   
-  const handleNavigation = React.useCallback((view: 'buses' | 'favorites' | 'settings') => {
+  const handleNavigation = React.useCallback((view: 'buses' | 'station' | 'favorites' | 'settings') => {
     // Prevent duplicate navigation to the same view
     if (view === currentView) {
       logger.info('Navigation ignored - already on target view', { currentView, targetView: view }, 'UI');
@@ -176,6 +179,26 @@ const MaterialBottomNav: React.FC<{
           },
         }}
       >
+        <BottomNavigationAction
+          label="Station"
+          value="station"
+          icon={<StationIcon />}
+          disabled={!isFullyConfigured}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!isFullyConfigured) return;
+            handleNavigation('station');
+          }}
+          sx={{
+            '&.Mui-selected': {
+              color: theme.palette.primary.main,
+            },
+            '&.Mui-disabled': {
+              opacity: 0.5,
+            },
+          }}
+        />
         <BottomNavigationAction
           label="Buses"
           value="buses"
@@ -255,13 +278,21 @@ const MaterialContentArea: React.FC<{ children: React.ReactNode }> = React.memo(
 ));
 
 function AppMaterial() {
-  const [currentView, setCurrentView] = useState<'buses' | 'favorites' | 'settings'>('buses');
+  const [currentView, setCurrentView] = useState<'buses' | 'station' | 'favorites' | 'settings'>('station');
   const { config, isConfigured, isFullyConfigured } = useConfigStore();
 
   const { isAutoRefreshEnabled } = useRefreshSystem();
   const { error: globalError, clearError } = useErrorHandler();
   const { initialize: initializeOffline, cleanup: cleanupOffline } = useOfflineStore();
   const { checkAndFixCorruptedData } = useAgencyStore();
+  const { 
+    isInitializing, 
+    initializationProgress, 
+    initializationStep, 
+    initializationError, 
+    isInitialized,
+    retryInitialization 
+  } = useAppInitialization();
   const theme = useTheme();
 
   // Track if navigation is coming from setup flow
@@ -310,15 +341,15 @@ function AppMaterial() {
     };
   }, [isFullyConfigured]);
 
-  // Auto-switch to buses view when full configuration is complete (only from setup flow)
+  // Auto-switch to station view when full configuration is complete (only from setup flow)
   const hasAutoSwitched = React.useRef(false);
   
   useEffect(() => {
     // Only auto-switch if we're coming from the setup flow, not from user navigation
     if (isFullyConfigured && currentView === 'settings' && !hasAutoSwitched.current && isFromSetupFlow.current) {
-      logger.info('Auto-switching to buses view after full configuration');
+      logger.info('Auto-switching to station view after full configuration');
       hasAutoSwitched.current = true;
-      setCurrentView('buses');
+      setCurrentView('station');
     }
   }, [isFullyConfigured, currentView]);
 
@@ -338,6 +369,26 @@ function AppMaterial() {
 
 
   const renderContent = () => {
+    // Show initialization error if present
+    if (initializationError) {
+      return (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <AlertTitle>Initialization Error</AlertTitle>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {initializationError}
+          </Typography>
+          <Button 
+            variant="contained" 
+            size="small" 
+            onClick={retryInitialization}
+            sx={{ textTransform: 'none' }}
+          >
+            Retry Initialization
+          </Button>
+        </Alert>
+      );
+    }
+
     // Show global error if present
     if (globalError) {
       return (
@@ -345,6 +396,39 @@ function AppMaterial() {
           <AlertTitle>Error</AlertTitle>
           <ErrorDisplay error={globalError} onRetry={clearError} />
         </Alert>
+      );
+    }
+
+    // Show initialization progress if initializing
+    if (isInitializing) {
+      return (
+        <Card sx={{ textAlign: 'center', p: 4, mt: 4 }}>
+          <Avatar
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              width: 64,
+              height: 64,
+              mx: 'auto',
+              mb: 3,
+            }}
+          >
+            <BusIcon sx={{ fontSize: 32 }} />
+          </Avatar>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+            Loading Transit Data
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {initializationStep}
+          </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={initializationProgress} 
+            sx={{ width: '100%', height: 8, borderRadius: 4 }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            {Math.round(initializationProgress)}% complete
+          </Typography>
+        </Card>
       );
     }
 
@@ -398,6 +482,59 @@ function AppMaterial() {
             {/* Favorite Buses */}
             <Box sx={{ mb: 3 }}>
               <FavoriteBusDisplay />
+            </Box>
+          </Box>
+        );
+
+      case 'station':
+        if (!isFullyConfigured) {
+          return (
+            <Card sx={{ textAlign: 'center', p: 4, mt: 4 }}>
+              <Avatar
+                sx={{
+                  bgcolor: theme.palette.warning.main,
+                  width: 64,
+                  height: 64,
+                  mx: 'auto',
+                  mb: 3,
+                }}
+              >
+                <SettingsIcon sx={{ fontSize: 32 }} />
+              </Avatar>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Setup Required
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Please complete your setup to view nearby station buses.
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  isFromSetupFlow.current = true; // Mark that we're coming from setup
+                  setCurrentView('settings');
+                }}
+                sx={{
+                  borderRadius: 3,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Complete Setup
+              </Button>
+            </Card>
+          );
+        }
+
+        return (
+          <Box sx={{ space: 3 }}>
+            {/* Offline Indicator */}
+            <Box sx={{ mb: 2 }}>
+              <OfflineIndicator />
+            </Box>
+            
+            {/* Station Display */}
+            <Box sx={{ mb: 3 }}>
+              <StationDisplay />
             </Box>
           </Box>
         );
@@ -457,6 +594,8 @@ function AppMaterial() {
 
   const getHeaderTitle = () => {
     switch (currentView) {
+      case 'station':
+        return 'Nearby Station';
       case 'buses':
         return config?.city ? `Buses in ${config.city}` : 'Bus Tracker';
       case 'favorites':
@@ -464,7 +603,7 @@ function AppMaterial() {
       case 'settings':
         return 'Settings';
       default:
-        return 'Bus Tracker';
+        return 'Nearby Station';
     }
   };
 
@@ -473,8 +612,23 @@ function AppMaterial() {
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <MaterialHeader 
           title={getHeaderTitle()}
-          showRefresh={currentView === 'buses' || currentView === 'favorites'}
+          showRefresh={currentView === 'buses' || currentView === 'station' || currentView === 'favorites'}
+          isLoading={isInitializing}
         />
+        
+        {/* Initialization Progress */}
+        {isInitializing && (
+          <Box sx={{ px: 2, pb: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              {initializationStep}
+            </Typography>
+            <LinearProgress 
+              variant="determinate" 
+              value={initializationProgress} 
+              sx={{ height: 6, borderRadius: 3 }}
+            />
+          </Box>
+        )}
         
         <MaterialContentArea>
           {renderContent()}

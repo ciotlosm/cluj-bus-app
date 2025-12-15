@@ -11,9 +11,9 @@ import type {
   Trip,
   StopTime,
   LiveVehicle,
-  EnhancedBusInfo
+  EnhancedVehicleInfo
 } from '../types/tranzyApi';
-import type { Agency, Station, BusInfo, TranzyApiService as ITranzyApiService } from '../types';
+import type { Agency, Station, VehicleInfo, TranzyApiService as ITranzyApiService } from '../types';
 import { cacheManager as dataCacheManager, CACHE_CONFIGS } from './cacheManager';
 import { logger } from '../utils/logger';
 
@@ -254,14 +254,14 @@ export class TranzyApiService {
   }
 
   /**
-   * Get enhanced bus information combining schedule and live data
+   * Get enhanced vehicle information combining schedule and live data
    */
-  async getEnhancedBusInfo(
+  async getEnhancedVehicleInfo(
     agencyId: number,
     stopId?: number,
     routeId?: number,
     forceRefresh = false
-  ): Promise<EnhancedBusInfo[]> {
+  ): Promise<EnhancedVehicleInfo[]> {
     try {
       // Get all required data in parallel
       const [stops, routes, vehicles, stopTimes] = await Promise.allSettled([
@@ -286,9 +286,22 @@ export class TranzyApiService {
         routeId
       );
     } catch (error) {
-      logger.error('Failed to get enhanced bus info', { agencyId, stopId, routeId, error }, 'API');
+      logger.error('Failed to get enhanced vehicle info', { agencyId, stopId, routeId, error }, 'API');
       throw error;
     }
+  }
+
+  /**
+   * @deprecated Use getEnhancedVehicleInfo instead
+   * Legacy alias for backward compatibility
+   */
+  async getEnhancedBusInfo(
+    agencyId: number,
+    stopId?: number,
+    routeId?: number,
+    forceRefresh = false
+  ): Promise<EnhancedVehicleInfo[]> {
+    return this.getEnhancedVehicleInfo(agencyId, stopId, routeId, forceRefresh);
   }
 
   /**
@@ -342,8 +355,8 @@ export class TranzyApiService {
     return data.map(route => ({
       id: route.route_id.toString(),
       agencyId: route.agency_id.toString(),
-      shortName: route.route_short_name,
-      longName: route.route_long_name,
+      routeName: route.route_short_name,
+      routeDesc: route.route_long_name,
       type: this.getRouteType(route.route_type),
       color: route.route_color,
       textColor: route.route_text_color,
@@ -435,8 +448,8 @@ export class TranzyApiService {
     stopTimes: StopTime[],
     stopId?: number,
     routeId?: number
-  ): EnhancedBusInfo[] {
-    const enhancedBuses: EnhancedBusInfo[] = [];
+  ): EnhancedVehicleInfo[] {
+    const enhancedVehicles: EnhancedVehicleInfo[] = [];
     const now = new Date();
 
     // Create a map for quick lookups
@@ -467,23 +480,23 @@ export class TranzyApiService {
       const estimatedArrival = this.calculateArrivalTime(vehicle, closestStop, scheduleData);
       const minutesAway = Math.max(0, Math.round((estimatedArrival.getTime() - now.getTime()) / 60000));
 
-      enhancedBuses.push({
+      enhancedVehicles.push({
         vehicle,
         schedule: scheduleData ? {
           stopId: scheduleData.stopId,
           routeId: vehicle.routeId,
           tripId: scheduleData.tripId,
           direction: 'inbound', // This would need more logic to determine
-          headsign: scheduleData.headsign || route.longName,
+          headsign: scheduleData.headsign || route.routeDesc,
           scheduledTimes: [{
             arrival: this.parseTimeToDate(scheduleData.arrivalTime),
             departure: this.parseTimeToDate(scheduleData.departureTime),
           }],
         } : undefined,
         id: vehicle.id,
-        route: route.shortName,
+        route: route.routeName,
         routeId: vehicle.routeId,
-        destination: route.longName,
+        destination: route.routeDesc,
         direction: this.determineDirection(vehicle, closestStop), // Simplified
         scheduledArrival: scheduleData ? this.parseTimeToDate(scheduleData.arrivalTime) : undefined,
         liveArrival: estimatedArrival,
@@ -508,7 +521,7 @@ export class TranzyApiService {
       
       for (const stopTime of relevantStopTimes) {
         // Skip if we already have live data for this trip
-        if (enhancedBuses.some(bus => bus.schedule?.tripId === stopTime.tripId)) continue;
+        if (enhancedVehicles.some(vehicle => vehicle.schedule?.tripId === stopTime.tripId)) continue;
 
         const route = routesMap.get(stopTime.tripId.split('_')[0]); // Simplified route extraction
         if (!route) continue;
@@ -519,22 +532,22 @@ export class TranzyApiService {
         const scheduledArrival = this.parseTimeToDate(stopTime.arrivalTime);
         const minutesAway = Math.max(0, Math.round((scheduledArrival.getTime() - now.getTime()) / 60000));
 
-        enhancedBuses.push({
+        enhancedVehicles.push({
           schedule: {
             stopId: stopTime.stopId,
             routeId: route.id,
             tripId: stopTime.tripId,
             direction: 'inbound',
-            headsign: stopTime.headsign || route.longName,
+            headsign: stopTime.headsign || route.routeDesc,
             scheduledTimes: [{
               arrival: scheduledArrival,
               departure: this.parseTimeToDate(stopTime.departureTime),
             }],
           },
           id: `schedule-${stopTime.tripId}-${stopTime.stopId}`,
-          route: route.shortName,
+          route: route.routeName,
           routeId: route.id,
-          destination: route.longName,
+          destination: route.routeDesc,
           direction: 'unknown',
           scheduledArrival,
           estimatedArrival: scheduledArrival,
@@ -552,7 +565,7 @@ export class TranzyApiService {
       }
     }
 
-    return enhancedBuses.sort((a, b) => a.minutesAway - b.minutesAway);
+    return enhancedVehicles.sort((a, b) => a.minutesAway - b.minutesAway);
   }
 
   private getRouteType(type: number): Route['type'] {
@@ -784,7 +797,7 @@ export class TranzyApiService {
       if (age < 300000) return 'medium'; // Live data within 5 minutes
       return 'low'; // Old or no live data
     } catch (error) {
-      console.warn('Invalid timestamp in vehicle data:', vehicle.timestamp);
+      logger.warn('Invalid timestamp in vehicle data', { timestamp: vehicle.timestamp }, 'API');
       return 'low'; // Default to low confidence if timestamp is invalid
     }
   }
@@ -816,9 +829,10 @@ export class TranzyApiService {
       logger.debug('Could not get agency ID from config store', { error }, 'API');
     }
     
-    // Fallback to CTP Cluj agency ID
-    logger.debug('Using fallback agency ID for CTP Cluj', { agencyId: 2 }, 'API');
-    return 2;
+    // Fallback to CTP Cluj agency ID (only when no configuration is available)
+    const fallbackAgencyId = 2; // CTP Cluj-Napoca
+    logger.debug('Using fallback agency ID for CTP Cluj', { agencyId: fallbackAgencyId }, 'API');
+    return fallbackAgencyId;
   }
 
   async validateApiKey(key: string): Promise<boolean> {
@@ -874,7 +888,7 @@ export class TranzyApiService {
     }
   }
 
-  async getBusesForCity(city: string): Promise<BusInfo[]> {
+  async getBusesForCity(city: string): Promise<VehicleInfo[]> {
     const requestKey = `vehicles-${city}`;
     if (!this.shouldAllowRequest(requestKey)) {
       logger.debug('Vehicles request debounced', { city }, 'API');
@@ -912,7 +926,7 @@ export class TranzyApiService {
     }
   }
 
-  async getBusesAtStation(stationId: string): Promise<BusInfo[]> {
+  async getBusesAtStation(stationId: string): Promise<VehicleInfo[]> {
     const requestKey = `station-vehicles-${stationId}`;
     if (!this.shouldAllowRequest(requestKey)) {
       logger.debug('Station vehicles request debounced', { stationId }, 'API');
@@ -951,7 +965,7 @@ export class TranzyApiService {
   }
 
   // Helper methods for legacy compatibility
-  private transformVehiclesToBusInfo(vehicles: LiveVehicle[], city: string): BusInfo[] {
+  private transformVehiclesToBusInfo(vehicles: LiveVehicle[], city: string): VehicleInfo[] {
     return vehicles.map(vehicle => ({
       id: vehicle.id,
       route: vehicle.routeId?.toString() || 'Unknown',

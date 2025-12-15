@@ -151,29 +151,58 @@ class LiveVehicleService {
    * Fetch and process all vehicles for an agency
    */
   private async fetchAllVehicles(agencyId: number): Promise<Map<string, any[]>> {
-    logger.debug('Fetching all vehicles for agency cache', { agencyId });
+    logger.info('🚛 DEBUGGING: Fetching all vehicles for agency cache', { agencyId });
     const allVehiclesRaw = await enhancedTranzyApi.getVehicles(agencyId);
+    logger.info('🚛 DEBUGGING: Raw vehicles received', { 
+      totalVehicles: allVehiclesRaw.length,
+      sampleVehicles: allVehiclesRaw.slice(0, 3).map(v => ({
+        id: v.id,
+        routeId: v.routeId,
+        tripId: v.tripId,
+        hasPosition: !!v.position
+      }))
+    });
     
     // Group vehicles by route_id
     const vehiclesByRoute = new Map<string, any[]>();
     let activeVehicleCount = 0;
+    let filteredOutCount = 0;
+    const filterReasons = { noTripId: 0, noRouteId: 0, emptyTripId: 0 };
     
     for (const vehicle of allVehiclesRaw) {
-      // Only cache vehicles with active trip_id
-      const hasActiveTripId = vehicle.tripId !== null && vehicle.tripId !== undefined;
-      if (!hasActiveTripId) {
-        continue;
-      }
-
-      activeVehicleCount++;
+      // Only cache vehicles with valid trip_id AND route_id (both are required for proper vehicle tracking)
+      const hasValidTripId = vehicle.tripId !== null && vehicle.tripId !== undefined && vehicle.tripId !== '';
       const routeId = vehicle.routeId?.toString();
-      if (routeId) {
+      
+      if (hasValidTripId && routeId) {
+        activeVehicleCount++;
         if (!vehiclesByRoute.has(routeId)) {
           vehiclesByRoute.set(routeId, []);
         }
         vehiclesByRoute.get(routeId)!.push(vehicle);
+      } else {
+        filteredOutCount++;
+        if (!hasValidTripId) {
+          if (vehicle.tripId === null || vehicle.tripId === undefined) {
+            filterReasons.noTripId++;
+          } else if (vehicle.tripId === '') {
+            filterReasons.emptyTripId++;
+          }
+        }
+        if (!routeId) {
+          filterReasons.noRouteId++;
+        }
       }
     }
+    
+    logger.info('🚛 DEBUGGING: Vehicle filtering results', {
+      totalVehicles: allVehiclesRaw.length,
+      activeVehicles: activeVehicleCount,
+      filteredOut: filteredOutCount,
+      filterReasons,
+      routesWithVehicles: vehiclesByRoute.size,
+      routeIds: Array.from(vehiclesByRoute.keys())
+    });
 
     logger.debug('Processed vehicle data', {
       totalVehicles: allVehiclesRaw.length,

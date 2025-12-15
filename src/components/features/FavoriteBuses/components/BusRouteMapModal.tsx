@@ -15,6 +15,8 @@ import L from 'leaflet';
 import { enhancedTranzyApi } from '../../../../services/tranzyApiService';
 import { agencyService } from '../../../../services/agencyService';
 import { logger } from '../../../../utils/logger';
+import { calculateDistance } from '../../../../utils/distanceUtils';
+import { arePointsOverlapping, calculateOverlapBounds, logOverlapDetection } from '../../../../utils/mapUtils';
 import type { FavoriteBusInfo } from '../../../../services/favoriteBusService';
 
 // Import Leaflet CSS
@@ -176,21 +178,7 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
     }
   };
 
-  // Calculate distance between two coordinates in meters
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lng2-lng1) * Math.PI/180;
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    return R * c;
-  };
 
   // Calculate map bounds to fit all points
   const getMapBounds = (): [[number, number], [number, number]] | null => {
@@ -211,36 +199,39 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
 
     if (points.length === 0) return null;
 
-    // Check if bus and user are very close (within 200 meters)
-    const busUserDistance = userLocation ? 
-      calculateDistance(bus.latitude, bus.longitude, userLocation.latitude, userLocation.longitude) : 
-      Infinity;
+    const busPosition = { latitude: bus.latitude, longitude: bus.longitude };
 
-    const isVeryClose = busUserDistance < 200; // 200 meters threshold
+    // Check for bus-user overlap
+    if (userLocation && arePointsOverlapping(busPosition, userLocation)) {
+      const bounds = calculateOverlapBounds(busPosition, userLocation);
+      const distance = calculateDistance(busPosition, userLocation);
+      
+      logOverlapDetection(
+        'Bus-user',
+        { ...busPosition, name: `Bus ${bus.label || bus.vehicleId}` },
+        { ...userLocation, name: 'User location' },
+        distance,
+        bounds
+      );
+      
+      return bounds;
+    }
 
-    if (isVeryClose && userLocation) {
-      // When very close, create a tight bounds around bus and user with fixed padding
-      const centerLat = (bus.latitude + userLocation.latitude) / 2;
-      const centerLng = (bus.longitude + userLocation.longitude) / 2;
+    // Check for bus-station overlap (for station view)
+    const targetStation = bus.stopSequence?.find(stop => stop.isClosestToUser);
+    if (targetStation?.coordinates && arePointsOverlapping(busPosition, targetStation.coordinates)) {
+      const bounds = calculateOverlapBounds(busPosition, targetStation.coordinates);
+      const distance = calculateDistance(busPosition, targetStation.coordinates);
       
-      // Use a fixed padding of ~100 meters in degrees (approximately 0.001 degrees = ~111 meters)
-      const padding = 0.002; // ~220 meters padding to ensure symbols don't overlap
+      logOverlapDetection(
+        'Bus-station',
+        { ...busPosition, name: `Bus ${bus.label || bus.vehicleId}` },
+        { ...targetStation.coordinates, name: targetStation.name },
+        distance,
+        bounds
+      );
       
-      logger.info('Bus and user are very close, applying zoom', {
-        distance: busUserDistance,
-        busLat: bus.latitude,
-        busLng: bus.longitude,
-        userLat: userLocation.latitude,
-        userLng: userLocation.longitude,
-        centerLat,
-        centerLng,
-        padding
-      });
-      
-      return [
-        [centerLat - padding, centerLng - padding],
-        [centerLat + padding, centerLng + padding],
-      ];
+      return bounds;
     }
 
     // Normal bounds calculation for when they're not very close
@@ -464,7 +455,7 @@ export const BusRouteMapModal: React.FC<BusRouteMapModalProps> = ({
               <Popup>
                 <Box>
                   <Typography variant="subtitle2" fontWeight="bold">
-                    Bus {bus.vehicleId}
+                    Bus {bus.label || bus.vehicleId}
                   </Typography>
                   <Typography variant="caption" display="block">
                     Route: {bus.routeName}

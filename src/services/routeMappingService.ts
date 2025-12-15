@@ -4,9 +4,9 @@ import { useConfigStore } from '../stores/configStore';
 import { logger } from '../utils/logger';
 
 export interface RouteMapping {
-  routeShortName: string; // What users see: "42", "43B", etc.
+  routeName: string; // What users see: "42", "43B", etc.
   routeId: string;        // Internal API ID: "40", "42", etc.
-  routeLongName: string;  // Full name: "P-ta M. Viteazul - Str. Campului"
+  routeDesc: string;  // Full name: "P-ta M. Viteazul - Str. Campului"
   routeDescription?: string;
   routeType: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 }
@@ -16,52 +16,52 @@ class RouteMappingService {
   private cacheExpiry = new Map<string, number>(); // cityName -> timestamp
 
   /**
-   * Get route ID from route short name (what users see)
+   * Get route ID from route name (what users see)
    * Example: "42" -> "40"
    */
-  async getRouteIdFromShortName(routeShortName: string, cityName: string): Promise<string | null> {
+  async getRouteIdFromName(routeName: string, cityName: string): Promise<string | null> {
     try {
       const mappings = await this.getRouteMappings(cityName);
-      const mapping = mappings.find(m => m.routeShortName === routeShortName);
+      const mapping = mappings.find(m => m.routeName === routeName);
       return mapping?.routeId || null;
     } catch (error) {
-      logger.error('Failed to get route ID from short name', { routeShortName, cityName, error });
+      logger.error('Failed to get route ID from route name', { routeName, cityName, error });
       return null;
     }
   }
 
   /**
-   * Get route short name from route ID (for display)
+   * Get route name from route ID (for display)
    * Example: "40" -> "42"
    */
-  async getRouteShortNameFromId(routeId: string, cityName: string): Promise<string | null> {
+  async getRouteNameFromId(routeId: string, cityName: string): Promise<string | null> {
     try {
       const mappings = await this.getRouteMappings(cityName);
       const mapping = mappings.find(m => m.routeId === routeId);
-      return mapping?.routeShortName || null;
+      return mapping?.routeName || null;
     } catch (error) {
-      logger.error('Failed to get route short name from ID', { routeId, cityName, error });
+      logger.error('Failed to get route name from ID', { routeId, cityName, error });
       return null;
     }
   }
 
   /**
-   * Get full route mapping from short name
-   * Example: "42" -> { routeShortName: "42", routeId: "40", routeLongName: "...", ... }
+   * Get full route mapping from route name
+   * Example: "42" -> { routeName: "42", routeId: "40", routeDesc: "...", ... }
    */
-  async getRouteMappingFromShortName(routeShortName: string, cityName: string): Promise<RouteMapping | null> {
+  async getRouteMappingFromName(routeName: string, cityName: string): Promise<RouteMapping | null> {
     try {
       const mappings = await this.getRouteMappings(cityName);
-      return mappings.find(m => m.routeShortName === routeShortName) || null;
+      return mappings.find(m => m.routeName === routeName) || null;
     } catch (error) {
-      logger.error('Failed to get route mapping from short name', { routeShortName, cityName, error });
+      logger.error('Failed to get route mapping from route name', { routeName, cityName, error });
       return null;
     }
   }
 
   /**
    * Get full route mapping from route ID
-   * Example: "40" -> { routeShortName: "42", routeId: "40", routeLongName: "...", ... }
+   * Example: "40" -> { routeName: "42", routeId: "40", routeDesc: "...", ... }
    */
   async getRouteMappingFromId(routeId: string, cityName: string): Promise<RouteMapping | null> {
     try {
@@ -74,79 +74,81 @@ class RouteMappingService {
   }
 
   /**
-   * Convert array of route short names to route IDs for API calls
+   * Convert array of route names to route IDs for API calls
    * Example: ["42", "43B"] -> ["40", "42"]
    */
-  async convertShortNamesToIds(routeShortNames: string[], cityName: string): Promise<string[]> {
+  async convertRouteNamesToIds(routeNames: string[], cityName: string): Promise<string[]> {
     try {
       const mappings = await this.getRouteMappings(cityName);
       const routeIds: string[] = [];
 
-      for (const shortName of routeShortNames) {
-        const mapping = mappings.find(m => m.routeShortName === shortName);
+      for (const routeName of routeNames) {
+        const mapping = mappings.find(m => m.routeName === routeName);
         if (mapping) {
           routeIds.push(mapping.routeId);
         } else {
-          logger.warn('No route ID found for short name', { shortName, cityName });
+          logger.warn('No route ID found for route name', { routeName, cityName });
         }
       }
 
       return routeIds;
     } catch (error) {
-      logger.error('Failed to convert short names to IDs', { routeShortNames, cityName, error });
+      logger.error('Failed to convert route names to IDs', { routeNames, cityName, error });
       return [];
     }
   }
 
   /**
-   * Convert array of route IDs to short names for display
+   * Convert array of route IDs to route names for display
    * Example: ["40", "42"] -> ["42", "43B"]
    */
-  async convertIdsToShortNames(routeIds: string[], cityName: string): Promise<string[]> {
+  async convertIdsToRouteNames(routeIds: string[], cityName: string): Promise<string[]> {
     try {
       const mappings = await this.getRouteMappings(cityName);
-      const shortNames: string[] = [];
+      const routeNames: string[] = [];
 
       for (const routeId of routeIds) {
         const mapping = mappings.find(m => m.routeId === routeId);
         if (mapping) {
-          shortNames.push(mapping.routeShortName);
+          routeNames.push(mapping.routeName);
         } else {
-          logger.warn('No short name found for route ID', { routeId, cityName });
+          logger.warn('No route name found for route ID', { routeId, cityName });
         }
       }
 
-      return shortNames;
+      return routeNames;
     } catch (error) {
-      logger.error('Failed to convert IDs to short names', { routeIds, cityName, error });
+      logger.error('Failed to convert IDs to route names', { routeIds, cityName, error });
       return [];
     }
   }
 
   /**
-   * Get all available routes for user selection (showing short names)
+   * Get all available routes for user selection (showing route names)
    */
   async getAvailableRoutesForUser(cityName: string): Promise<{
-    shortName: string;
-    longName: string;
+    id: string;
+    routeName: string;
+    routeDesc: string;
     description?: string;
     type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
   }[]> {
     try {
       const mappings = await this.getRouteMappings(cityName);
       return mappings.map(mapping => ({
-        shortName: mapping.routeShortName,
-        longName: mapping.routeLongName,
+        id: mapping.routeId,
+        routeName: mapping.routeName,
+        routeDesc: mapping.routeDesc,
         description: mapping.routeDescription,
         type: mapping.routeType
       })).sort((a, b) => {
         // Sort numerically if possible, otherwise alphabetically
-        const aNum = parseInt(a.shortName);
-        const bNum = parseInt(b.shortName);
+        const aNum = parseInt(a.routeName);
+        const bNum = parseInt(b.routeName);
         if (!isNaN(aNum) && !isNaN(bNum)) {
           return aNum - bNum;
         }
-        return a.shortName.localeCompare(b.shortName);
+        return a.routeName.localeCompare(b.routeName);
       });
     } catch (error) {
       logger.error('Failed to get available routes for user', { cityName, error });
@@ -187,10 +189,10 @@ class RouteMappingService {
 
       const routes = await enhancedTranzyApi.getRoutes(agencyId);
       const mappings: RouteMapping[] = routes.map(route => ({
-        routeShortName: route.shortName || route.id,
+        routeName: route.routeName || route.id,
         routeId: route.id,
-        routeLongName: route.longName || route.shortName || `Route ${route.id}`,
-        routeDescription: route.longName, // Use longName for description
+        routeDesc: route.routeDesc || route.routeName || `Route ${route.id}`,
+        routeDescription: route.routeDesc, // Use routeDesc for description
         routeType: route.type || 'bus'
       }));
 
@@ -202,7 +204,7 @@ class RouteMappingService {
         cityName, 
         count: mappings.length,
         cacheDuration: `${this.getCacheDuration() / 1000}s`,
-        sample: mappings.slice(0, 3).map(m => `${m.routeShortName} -> ${m.routeId}`)
+        sample: mappings.slice(0, 3).map(m => `${m.routeName} -> ${m.routeId}`)
       });
 
       return mappings;
@@ -238,23 +240,23 @@ class RouteMappingService {
   }
 
   /**
-   * Validate that route short names exist
+   * Validate that route names exist
    */
-  async validateRouteShortNames(routeShortNames: string[], cityName: string): Promise<{
+  async validateRouteNames(routeNames: string[], cityName: string): Promise<{
     valid: string[];
     invalid: string[];
   }> {
     try {
       const mappings = await this.getRouteMappings(cityName);
-      const validShortNames = mappings.map(m => m.routeShortName);
+      const validRouteNames = mappings.map(m => m.routeName);
       
-      const valid = routeShortNames.filter(name => validShortNames.includes(name));
-      const invalid = routeShortNames.filter(name => !validShortNames.includes(name));
+      const valid = routeNames.filter(name => validRouteNames.includes(name));
+      const invalid = routeNames.filter(name => !validRouteNames.includes(name));
 
       return { valid, invalid };
     } catch (error) {
-      logger.error('Failed to validate route short names', { routeShortNames, cityName, error });
-      return { valid: [], invalid: routeShortNames };
+      logger.error('Failed to validate route names', { routeNames, cityName, error });
+      return { valid: [], invalid: routeNames };
     }
   }
 }

@@ -1,19 +1,19 @@
-import type { Coordinates, Station, EnhancedBusInfo } from '../types';
+import type { Coordinates, Station, EnhancedVehicleInfo } from '../types';
 import { enhancedTranzyApi } from './tranzyApiService';
 import { agencyService } from './agencyService';
 import { logger } from '../utils/logger';
 
 export interface RouteConnection {
-  firstBus: EnhancedBusInfo;
+  firstVehicle: EnhancedVehicleInfo;
   connectionStation: Station;
-  secondBus: EnhancedBusInfo;
+  secondVehicle: EnhancedVehicleInfo;
   transferTime: number; // minutes
   totalTravelTime: number; // minutes
   arrivalTime: Date;
 }
 
 export interface DirectRoute {
-  bus: EnhancedBusInfo;
+  vehicle: EnhancedVehicleInfo;
   arrivalTime: Date;
 }
 
@@ -97,8 +97,8 @@ class RoutePlanningService {
     }
   }
 
-  private async getBusesAtStations(stations: Station[], cityName: string): Promise<EnhancedBusInfo[]> {
-    const allBuses: EnhancedBusInfo[] = [];
+  private async getBusesAtStations(stations: Station[], cityName: string): Promise<EnhancedVehicleInfo[]> {
+    const allVehicles: EnhancedVehicleInfo[] = [];
     
     // Get agency ID once for all stations
     const agencyId = await agencyService.getAgencyIdForCity(cityName);
@@ -185,13 +185,13 @@ class RoutePlanningService {
             
             const minutesAway = Math.max(0, Math.round((estimatedArrival.getTime() - now.getTime()) / 60000));
             
-            // Only include buses arriving within the next 60 minutes
+            // Only include vehicles arriving within the next 60 minutes
             if (minutesAway <= 60) {
-              allBuses.push({
+              allVehicles.push({
                 id: liveVehicle?.id || `schedule-${trip.id}-${station.id}`,
-                route: route.shortName || route.id,
+                route: route.routeName || route.id,
                 routeId: route.id,
-                destination: trip.headsign || route.longName || 'Unknown',
+                destination: trip.headsign || route.routeDesc || 'Unknown',
                 direction: this.determineDirectionFromTrip(trip, station),
                 routeType: route.type,
                 scheduledArrival: this.parseTimeToDate(stopTime.arrivalTime),
@@ -234,15 +234,15 @@ class RoutePlanningService {
     }
     
     // Sort by arrival time and remove duplicates
-    const sortedBuses = allBuses
+    const sortedVehicles = allVehicles
       .sort((a, b) => a.minutesAway - b.minutesAway)
-      .slice(0, 20); // Limit to 20 buses
+      .slice(0, 20); // Limit to 20 vehicles
     
-    logger.debug('Found buses at stations', { count: sortedBuses.length, agencyId, city: cityName });
-    return sortedBuses;
+    logger.debug('Found vehicles at stations', { count: sortedVehicles.length, agencyId, city: cityName });
+    return sortedVehicles;
   }
 
-  private convertVehicleToEnhancedBusInfo(vehicle: any, station: Station): EnhancedBusInfo {
+  private convertVehicleToEnhancedVehicleInfo(vehicle: any, station: Station): EnhancedVehicleInfo {
     const now = new Date();
     const estimatedArrival = new Date(now.getTime() + Math.random() * 30 * 60000); // Random 0-30 min
     
@@ -269,7 +269,7 @@ class RoutePlanningService {
   }
 
   private determineRouteDirection(
-    bus: EnhancedBusInfo,
+    vehicle: EnhancedVehicleInfo,
     targetLocation: Coordinates
   ): boolean {
     // This is a simplified version - in reality, you'd need route shape data
@@ -326,7 +326,7 @@ class RoutePlanningService {
   }
 
   private findDirectRoutes(
-    buses: EnhancedBusInfo[],
+    vehicles: EnhancedVehicleInfo[],
     destination: 'work' | 'home',
     targetLocation: Coordinates
   ): DirectRoute[] {
@@ -343,7 +343,7 @@ class RoutePlanningService {
   }
 
   private async findConnectionRoutes(
-    originBuses: EnhancedBusInfo[],
+    originVehicles: EnhancedVehicleInfo[],
     targetLocation: Coordinates,
     destination: 'work' | 'home',
     cityName: string

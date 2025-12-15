@@ -17,8 +17,8 @@ export const DebugFavorites: React.FC = () => {
     
     if (availableRoutes.length > 0) {
       // Find the problematic routes
-      const route42 = availableRoutes.find(r => r.shortName === '42');
-      const route43B = availableRoutes.find(r => r.shortName === '43B');
+      const route42 = availableRoutes.find(r => r.routeName === '42');
+      const route43B = availableRoutes.find(r => r.routeName === '43B');
       const routeId40 = availableRoutes.find(r => (r as any).id === '40');
       const routeId42 = availableRoutes.find(r => (r as any).id === '42');
       
@@ -35,7 +35,7 @@ export const DebugFavorites: React.FC = () => {
           const route = availableRoutes.find(r => (r as any).id === storedId);
           logger.debug(`${index + 1}. Stored ID "${storedId}" → Route`, route);
           if (route) {
-            logger.debug(`Shows as: "${route.shortName}" (${route.name})`);
+            logger.debug(`Shows as: "${route.routeName}" (ID: ${route.id})`);
           }
         });
       }
@@ -43,7 +43,7 @@ export const DebugFavorites: React.FC = () => {
       // Show first 10 routes for context
       logger.debug('First 10 Available Routes');
       availableRoutes.slice(0, 10).forEach(route => {
-        logger.debug(`ID: ${(route as any).id.padEnd(3)} | Short: ${(route.shortName || 'N/A').padEnd(6)} | Name: ${route.name}`);
+        logger.debug(`ID: ${route.id.padEnd(3)} | Route: ${(route.routeName || 'N/A').padEnd(6)} | Desc: ${route.routeDesc}`);
       });
     }
   };
@@ -53,11 +53,11 @@ export const DebugFavorites: React.FC = () => {
     logger.debug('='.repeat(50));
     
     // Find route "42" (should have ID "40")
-    const route42 = availableRoutes.find(r => r.shortName === '42');
+    const route42 = availableRoutes.find(r => r.routeName === '42');
     if (route42) {
       logger.debug('Found route "42"', route42);
       logger.debug(`When user clicks "42", we should store ID: "${(route42 as any).id}"`);
-      logger.debug(`When displaying ID "${(route42 as any).id}", we should show: "${route42.shortName}"`);
+      logger.debug(`When displaying ID "${(route42 as any).id}", we should show: "${route42.routeName}"`);
     }
     
     // Test what happens if we store the wrong ID
@@ -65,7 +65,7 @@ export const DebugFavorites: React.FC = () => {
     if (routeId42) {
       logger.debug('If we mistakenly store ID "42"');
       logger.debug('Route with ID "42"', routeId42);
-      logger.debug(`Would display as: "${routeId42.shortName}" (WRONG!)`);
+      logger.debug(`Would display as: "${routeId42.routeName}" (WRONG!)`);
     }
   };
 
@@ -80,7 +80,7 @@ export const DebugFavorites: React.FC = () => {
     const validRoutes = config.favoriteBuses.filter(id => {
       const route = availableRoutes.find(r => (r as any).id === id);
       const isValid = !!route;
-      logger.debug(`ID "${id}" → ${isValid ? 'Valid' : 'Invalid'} ${route ? `(${route.shortName})` : ''}`);
+      logger.debug(`ID "${id}" → ${isValid ? 'Valid' : 'Invalid'} ${route ? `(${route.routeName})` : ''}`);
       return isValid;
     });
     

@@ -22,10 +22,11 @@ export interface BusStopInfo {
 
 export interface FavoriteBusInfo {
   routeName: string; // route_short_name (e.g., "100", "101", "43B")
-  routeLongName?: string; // route_long_name (e.g., "Piața Unirii - Mănăștur")
+  routeDesc?: string; // route_long_name (e.g., "Piața Unirii - Mănăștur")
   routeType: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
   vehicleId: string; // Live vehicle ID
   tripId: string; // Active trip ID (indicates direction: "40_0", "40_1", etc.)
+  label?: string; // Vehicle label from API (e.g., "CJ-01-ABC")
   destination?: string; // Where the bus is going (from trip_headsign)
   latitude: number; // Current vehicle position
   longitude: number;
@@ -87,7 +88,7 @@ class FavoriteBusService {
       const trip = trips.find(t => t.id === tripId);
       
       if (!trip || !trip.shapeId) {
-        logger.warn('No shape_id found for trip', { tripId });
+        logger.debug('No shape_id found for trip', { tripId });
         return null;
       }
 
@@ -319,7 +320,7 @@ class FavoriteBusService {
   }
 
   async getFavoriteBusInfo(
-    favoriteRoutes: Array<{id: string, routeName: string, longName?: string}>,
+    favoriteRoutes: Array<{id: string, routeName: string, routeDesc?: string}>,
     cityName: string,
     userLocation?: { latitude: number; longitude: number } | null
   ): Promise<FavoriteBusResult> {
@@ -362,38 +363,42 @@ class FavoriteBusService {
 
       // Get agency ID for the city
       const agencyId = await agencyService.getAgencyIdForCity(cityName);
+      logger.info('🔍 DEBUGGING: Agency lookup', { cityName, agencyId });
       if (!agencyId) {
-        logger.warn('No agency found for city', { cityName });
+        logger.warn('❌ No agency found for city', { cityName });
         return {
           favoriteBuses: [],
           lastUpdate: new Date()
         };
       }
 
-      // Get route mappings for display info and correct route IDs
+      // Handle Tranzy API vehicle lookup: vehicles use internal route IDs in their route_id field
+      // We need to map from user's route short names to internal route IDs for vehicle lookup
       const routeMappings = new Map<string, any>();
-      const correctedFavoriteRoutes: Array<{id: string, routeName: string, longName?: string}> = [];
+      const correctedFavoriteRoutes: Array<{id: string, routeName: string, routeDesc?: string}> = [];
       
       for (const favoriteRoute of favoriteRoutes) {
-        const mapping = await routeMappingService.getRouteMappingFromShortName(favoriteRoute.routeName, cityName);
+        const mapping = await routeMappingService.getRouteMappingFromName(favoriteRoute.routeName, cityName);
         if (mapping) {
-          // Use the correct route ID from the mapping, not the one from favorites config
+          // CORRECT: Vehicles API uses internal route_id field (e.g., "40")
+          // User sees route short name (e.g., "42"), but we need internal ID for vehicle lookup
           const correctedRoute = {
-            id: mapping.routeId, // This is the correct API route ID
-            routeName: favoriteRoute.routeName, // Keep the user-friendly route name
-            longName: favoriteRoute.longName // Pass through the full route description
+            id: mapping.routeId, // Use internal route ID for vehicle lookup (e.g., "40")
+            routeName: mapping.routeName, // Use route name for display (e.g., "42")
+            routeDesc: mapping.routeDesc // Use mapping's route description for display
           };
           correctedFavoriteRoutes.push(correctedRoute);
-          routeMappings.set(mapping.routeId, mapping);
+          routeMappings.set(mapping.routeId, mapping); // Key by internal route ID for consistency
           
-          logger.debug('Route mapping', {
+          logger.info('🗺️ DEBUGGING: Route mapping found', {
             userRouteName: favoriteRoute.routeName,
             configRouteId: favoriteRoute.id,
-            correctApiRouteId: mapping.routeId,
-            corrected: favoriteRoute.id !== mapping.routeId
+            apiInternalRouteId: mapping.routeId,
+            vehicleLookupId: mapping.routeId,
+            explanation: "Vehicles API uses internal route_id field, not route_name"
           });
         } else {
-          logger.warn('No route mapping found for favorite route', { 
+          logger.warn('❌ DEBUGGING: No route mapping found for favorite route', { 
             routeName: favoriteRoute.routeName, 
             configId: favoriteRoute.id 
           });
@@ -402,10 +407,11 @@ class FavoriteBusService {
         }
       }
       
-      logger.debug('Corrected favorite routes', {
+      logger.info('🔄 DEBUGGING: Route correction summary', {
         original: favoriteRoutes,
         corrected: correctedFavoriteRoutes,
-        mappingCount: routeMappings.size
+        mappingCount: routeMappings.size,
+        explanation: "Using internal route_id for vehicle lookup (vehicles API uses numeric route IDs)"
       });
 
       // Get stations for finding nearest stations to vehicles
@@ -471,12 +477,18 @@ class FavoriteBusService {
         const cacheStats = liveVehicleService.getCacheStats();
         logger.debug('Vehicle cache stats', cacheStats);
         
-        logger.debug('Vehicles for favorite routes', {
+        logger.info('🚌 DEBUGGING: Vehicle cache lookup results', {
           requestedRoutes: favoriteRouteIds,
           routesWithVehicles: Array.from(vehiclesByRoute.keys()),
           vehicleBreakdown: Array.from(vehiclesByRoute.entries()).map(([routeId, vehicles]) => ({
             routeId,
-            vehicleCount: vehicles.length
+            vehicleCount: vehicles.length,
+            sampleVehicle: vehicles[0] ? {
+              id: vehicles[0].id,
+              tripId: vehicles[0].tripId,
+              routeId: vehicles[0].routeId,
+              hasPosition: !!vehicles[0].position
+            } : null
           }))
         });
         
@@ -525,12 +537,12 @@ class FavoriteBusService {
             });
 
             // Get destination from trip data
-            const tripData = tripsMap.get(vehicle.tripId!);
-            const destination = tripData?.headsign || undefined;
+            const tripData = tripsMap.get(vehicle.tripId);
+            const destination = tripData?.headsign || routeMapping?.routeDesc || undefined;
             const direction = tripData?.direction || undefined;
 
             // Get stop sequence for this trip
-            const tripStopTimes = stopTimesMap.get(vehicle.tripId!) || [];
+            const tripStopTimes = stopTimesMap.get(vehicle.tripId) || [];
             
             // Find current/next station in route path
             const currentStation = this.findCurrentStation(
@@ -551,7 +563,7 @@ class FavoriteBusService {
             }
 
             const stopSequence = this.buildStopSequence(
-              vehicle.tripId!,
+              vehicle.tripId,
               tripStopTimes,
               stations,
               { latitude: vehicle.position.latitude, longitude: vehicle.position.longitude },
@@ -566,7 +578,7 @@ class FavoriteBusService {
               const routeDistance = await this.calculateDistanceAlongRoute(
                 userLocation,
                 { latitude: vehicle.position.latitude, longitude: vehicle.position.longitude },
-                vehicle.tripId!,
+                vehicle.tripId,
                 agencyId
               );
               distanceFromUser = routeDistance || undefined;
@@ -579,10 +591,11 @@ class FavoriteBusService {
 
             const favoriteBus: FavoriteBusInfo = {
               routeName: routeShortName, // route_short_name (e.g., "100", "101")
-              routeLongName: favoriteRoute.longName || routeMapping?.routeLongName, // route_long_name (e.g., "Piața Unirii - Mănăștur")
+              routeDesc: favoriteRoute.routeDesc || routeMapping?.routeDesc, // route_long_name (e.g., "Piața Unirii - Mănăștur")
               routeType: routeMapping?.routeType || 'bus',
               vehicleId: vehicle.id,
-              tripId: vehicle.tripId!, // We know it's not null due to filtering
+              tripId: vehicle.tripId, // Valid tripId guaranteed by filtering
+              label: vehicle.label, // Vehicle label from API
               destination,
               latitude: vehicle.position.latitude,
               longitude: vehicle.position.longitude,

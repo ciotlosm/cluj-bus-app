@@ -268,3 +268,42 @@ export const isWithinClujBounds = (coords: Coordinates): boolean => {
     coords.longitude <= clujBounds.east
   );
 };
+
+/**
+ * Get effective location with fallback priority:
+ * 1. Current GPS location
+ * 2. Home location
+ * 3. Work location  
+ * 4. Default/fallback location
+ * 5. Cluj-Napoca center as final fallback
+ */
+export const getEffectiveLocation = (
+  currentLocation: Coordinates | null,
+  homeLocation?: Coordinates,
+  workLocation?: Coordinates,
+  defaultLocation?: Coordinates
+): Coordinates | null => {
+  // Priority 1: Current GPS location
+  if (currentLocation && isValidCoordinates(currentLocation)) {
+    return currentLocation;
+  }
+
+  // Priority 2: Home location
+  if (homeLocation && isValidCoordinates(homeLocation)) {
+    return homeLocation;
+  }
+
+  // Priority 3: Work location
+  if (workLocation && isValidCoordinates(workLocation)) {
+    return workLocation;
+  }
+
+  // Priority 4: Default/fallback location
+  if (defaultLocation && isValidCoordinates(defaultLocation)) {
+    return defaultLocation;
+  }
+
+  // Priority 5: Cluj-Napoca center as final fallback
+  const clujCenter: Coordinates = { latitude: 46.7712, longitude: 23.6236 };
+  return clujCenter;
+};

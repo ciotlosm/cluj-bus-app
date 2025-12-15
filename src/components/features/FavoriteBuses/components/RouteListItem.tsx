@@ -18,8 +18,9 @@ import {
 import { getRouteTypeInfo } from '../../../../utils/routeUtils';
 // Define the route type used by the store
 type StoreRoute = {
-  shortName: string; // route_short_name: What users see and interact with ("100", "101")
-  longName?: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
+  id: string; // Internal route ID for API calls ("40", "42", etc.)
+  routeName: string; // route_short_name: What users see and interact with ("100", "101")
+  routeDesc?: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
   type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 };
 
@@ -74,7 +75,7 @@ export const RouteListItem: React.FC<RouteListItemProps> = ({
         primary={
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              {route.shortName}
+              {route.routeName}
             </Typography>
             <Chip
               label={routeTypeInfo.label}
@@ -112,7 +113,7 @@ export const RouteListItem: React.FC<RouteListItemProps> = ({
               maxWidth: 300,
             }}
           >
-            {route.longName || 'No description available'}
+            {route.routeDesc || 'No description available'}
           </Typography>
         }
       />
@@ -122,7 +123,7 @@ export const RouteListItem: React.FC<RouteListItemProps> = ({
           edge="end"
           checked={isFavorite}
           onChange={() => {
-            onToggle(route.shortName).catch(error => {
+            onToggle(route.routeName).catch(error => {
               console.error('Failed to toggle route:', error);
             });
           }}

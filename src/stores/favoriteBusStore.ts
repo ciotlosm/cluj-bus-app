@@ -12,9 +12,9 @@ export interface FavoriteBusStore {
   // Data
   favoriteBusResult: FavoriteBusResult | null;
   availableRoutes: { 
-    shortName: string; // PRIMARY: What users see and interact with
-    name: string; 
-    longName: string; 
+    id: string; // Internal route ID for API calls ("40", "42", etc.)
+    routeName: string; // PRIMARY: What users see and interact with
+    routeDesc: string; 
     description?: string; 
     type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
   }[];
@@ -168,7 +168,11 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
 
         try {
           // Check if we have cached vehicle data that we can use
-          const agencyId = parseInt(config.agencyId || '2'); // Default to CTP Cluj
+          const agencyId = config.agencyId ? parseInt(config.agencyId) : null;
+          if (!agencyId) {
+            logger.warn('No agency ID configured for cache refresh', {}, 'FAVORITES');
+            return;
+          }
           const vehicleCacheKey = CacheKeys.vehicles(agencyId);
           
           // Try to get cached data (even if stale)
@@ -258,9 +262,9 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
           
           // Transform routes to the expected format
           const availableRoutes = routes.map(route => ({
-            shortName: route.shortName, // route_short_name: What users see and interact with ("100", "101")
-            name: route.shortName, // Use shortName as name for compatibility
-            longName: route.longName, // route_long_name: Full description ("Piața Unirii - Mănăștur")
+            id: route.id, // Internal route ID for API calls ("40", "42", etc.)
+            routeName: route.routeName, // route_short_name: What users see and interact with ("100", "101")
+            routeDesc: route.routeDesc, // route_long_name: Full description ("Piața Unirii - Mănăștur")
             type: route.type as 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other'
           }));
 
@@ -422,7 +426,11 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
         // Clean up existing subscriptions
         get().unsubscribeFromCacheChanges();
 
-        const agencyId = parseInt(config.agencyId || '2');
+        const agencyId = config.agencyId ? parseInt(config.agencyId) : null;
+        if (!agencyId) {
+          logger.warn('No agency ID configured for cache subscription', {}, 'FAVORITES');
+          return;
+        }
         const vehicleCacheKey = CacheKeys.vehicles(agencyId);
 
         // Subscribe to vehicle cache updates

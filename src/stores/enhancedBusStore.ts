@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { ErrorState, EnhancedBusInfo } from '../types';
+import type { ErrorState, EnhancedVehicleInfo } from '../types';
 import { useConfigStore } from './configStore';
 import { enhancedTranzyApi } from '../services/tranzyApiService';
 import { logger } from '../utils/logger';
 
 export interface EnhancedBusStore {
   // Data
-  buses: EnhancedBusInfo[];
+  buses: EnhancedVehicleInfo[]; // Note: keeping 'buses' name for UI compatibility
   lastUpdate: Date | null;
   lastApiUpdate: Date | null; // When we last received fresh data from API
   lastCacheUpdate: Date | null; // When we last updated cache
@@ -86,39 +86,39 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
           
           const agencyId = parseInt(config.agencyId);
 
-          // Get enhanced bus information
-          const enhancedBuses = await enhancedTranzyApi.getEnhancedBusInfo(
+          // Get enhanced vehicle information
+          const enhancedVehicles = await enhancedTranzyApi.getEnhancedVehicleInfo(
             agencyId,
             undefined, // stopId - get all stops
             undefined, // routeId - get all routes
             forceRefresh
           );
 
-          // Classify buses by direction using user locations
-          const classifiedBuses = enhancedBuses.map((bus) => {
+          // Classify vehicles by direction using user locations
+          const classifiedVehicles = enhancedVehicles.map((vehicle) => {
             if (!config.homeLocation || !config.workLocation) {
-              return { ...bus, direction: 'unknown' as const };
+              return { ...vehicle, direction: 'unknown' as const };
             }
 
-            // Calculate distances from bus station to home and work
+            // Calculate distances from vehicle station to home and work
             const distanceToHome = get().calculateDistance(
-              bus.station.coordinates, 
+              vehicle.station.coordinates, 
               config.homeLocation
             );
             const distanceToWork = get().calculateDistance(
-              bus.station.coordinates, 
+              vehicle.station.coordinates, 
               config.workLocation
             );
 
-            // If station is closer to home, buses likely go to work (and vice versa)
+            // If station is closer to home, vehicles likely go to work (and vice versa)
             const direction: 'work' | 'home' | 'unknown' = distanceToHome < distanceToWork ? 'work' : 'home';
             
-            return { ...bus, direction };
+            return { ...vehicle, direction };
           });
 
           const now = new Date();
           set({
-            buses: classifiedBuses,
+            buses: classifiedVehicles,
             lastUpdate: now,
             lastApiUpdate: now, // Fresh API data received
             lastCacheUpdate: now, // Cache updated with fresh data
@@ -128,10 +128,10 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
           // Update cache stats
           get().getCacheStats();
 
-          logger.info('Enhanced buses refreshed', {
-            busCount: classifiedBuses.length,
-            liveCount: classifiedBuses.filter(b => b.isLive).length,
-            scheduledCount: classifiedBuses.filter(b => b.isScheduled).length,
+          logger.info('Enhanced vehicles refreshed', {
+            vehicleCount: classifiedVehicles.length,
+            liveCount: classifiedVehicles.filter(v => v.isLive).length,
+            scheduledCount: classifiedVehicles.filter(v => v.isScheduled).length,
             forceRefresh,
           }, 'BUS_STORE');
 

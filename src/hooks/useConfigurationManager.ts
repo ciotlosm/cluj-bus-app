@@ -13,6 +13,7 @@ interface ValidationErrors {
   googleMapsApiKey?: string;
   refreshRate?: string;
   staleDataThreshold?: string;
+  maxVehiclesPerStation?: string;
 }
 
 export interface UseConfigurationManagerReturn {
@@ -70,6 +71,7 @@ export const useConfigurationManager = (
     refreshRate: config?.refreshRate || 30000,
     staleDataThreshold: config?.staleDataThreshold || 2,
     logLevel: config?.logLevel ?? 1, // Default to INFO level
+    maxVehiclesPerStation: config?.maxVehiclesPerStation || 5,
   });
   
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -114,6 +116,10 @@ export const useConfigurationManager = (
     
     if (formData.staleDataThreshold && (formData.staleDataThreshold < 1 || formData.staleDataThreshold > 30)) {
       newErrors.staleDataThreshold = 'Stale data threshold must be between 1 and 30 minutes';
+    }
+    
+    if (formData.maxVehiclesPerStation && (formData.maxVehiclesPerStation < 1 || formData.maxVehiclesPerStation > 20)) {
+      newErrors.maxVehiclesPerStation = 'Max vehicles per station must be between 1 and 20';
     }
     
     setErrors(newErrors);

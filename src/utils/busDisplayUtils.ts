@@ -56,11 +56,11 @@ export const getUrgencyColor = (minutesAway: number, theme?: any) => {
 };
 
 export const getDisplayRouteName = (bus: FavoriteBusInfo): string => {
-  const { routeName, routeLongName } = bus;
+  const { routeName, routeDesc } = bus;
   
-  // If routeLongName exists and is different from routeName, use it
-  if (routeLongName && routeLongName !== routeName && !routeLongName.startsWith('Route ')) {
-    return routeLongName;
+  // If routeDesc exists and is different from routeName, use it
+  if (routeDesc && routeDesc !== routeName && !routeDesc.startsWith('Route ')) {
+    return routeDesc;
   }
   
   // Otherwise, create a proper label
@@ -72,12 +72,12 @@ export const getDisplayRouteName = (bus: FavoriteBusInfo): string => {
 };
 
 export const getAvatarRouteNumber = (bus: FavoriteBusInfo): string => {
-  const { routeName, routeLongName } = bus;
+  const { routeName, routeDesc } = bus;
   
-  // Strategy 1: Extract route number from routeLongName if it contains meaningful route info
-  if (routeLongName && routeLongName !== routeName) {
-    // Look for route numbers in the routeLongName (e.g., "Route 42", "42", "42A", etc.)
-    const routeNumberMatch = routeLongName.match(/\b(\d+[A-Z]?)\b/);
+  // Strategy 1: Extract route number from routeDesc if it contains meaningful route info
+  if (routeDesc && routeDesc !== routeName) {
+    // Look for route numbers in the routeDesc (e.g., "Route 42", "42", "42A", etc.)
+    const routeNumberMatch = routeDesc.match(/\b(\d+[A-Z]?)\b/);
     if (routeNumberMatch) {
       return routeNumberMatch[1];
     }
@@ -101,7 +101,7 @@ export const getAvatarRouteNumber = (bus: FavoriteBusInfo): string => {
 export const getRouteLabel = (routeId: string, availableRoutes: any[]): string => {
   const route = availableRoutes.find(r => r.id === routeId);
   if (route) {
-    return route.shortName || route.name || `Route ${routeId}`;
+    return route.routeName || `Route ${routeId}`;
   }
   return `Route ${routeId}`;
 };

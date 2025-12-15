@@ -8,8 +8,9 @@ import {
 import { RouteListItem } from './RouteListItem';
 // Define the route type used by the store
 type StoreRoute = {
-  shortName: string; // route_short_name: What users see and interact with ("100", "101")
-  longName?: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
+  id: string; // Internal route ID for API calls ("40", "42", etc.)
+  routeName: string; // route_short_name: What users see and interact with ("100", "101")
+  routeDesc?: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
   type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 };
 
@@ -55,7 +56,7 @@ export const RoutesList: React.FC<RoutesListProps> = ({
         <List sx={{ py: 0 }}>
           {routes.map((route, index) => (
             <RouteListItem
-              key={route.shortName}
+              key={route.routeName}
               route={route}
               isFavorite={isFavoriteList}
               onToggle={onToggleRoute}

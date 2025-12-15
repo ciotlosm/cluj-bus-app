@@ -52,7 +52,7 @@ class NominatimGeocodingService implements GeocodingService {
         confidence: parseFloat(item.importance || '0.5'),
       }));
     } catch (error) {
-      console.error('Address search failed:', error);
+      logger.error('Address search failed', { error }, 'GEOCODING');
       return [];
     }
   }
@@ -86,7 +86,7 @@ class NominatimGeocodingService implements GeocodingService {
         confidence: parseFloat(data.importance || '0.5'),
       };
     } catch (error) {
-      console.error('Reverse geocoding failed:', error);
+      logger.error('Reverse geocoding failed', { error }, 'GEOCODING');
       return null;
     }
   }

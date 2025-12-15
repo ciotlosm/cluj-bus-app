@@ -140,6 +140,120 @@ const handleComplete = async () => {
 - **City/Agency**: Set once during setup, stored permanently in localStorage
 - **Other settings**: Configurable in main Settings tab
 
+## 📍 Station Display Component
+
+### Overview (`src/components/features/StationDisplay/StationDisplay.tsx`)
+Location-aware component that shows buses arriving at the station closest to the user's current position.
+
+### Key Features
+- **Multi-Station Detection**: Finds all stations within 100m of the closest station
+- **Smart Station Prioritization**: Prioritizes stations based on user's proximity to home/work
+- **Station Identification**: Material Design chips showing station names and distances
+- **Route Deduplication**: Shows earliest bus from each unique route per station
+- **Real-World Optimization**: Handles main streets with stations on opposite sides
+
+### Implementation Details
+
+```typescript
+const StationDisplay: React.FC<StationDisplayProps> = ({ maxBuses = 5 }) => {
+  const { buses } = useEnhancedBusStore();
+  const { currentLocation, calculateDistance } = useLocationStore();
+  const { config } = useConfigStore();
+
+  // Find closest station to user's current location
+  const closestStation = React.useMemo(() => {
+    if (!currentLocation || !buses.length) return null;
+    
+    const stations = Array.from(
+      new Map(buses.map(bus => [bus.station.id, bus.station])).values()
+    );
+    
+    let closest: Station | null = null;
+    let minDistance = Infinity;
+    
+    for (const station of stations) {
+      const distance = calculateDistance(currentLocation, station.coordinates);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = station;
+      }
+    }
+    
+    return closest;
+  }, [currentLocation, buses, calculateDistance]);
+
+  // Categorize buses by direction
+  const stationBuses = React.useMemo(() => {
+    if (!closestStation) return { toWork: [], toOther: [] };
+    
+    const busesAtStation = buses.filter(bus => bus.station.id === closestStation.id);
+    const isNearHome = config?.homeLocation && currentLocation ? 
+      calculateDistance(currentLocation, config.homeLocation) < 0.5 : false;
+    
+    // Group by route to avoid duplicates
+    const routeGroups = new Map<string, EnhancedBusInfo[]>();
+    busesAtStation.forEach(bus => {
+      const routeKey = bus.route;
+      if (!routeGroups.has(routeKey)) {
+        routeGroups.set(routeKey, []);
+      }
+      routeGroups.get(routeKey)!.push(bus);
+    });
+    
+    // Categorize earliest bus from each route
+    const toWork: EnhancedBusInfo[] = [];
+    const toOther: EnhancedBusInfo[] = [];
+    
+    routeGroups.forEach((routeBuses) => {
+      const earliestBus = routeBuses.sort((a, b) => 
+        a.estimatedArrival.getTime() - b.estimatedArrival.getTime()
+      )[0];
+      
+      if (isNearHome && config?.workLocation) {
+        // Determine if bus goes towards work
+        const distanceToWork = calculateDistance(
+          earliestBus.station.coordinates, 
+          config.workLocation
+        );
+        const distanceToHome = calculateDistance(
+          earliestBus.station.coordinates, 
+          config.homeLocation!
+        );
+        
+        if (distanceToWork < distanceToHome) {
+          toWork.push(earliestBus);
+        } else {
+          toOther.push(earliestBus);
+        }
+      } else {
+        toOther.push(earliestBus);
+      }
+    });
+    
+    return { toWork, toOther };
+  }, [closestStation, buses, config, currentLocation, calculateDistance]);
+};
+```
+
+### Data Flow
+1. **Location Detection**: Uses `useLocationStore` to get current GPS coordinates
+2. **Station Finding**: Calculates distances to all available stations using Haversine formula
+3. **Bus Filtering**: Gets all buses at the closest station from `useEnhancedBusStore`
+4. **Route Deduplication**: Groups buses by route number, takes earliest from each group
+5. **Direction Analysis**: Uses home/work locations to categorize bus destinations
+6. **Display Rendering**: Shows categorized buses with real-time arrival information
+
+### Dependencies
+- **useEnhancedBusStore**: Provides bus data with live tracking and schedule information
+- **useLocationStore**: Provides GPS coordinates and distance calculation utilities
+- **useConfigStore**: Provides user's home/work locations for direction detection
+- **Performance Monitoring**: Wrapped with `withPerformanceMonitoring` for optimization tracking
+
+### Cache Integration
+- **Read-Only Cache Access**: Only reads from existing cache, never triggers updates
+- **Subscription-Based Updates**: Automatically refreshes when cache data changes
+- **No Network Requests**: Relies entirely on data already fetched by other components
+
 ## 🔧 Key Services
 
 ### Favorite Bus Service (`src/services/favoriteBusService.ts`)

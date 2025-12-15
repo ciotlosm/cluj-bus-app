@@ -90,8 +90,8 @@ export interface TranzyShapeResponse {
 export interface Route {
   id: string;
   agencyId: string;
-  shortName: string;
-  longName: string;
+  routeName: string;
+  routeDesc: string;
   type: 'tram' | 'metro' | 'rail' | 'bus' | 'ferry' | 'trolleybus' | 'other';
   color?: string;
   textColor?: string;
@@ -122,6 +122,9 @@ export interface StopTime {
   isDropOffAvailable: boolean;
 }
 
+// Alias for conceptual clarity - StopTime represents vehicle route paths
+export type VehicleRoutePath = StopTime;
+
 export interface Schedule {
   stopId: string;
   routeId: string;
@@ -151,9 +154,21 @@ export interface LiveVehicle {
   isBikeAccessible: boolean;
 }
 
-// Combined data for enhanced bus information
-export interface EnhancedBusInfo {
-  // Live data
+// Vehicle route path data (from stop_times)
+export interface VehicleRoute {
+  tripId: string;
+  stopId: string;
+  arrivalTime: string;
+  departureTime: string;
+  sequence: number;
+  headsign?: string;
+  isPickupAvailable: boolean;
+  isDropOffAvailable: boolean;
+}
+
+// Combined data for enhanced vehicle information (live vehicle + route + schedule data)
+export interface EnhancedVehicleInfo {
+  // Live vehicle data
   vehicle?: LiveVehicle;
   
   // Schedule data
@@ -161,9 +176,9 @@ export interface EnhancedBusInfo {
   
   // Computed information
   id: string;
-  route: string;
-  routeId: string;
-  destination: string;
+  route: string; // Display name (route_short_name like "42", "43B")
+  routeId: string; // Internal route ID for API calls
+  destination: string; // From trip_headsign or route_long_name
   direction: 'work' | 'home' | 'unknown';
   routeType?: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
   
@@ -190,6 +205,9 @@ export interface EnhancedBusInfo {
     isFavorite: boolean;
   };
 }
+
+// Legacy alias for backward compatibility (will be removed)
+export type EnhancedBusInfo = EnhancedVehicleInfo;
 
 // API endpoint types
 export type TranzyEndpoint = 

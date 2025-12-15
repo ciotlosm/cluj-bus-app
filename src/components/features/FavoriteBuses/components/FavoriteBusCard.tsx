@@ -40,7 +40,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
   const { config } = useConfigStore();
   const { currentLocation } = useLocationStore();
   
-  const displayRouteName = bus?.routeLongName || bus?.routeName || 'Unknown Route';
+  const displayRouteName = bus?.routeDesc || bus?.routeName || 'Unknown Route';
   const avatarRouteNumber = bus?.routeName || 'N/A';
 
 
@@ -147,7 +147,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         isOffline: false,
         isStale,
         vehicleId: bus?.vehicleId,
-        vehicleLabel: bus?.routeName,
+        vehicleLabel: bus?.label,
         lastUpdate: bus?.lastUpdate
       };
     }
@@ -163,7 +163,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         isOffline: false,
         isStale,
         vehicleId: bus?.vehicleId,
-        vehicleLabel: bus?.routeName,
+        vehicleLabel: bus?.label,
         lastUpdate: bus?.lastUpdate
       };
     }
@@ -181,7 +181,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         isOffline: false,
         isStale,
         vehicleId: bus.vehicleId,
-        vehicleLabel: bus.routeName,
+        vehicleLabel: bus.label,
         lastUpdate: bus.lastUpdate
       };
     } else if (currentStopIndex < userStopIndex) {
@@ -200,7 +200,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         isOffline: !hasGoogleMaps || !transitEstimate,
         isStale,
         vehicleId: bus.vehicleId,
-        vehicleLabel: bus.routeName,
+        vehicleLabel: bus.label,
         lastUpdate: bus.lastUpdate
       };
     } else {
@@ -212,7 +212,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
         isOffline: false,
         isStale,
         vehicleId: bus.vehicleId,
-        vehicleLabel: bus.routeName,
+        vehicleLabel: bus.label,
         lastUpdate: bus.lastUpdate
       };
     }
@@ -227,9 +227,9 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
 
   // Generate cache keys for this bus card
   const cacheKeys = config ? [
-    CacheKeys.busInfo(config.city),
-    CacheKeys.vehicles(2), // CTP Cluj agency ID
-    ...(bus.routeName ? [CacheKeys.routeVehicles(2, bus.routeName)] : [])
+    CacheKeys.vehicleInfo(config.city),
+    ...(config.agencyId ? [CacheKeys.vehicles(parseInt(config.agencyId))] : []),
+    ...(bus.routeName && config.agencyId ? [CacheKeys.routeVehicles(parseInt(config.agencyId), bus.routeName)] : [])
   ] : [];
 
   return (
@@ -245,6 +245,7 @@ export const FavoriteBusCard: React.FC<FavoriteBusCardProps> = ({ bus }) => {
           logger.debug('Toggle favorite for route', { routeName: bus.routeName });
         }}
         onMapClick={() => setShowMap(true)}
+        mapButtonStyle="corner"
         arrivalStatus={arrivalStatus}
         cacheKeys={cacheKeys}
         customContent={

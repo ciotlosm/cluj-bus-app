@@ -1,11 +1,10 @@
 // Define the route type used by the store
 type StoreRoute = {
-  id: string;
-  name: string;
-  shortName?: string;
-  longName?: string;
-  description?: string;
-  type?: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
+  id: string; // Internal route ID for API calls ("40", "42", etc.)
+  routeName: string; // route_short_name: What users see and interact with ("100", "101")
+  routeDesc: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
+  description?: string; // Additional description field
+  type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 };
 
 export interface RouteTypeInfo {
@@ -71,9 +70,8 @@ export const filterRoutes = (
     
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = (
-      route.shortName?.toLowerCase().includes(searchLower) ||
-      route.name?.toLowerCase().includes(searchLower) ||
-      route.longName?.toLowerCase().includes(searchLower) ||
+      route.routeName?.toLowerCase().includes(searchLower) ||
+      route.routeDesc?.toLowerCase().includes(searchLower) ||
       route.id.toLowerCase().includes(searchLower)
     );
     

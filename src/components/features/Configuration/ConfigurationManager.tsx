@@ -29,6 +29,7 @@ import { Button } from '../../ui/Button';
 import LocationPicker from '../LocationPicker/LocationPicker';
 import ThemeToggle from '../../ui/ThemeToggle';
 import { LocationSettingsSection } from './sections/LocationSettingsSection';
+import { AdvancedSettingsSection } from './sections/AdvancedSettingsSection';
 import { logger, LogLevel } from '../../../utils/logger';
 
 interface ConfigurationManagerProps {
@@ -87,168 +88,57 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
       }}
     >
       <CardContent>
-        {/* Header with Status Chip */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
-                mr: 2,
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <SettingsIcon />
-            </Box>
-            <Box>
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
-                App Configuration
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Configure your API key, city, and locations
-              </Typography>
-            </Box>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Box
+            sx={{
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main,
+              mr: 2,
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <SettingsIcon />
           </Box>
-          
-          {isConfigured && (
-            <Chip
-              icon={<CheckIcon />}
-              label="Valid Config"
-              color="success"
-              variant="filled"
-              size="small"
-              sx={{ fontWeight: 600 }}
-            />
-          )}
+          <Box>
+            <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+              App Configuration
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Configure your API key, city, and locations
+            </Typography>
+          </Box>
         </Box>
 
-      <Stack spacing={3}>
-        {/* Common Settings - Inline Layout */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TimerIcon sx={{ color: 'primary.main' }} />
-            Common Settings
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <TextField
-              label="Refresh Rate (seconds)"
-              type="number"
-              value={(formData.refreshRate || 30000) / 1000}
-              onChange={(e) => {
-                const seconds = parseInt(e.target.value) || 30;
-                setFormData(prev => ({ ...prev, refreshRate: seconds * 1000 }));
-              }}
-              error={!!errors.refreshRate}
-              helperText={errors.refreshRate || 'How often to refresh bus data (5-300 seconds)'}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <TimerIcon color="action" />
-                    </InputAdornment>
-                  ),
-                  inputProps: { min: 5, max: 300 }
-                }
-              }}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              label="Stale Data Threshold (minutes)"
-              type="number"
-              value={formData.staleDataThreshold || 2}
-              onChange={(e) => {
-                const minutes = parseInt(e.target.value) || 2;
-                setFormData(prev => ({ ...prev, staleDataThreshold: minutes }));
-              }}
-              error={!!errors.staleDataThreshold}
-              helperText={errors.staleDataThreshold || 'When to consider vehicle data as outdated (1-30 minutes)'}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <TimerIcon color="action" />
-                    </InputAdornment>
-                  ),
-                  inputProps: { min: 1, max: 30 }
-                }
-              }}
-              sx={{ flex: 1 }}
-            />
-            <FormControl sx={{ flex: 1 }}>
-              <InputLabel id="log-level-label">Console Log Level</InputLabel>
-              <Select
-                labelId="log-level-label"
-                value={formData.logLevel ?? 1}
-                label="Console Log Level"
-                onChange={(e) => {
-                  const level = Number(e.target.value);
-                  handleLogLevelChange(level);
-                }}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <BugReportIcon color="action" />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value={0}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      DEBUG
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Show all logs (very verbose)
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value={1}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      INFO
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Show info, warnings, and errors
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value={2}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      WARN
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Show only warnings and errors
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value={3}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      ERROR
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Show only errors
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-
-        </Box>
+      <Stack spacing={2}>
+        {/* Display Settings */}
+        <AdvancedSettingsSection
+          refreshRate={formData.refreshRate || 30000}
+          onRefreshRateChange={(rate) => setFormData(prev => ({ ...prev, refreshRate: rate }))}
+          staleDataThreshold={formData.staleDataThreshold || 2}
+          onStaleDataThresholdChange={(threshold) => setFormData(prev => ({ ...prev, staleDataThreshold: threshold }))}
+          logLevel={formData.logLevel ?? 1}
+          onLogLevelChange={handleLogLevelChange}
+          maxVehiclesPerStation={formData.maxVehiclesPerStation || 5}
+          onMaxVehiclesPerStationChange={(max) => setFormData(prev => ({ ...prev, maxVehiclesPerStation: max }))}
+          refreshRateError={errors.refreshRate}
+          staleDataError={errors.staleDataThreshold}
+          maxVehiclesError={errors.maxVehiclesPerStation}
+        />
 
         {/* Theme Settings */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
             <PaletteIcon />
             Theme
           </Typography>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: 'background.paper', borderRadius: 2, border: 1, borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, bgcolor: 'background.paper', borderRadius: 2, border: 1, borderColor: 'divider' }}>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Dark Mode
             </Typography>

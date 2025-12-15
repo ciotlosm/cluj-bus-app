@@ -33,6 +33,7 @@ interface BusCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   onMapClick?: () => void;
+  mapButtonStyle?: 'overlay' | 'inline' | 'corner'; // Style of map button
   delay?: number;
   location?: string;
   customContent?: React.ReactNode; // Custom content to replace destination/location
@@ -58,6 +59,7 @@ export const BusCard: React.FC<BusCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
   onMapClick,
+  mapButtonStyle = 'corner',
   delay = 0,
   location,
   customContent,
@@ -96,6 +98,7 @@ export const BusCard: React.FC<BusCardProps> = ({
         borderRadius: 3,
         boxShadow: theme.shadows[2],
         transition: 'all 0.2s ease-in-out',
+        position: 'relative',
         '&:hover': {
           boxShadow: theme.shadows[4],
         },
@@ -115,25 +118,32 @@ export const BusCard: React.FC<BusCardProps> = ({
             >
               {routeId}
             </Avatar>
-            {onMapClick && (
-              <IconButton
-                size="small"
-                onClick={onMapClick}
-                sx={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  bgcolor: theme.palette.background.paper,
-                  boxShadow: theme.shadows[2],
-                  width: 24,
-                  height: 24,
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  },
-                }}
-              >
-                <MapIcon sx={{ fontSize: 14, color: theme.palette.primary.main }} />
-              </IconButton>
+            {onMapClick && mapButtonStyle === 'overlay' && (
+              <Tooltip title="View on map" placement="top">
+                <IconButton
+                  size="small"
+                  onClick={onMapClick}
+                  sx={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -6,
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    boxShadow: theme.shadows[3],
+                    width: 28,
+                    height: 28,
+                    border: `2px solid ${theme.palette.background.paper}`,
+                    '&:hover': {
+                      bgcolor: theme.palette.primary.dark,
+                      transform: 'scale(1.1)',
+                      boxShadow: theme.shadows[4],
+                    },
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  <MapIcon sx={{ fontSize: 16, fontWeight: 'bold' }} />
+                </IconButton>
+              </Tooltip>
             )}
           </Box>
           
@@ -278,7 +288,7 @@ export const BusCard: React.FC<BusCardProps> = ({
             )}
           </Box>
           
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {delay > 0 && (
               <Chip
                 label={`+${delay}min`}
@@ -292,11 +302,65 @@ export const BusCard: React.FC<BusCardProps> = ({
                 }}
               />
             )}
+            {onMapClick && mapButtonStyle === 'inline' && (
+              <Tooltip title="View on map" placement="top">
+                <IconButton
+                  size="small"
+                  onClick={onMapClick}
+                  sx={{
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: theme.palette.primary.main,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.2),
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  <MapIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         </Box>
         
+
+        
         {children}
       </CardContent>
+      
+      {/* Corner map button */}
+      {onMapClick && mapButtonStyle === 'corner' && (
+        <Tooltip 
+          title={`View on map${arrivalStatus?.vehicleLabel ? ` - Vehicle: ${arrivalStatus.vehicleLabel}` : ''}`} 
+          placement="top"
+        >
+          <IconButton
+            size="small"
+            onClick={onMapClick}
+            sx={{
+              position: 'absolute',
+              bottom: 8,
+              right: 8,
+              bgcolor: theme.palette.primary.main,
+              color: 'white',
+              width: 24,
+              height: 24,
+              boxShadow: theme.shadows[2],
+              '&:hover': {
+                bgcolor: theme.palette.primary.dark,
+                transform: 'scale(1.1)',
+                boxShadow: theme.shadows[3],
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
+          >
+            <MapIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
+      )}
     </Card>
   );
 

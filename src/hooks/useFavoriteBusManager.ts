@@ -8,8 +8,9 @@ import type { FavoriteRoute } from '../types';
 
 // Define the route type used by the store
 type StoreRoute = {
-  shortName: string; // route_short_name: What users see and interact with ("100", "101")
-  longName?: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
+  id: string; // Internal route ID for API calls ("40", "42", etc.)
+  routeName: string; // route_short_name: What users see and interact with ("100", "101")
+  routeDesc?: string; // route_long_name: Full description ("Piața Unirii - Mănăștur")
   type: 'bus' | 'trolleybus' | 'tram' | 'metro' | 'rail' | 'ferry' | 'other';
 };
 
@@ -33,7 +34,7 @@ export interface UseFavoriteBusManagerReturn {
   // Actions
   setSearchTerm: (term: string) => void;
   setSelectedTypes: (types: string[]) => void;
-  handleToggleRoute: (routeShortName: string) => Promise<void>;
+  handleToggleRoute: (routeName: string) => Promise<void>;
   handleSaveChanges: () => Promise<void>;
   handleTypeFilterChange: (event: React.MouseEvent<HTMLElement>, newTypes: string[]) => void;
 }
@@ -70,7 +71,7 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
   // Separate favorite and available routes
   const favoriteRoutes = useMemo(() => {
     const selectedRouteNames = selectedRoutes.map(r => r.routeName);
-    return availableRoutes.filter(route => selectedRouteNames.includes(route.shortName));
+    return availableRoutes.filter(route => selectedRouteNames.includes(route.routeName));
   }, [availableRoutes, selectedRoutes]);
 
   // Filter available routes based on search term and selected types
@@ -78,14 +79,14 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
     const selectedRouteNames = selectedRoutes.map(r => r.routeName);
     return availableRoutes.filter(route => {
       // Exclude routes that are already in favorites
-      if (selectedRouteNames.includes(route.shortName)) {
+      if (selectedRouteNames.includes(route.routeName)) {
         return false;
       }
       
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = (
-        route.shortName?.toLowerCase().includes(searchLower) ||
-        route.longName?.toLowerCase().includes(searchLower)
+        route.routeName?.toLowerCase().includes(searchLower) ||
+        route.routeDesc?.toLowerCase().includes(searchLower)
       );
       
       const matchesType = selectedTypes.length === 0 || selectedTypes.includes(route.type);
@@ -94,40 +95,40 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
     });
   }, [availableRoutes, selectedRoutes, searchTerm, selectedTypes]);
 
-  const handleToggleRoute = async (routeShortName: string): Promise<void> => {
-    const isCurrentlySelected = selectedRoutes.some(r => r.routeName === routeShortName);
+  const handleToggleRoute = async (routeName: string): Promise<void> => {
+    const isCurrentlySelected = selectedRoutes.some(r => r.routeName === routeName);
     
     if (isCurrentlySelected) {
       // Remove from favorites
-      const newSelectedRoutes = selectedRoutes.filter(r => r.routeName !== routeShortName);
+      const newSelectedRoutes = selectedRoutes.filter(r => r.routeName !== routeName);
       setSelectedRoutes(newSelectedRoutes);
     } else {
       // Add to favorites - find the complete route object and get proper route ID
-      const routeToAdd = availableRoutes.find(r => r.shortName === routeShortName);
+      const routeToAdd = availableRoutes.find(r => r.routeName === routeName);
       if (routeToAdd && config?.city) {
         try {
           // Import route mapping service dynamically to avoid circular dependencies
           const { routeMappingService } = await import('../services/routeMappingService');
-          const routeMapping = await routeMappingService.getRouteMappingFromShortName(routeShortName, config.city);
+          const routeMapping = await routeMappingService.getRouteMappingFromName(routeName, config.city);
           
           if (!routeMapping?.routeId) {
-            console.error('❌ Cannot add route - no valid route ID found for:', routeShortName);
+            logger.error('Cannot add route - no valid route ID found', { routeName }, 'FAVORITES');
             return; // Don't add routes without proper IDs
           }
           
           const favoriteRoute: FavoriteRoute = {
             id: routeMapping.routeId, // Always use proper route ID from mapping service
-            routeName: routeShortName,
-            longName: routeToAdd.longName || routeMapping.routeLongName || `Route ${routeShortName}`,
+            routeName: routeName,
+            longName: routeToAdd.routeDesc || routeMapping.routeDesc || `Route ${routeName}`,
             type: routeToAdd.type
           };
           const newSelectedRoutes = [...selectedRoutes, favoriteRoute];
           setSelectedRoutes(newSelectedRoutes);
           logger.info('Added route to favorites', { favoriteRoute }, 'FAVORITES');
         } catch (error) {
-          logger.error('Failed to get route mapping for route', { routeShortName, error }, 'FAVORITES');
+          logger.error('Failed to get route mapping for route', { routeName, error }, 'FAVORITES');
           // Don't add routes without proper mapping - this prevents API call failures
-          logger.warn('Skipping route addition - route mapping service failed', { routeShortName }, 'FAVORITES');
+          logger.warn('Skipping route addition - route mapping service failed', { routeName }, 'FAVORITES');
           return;
         }
       }
@@ -141,7 +142,7 @@ export const useFavoriteBusManager = (): UseFavoriteBusManagerReturn => {
       await updateConfig({ favoriteBuses: selectedRoutes });
       setHasChanges(false);
     } catch (error) {
-      console.error('Failed to save favorite buses:', error);
+      logger.error('Failed to save favorite buses', { error }, 'FAVORITES');
     }
   };
 

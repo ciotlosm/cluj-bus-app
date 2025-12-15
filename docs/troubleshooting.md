@@ -40,6 +40,25 @@
 
 **Prevention**: Use arrays instead of Fragments when rendering multiple children in MUI components
 
+#### Station Display Showing Duplicate Vehicles
+**Problem**: Station display showing multiple duplicate entries for the same bus routes and stations
+
+**Root Cause**: Vehicle assignment logic was showing all vehicles for each station group instead of filtering vehicles by which stations they actually serve
+
+**Solution**: Fixed vehicle-to-station assignment logic
+- Updated vehicle filtering to check which stations each vehicle's trip actually serves
+- Added proper trip_id to stop_times mapping for accurate vehicle-station relationships
+- Fixed TypeScript interface issues with LiveVehicle vs raw API response data
+- Added station name deduplication to handle multiple stations with same names
+
+**Code Changes**:
+- Fixed `StationDisplay.tsx` vehicle grouping logic
+- Updated type imports from `Vehicle` to `LiveVehicle`
+- Fixed property access for transformed vehicle data structure
+- Added `_internalDirection` field for UI display logic
+
+**Prevention**: Always verify data relationships when displaying grouped information
+
 #### Settings Component Export Error
 **Problem**: `SyntaxError: Indirectly exported binding name 'Settings' is not found`
 
@@ -48,6 +67,110 @@
 **Solution**: Fixed by standardizing to named exports only
 - Updated `Settings.tsx` to use only named export
 - Updated `index.ts` to properly re-export named export
+
+#### Vehicle Label Discrepancy
+**Problem**: Different vehicle numbers shown in tooltip vs map popup (e.g., "354" in tooltip, "Bus 223" in popup)
+
+**Root Cause**: Inconsistent use of vehicle identifiers - tooltip used `label` field, popup used `vehicleId` field
+
+**Solution**: Standardized to use vehicle `label` field consistently
+- Updated `FavoriteBusInfo` interface to include `label` field from API
+- Changed all `vehicleLabel` references to use `bus.label` instead of `bus.routeName`
+- Updated map popup to show `Bus {bus.label}` with fallback to `vehicleId`
+
+**Prevention**: Use consistent data fields across all components displaying vehicle information
+
+#### Station View Shows "Location Required" Despite Fallback Location Set
+**Problem**: Station view displays "Location Required - Please enable location services" even when fallback location is configured
+
+**Root Cause**: StationDisplay component only checked GPS location, ignored fallback location hierarchy
+
+**Solution**: Implemented proper location fallback logic in StationDisplay
+- Created `getEffectiveLocation()` utility function with priority: GPS → Home → Work → Default → Cluj center
+- Updated StationDisplay to use effective location instead of GPS-only location
+- Added fallback location dependencies to React useMemo for proper updates
+
+**Prevention**: Always use location fallback utilities instead of direct GPS location checks
+
+#### Station View Shows Wrong Buses or No Buses
+**Problem**: Station view shows buses that don't actually stop at the displayed stations, or shows no buses despite routes serving those stations
+
+**Root Cause**: Using proximity-based filtering instead of proper GTFS trip_id matching
+- Proximity approach shows buses that happen to be nearby but don't serve the station
+- Missing proper trip_id filtering based on stop_times data
+
+**Solution**: Implemented proper GTFS trip_id filtering approach
+- **Step 1**: Get stop_times data to find which trips serve target stations
+- **Step 2**: Extract trip_ids for trips that stop at these stations  
+- **Step 3**: Filter live vehicles by those trip_ids only
+- **Step 4**: Enrich with route information and display results
+- **Added proper loading states** and debug logging for troubleshooting
+
+**Technical Details**:
+- Tranzy API `/opendata/stop_times` returns `trip_id`, `stop_id`, and `stop_sequence`
+- 127 out of 130 vehicle trip_ids match with stop_times trip_ids
+- Proper approach: Use trip_id relationships to show only buses that serve the stations
+- Enriches vehicle data with route names and descriptions from `/opendata/routes`
+
+**Prevention**: 
+- Always use GTFS relationships (trip_id matching) instead of GPS proximity for station-vehicle associations
+- Verify that vehicles actually serve the stations before displaying them
+- Ensure each view triggers its own data refresh instead of relying on other components
+
+#### Station View Shows Empty Despite API Data Available
+**Problem**: Station view displays "No buses currently serve these stations" even though API calls are successful and return vehicle data
+
+**Root Cause**: StationDisplay component was using `useEnhancedBusStore` which requires complex configuration and location setup, but the store was returning empty arrays due to initialization issues
+
+**Symptoms**:
+- API calls to `/stops`, `/routes`, and `/vehicles` are successful (200 status)
+- Console shows stores returning `null` or empty arrays
+- No `/stop_times` API calls being made
+- Debug logs show `targetStationsLength: 0, vehiclesLength: 0`
+
+**Solution**: Modified StationDisplay to fetch vehicle data directly instead of relying on enhanced bus store
+- **Removed dependency** on `useEnhancedBusStore` which was designed for favorite buses
+- **Added direct API calls** to fetch vehicles using `enhancedTranzyApi.getVehicles()`
+- **Simplified data flow** from API → component state → processing → display
+- **Fixed timing issues** by ensuring vehicle data is available before processing
+
+**Technical Changes**:
+- Replaced `useEnhancedBusStore` with direct `useState` for vehicles
+- Added dedicated `fetchVehicles` useEffect for API calls
+- Updated vehicle filtering to work with raw `Vehicle[]` data instead of `EnhancedVehicleInfo[]`
+- Maintained proper trip_id filtering logic for station-vehicle matching
+
+**Prevention**: 
+- Use appropriate data sources for each component's needs
+- Avoid complex store dependencies when simple API calls suffice
+- Ensure data availability before processing in useEffect chains
+- Test component isolation to verify data flow works independently
+
+#### Station View Overcomplicated Vehicle Processing
+**Problem**: Station view had complex GTFS sequence analysis that was slow and error-prone
+
+**Root Cause**: Overcomplicated logic trying to determine vehicle arrival/departure status using sequence analysis
+
+**Solution**: Simplified to basic vehicle-station relationship check
+- **Simple Logic**: Station ID → Vehicle trip_id → Check if station is in trip's stops
+- **Removed Complexity**: Eliminated route ID mapping, sequence analysis, arrival/departure logic
+- **Direct Relationship**: Just show vehicles whose trips serve the closest station
+- **Better Performance**: Much faster processing with fewer API calls
+
+**Prevention**: Start with simple solutions before adding complexity
+
+#### Station View Inefficient Vehicle Filtering
+**Problem**: Station view was making individual API calls for each vehicle to check if it serves a station
+
+**Root Cause**: Wrong approach - checking each vehicle's trip individually instead of bulk filtering
+
+**Solution**: Implemented efficient bulk filtering approach
+- **Step 1**: Get all stop_times once (bulk API call)
+- **Step 2**: Filter stop_times by target station IDs to get relevant trip_ids
+- **Step 3**: Filter vehicles by those trip_ids (in-memory filtering)
+- **Result**: Much faster with fewer API calls
+
+**Prevention**: Use bulk operations and in-memory filtering instead of individual API calls in loops
 - Removed conflicting default export
 
 **Prevention**: Always use consistent export patterns (prefer named exports)
@@ -350,3 +473,118 @@ npm run dev
 ---
 
 **Still having issues?** Check the [developer guide](developer-guide.md) for technical details or look at the debug tools in `tools/debug/`.
+
+### Favorite Buses Data Issues
+
+#### "Route information unavailable" or "No real-time data available"
+**Problem**: Favorite buses show error messages instead of vehicle data
+
+**Major Fix Applied (December 2024)**: Fixed Tranzy API vehicle lookup issue
+
+**Root Cause**: Tranzy API vehicles endpoint design inconsistency:
+- `/routes` endpoint: Uses internal route IDs (e.g., `route_id: 40` for `route_short_name: "42"`)
+- `/vehicles` endpoint: Uses route short names in the route_id field (e.g., `route_id: "42"`)
+
+**Solution Applied**: Modified `favoriteBusService.ts` to look up vehicles using route short names instead of internal route IDs.
+
+**Verification**: Check console logs for:
+- `🗺️ DEBUGGING: Route mapping found` with explanation about API design
+- `🚌 DEBUGGING: Vehicle cache lookup results` showing `routesWithVehicles` populated
+- Route correction showing proper vehicle lookup strategy
+
+**Debugging Steps Using DevTools**:
+
+1. **Open Browser DevTools** (F12 or right-click → Inspect)
+
+2. **Go to Console Tab** and look for debugging messages with these prefixes:
+   - `🔍 DEBUGGING: Agency lookup` - Check if agency ID is found
+   - `🗺️ DEBUGGING: Route mapping found` - Check if route mapping works
+   - `🔄 DEBUGGING: Route correction summary` - See route ID corrections
+   - `🚛 DEBUGGING: Raw vehicles received` - Check if vehicles are fetched from API
+   - `🚛 DEBUGGING: Vehicle filtering results` - See how many vehicles pass filtering
+   - `🚌 DEBUGGING: Vehicle cache lookup results` - Check final vehicle availability
+
+3. **Common Issues & Solutions**:
+
+   **Agency Not Found**:
+   ```
+   ❌ No agency found for city: Cluj-Napoca
+   ```
+   **Solution**: Check API key configuration and city name
+
+   **Route Mapping Failed**:
+   ```
+   ❌ DEBUGGING: No route mapping found for favorite route: {routeName: "42"}
+   ```
+   **Solution**: Route "42" doesn't exist in API. Check available routes in Settings.
+
+   **No Vehicles with Valid Trip IDs**:
+   ```
+   🚛 DEBUGGING: Vehicle filtering results: {
+     totalVehicles: 150,
+     activeVehicles: 0,
+     filteredOut: 150,
+     filterReasons: {noTripId: 145, noRouteId: 5}
+   }
+   ```
+   **Solution**: All vehicles have `tripId: null`, indicating operational issues. This is correct behavior - the route has no active vehicles with proper GTFS data.
+
+   **Route ID Mismatch**:
+   ```
+   🚌 DEBUGGING: Vehicle cache lookup results: {
+     requestedRoutes: ["123"],
+     routesWithVehicles: ["456", "789"],
+     vehicleBreakdown: []
+   }
+   ```
+   **Solution**: Requested route ID "123" doesn't match available vehicle route IDs. Check route mapping service.
+
+4. **Manual Testing Steps**:
+
+   **Check Raw API Data**:
+   - Open Network tab in DevTools
+   - Look for requests to `/api/tranzy/v1/opendata/vehicles`
+   - Check response to see if vehicles have `trip_id` values
+   - Vehicles with `trip_id: null` are filtered out (this is correct)
+
+   **Check Route Mapping**:
+   - Look for requests to route mapping service
+   - Verify route "42" maps to correct API route ID
+   - Check if mapped route ID exists in vehicle data
+
+   **Check Configuration**:
+   - Go to Application tab → Local Storage
+   - Look for `config-store` entry
+   - Verify `favoriteBuses` array contains correct route names
+   - Verify `agencyId` is set (should be "2" for Cluj)
+
+5. **Expected Behavior**:
+   - **If no vehicles have valid `trip_id`**: "Route information unavailable" is correct
+   - **If route mapping fails**: Route doesn't exist in current GTFS data
+   - **If agency lookup fails**: API key or configuration issue
+
+#### Performance Issues with Favorite Buses
+**Problem**: Favorite buses take long time to load or cause app to freeze
+
+**Debugging**: Check console for:
+- Multiple rapid API calls (indicates caching issues)
+- Large vehicle datasets being processed
+- Memory usage in DevTools Performance tab
+
+**Solution**: 
+- Verify cache is working properly
+- Check if auto-refresh intervals are too aggressive
+- Ensure proper cleanup of subscriptions
+
+#### Cache Issues
+**Problem**: Favorite buses show stale data or don't update
+
+**Debugging**: Look for cache-related logs:
+- Cache hit/miss ratios
+- Cache age information
+- Force refresh triggers
+
+**Solution**:
+- Clear browser cache and localStorage
+- Check cache TTL settings
+- Verify auto-refresh is working
