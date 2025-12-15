@@ -5,8 +5,6 @@ import {
   useTheme,
   alpha,
   Box,
-  Typography,
-  Stack,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -14,23 +12,36 @@ import {
 
 import { useRefreshSystem } from '../../../hooks/useRefreshSystem';
 import { useEnhancedBusStore } from '../../../stores/enhancedBusStore';
+import { useLocationStore } from '../../../stores/locationStore';
 
 export const RefreshControl: React.FC = () => {
   const { manualRefresh, refreshRate, isAutoRefreshEnabled } = useRefreshSystem();
   const { lastUpdate, lastApiUpdate, cacheStats } = useEnhancedBusStore();
+  const { requestLocation, locationPermission } = useLocationStore();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-
   const [currentTime, setCurrentTime] = React.useState(Date.now());
+
+  const theme = useTheme();
 
   const refresh = async () => {
     setIsRefreshing(true);
     try {
+      // Refresh GPS location if permission is granted
+      if (locationPermission === 'granted') {
+        try {
+          await requestLocation();
+        } catch (locationError) {
+          console.warn('Failed to refresh GPS location:', locationError);
+          // Continue with data refresh even if GPS fails
+        }
+      }
+      
+      // Refresh bus data
       await manualRefresh();
     } finally {
       setIsRefreshing(false);
     }
   };
-  const theme = useTheme();
 
   // Update current time every second for accurate timing
   React.useEffect(() => {
@@ -42,7 +53,6 @@ export const RefreshControl: React.FC = () => {
 
   // Get the most recent timestamp available
   const getLastRefreshTime = (): Date | null => {
-    // Check each timestamp and ensure it's a valid Date object
     const timestamps = [lastApiUpdate, lastUpdate, cacheStats.lastRefresh];
     
     for (const timestamp of timestamps) {
@@ -54,82 +64,94 @@ export const RefreshControl: React.FC = () => {
     return null;
   };
 
-  const formatTimeDifference = (timestamp?: Date | null): string => {
-    if (!timestamp || !(timestamp instanceof Date)) return 'Never';
-    
-    try {
-      const diff = Math.floor((currentTime - timestamp.getTime()) / 1000);
-      
-      if (diff < 60) return `${diff}s`;
-      if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-      return `${Math.floor(diff / 3600)}h`;
-    } catch (error) {
-      console.warn('Error formatting time difference:', error, timestamp);
-      return 'Unknown';
-    }
-  };
-
-  const getTimeToNextRefresh = (): string => {
+  // Calculate refresh status and progress
+  const getRefreshStatus = () => {
     const lastRefreshTime = getLastRefreshTime();
     
-    if (!isAutoRefreshEnabled || !lastRefreshTime || !(lastRefreshTime instanceof Date) || refreshRate <= 0) {
-      return 'Off';
+    if (!isAutoRefreshEnabled || !lastRefreshTime || refreshRate <= 0) {
+      return {
+        color: theme.palette.warning.main,
+        progress: 0,
+        hasUpdate: false,
+      };
     }
 
-    try {
-      const nextRefreshTime = lastRefreshTime.getTime() + refreshRate;
-      const timeUntilNext = Math.floor((nextRefreshTime - currentTime) / 1000);
-      
-      if (timeUntilNext <= 0) return 'Now';
-      if (timeUntilNext < 60) return `${timeUntilNext}s`;
-      return `${Math.floor(timeUntilNext / 60)}m`;
-    } catch (error) {
-      console.warn('Error calculating next refresh time:', error, lastRefreshTime);
-      return 'Error';
+    const timeSinceLastRefresh = currentTime - lastRefreshTime.getTime();
+    const timeUntilNext = refreshRate - timeSinceLastRefresh;
+    
+    // If no cache update happened (red)
+    if (timeSinceLastRefresh > refreshRate * 2) {
+      return {
+        color: theme.palette.error.main,
+        progress: 0,
+        hasUpdate: false,
+      };
     }
+    
+    // If cache was updated (green) and counting down
+    if (timeUntilNext > 0) {
+      const progress = ((refreshRate - timeUntilNext) / refreshRate) * 100;
+      return {
+        color: theme.palette.success.main,
+        progress: Math.min(100, Math.max(0, progress)),
+        hasUpdate: true,
+      };
+    }
+    
+    // Time for next refresh
+    return {
+      color: theme.palette.success.main,
+      progress: 100,
+      hasUpdate: true,
+    };
   };
 
+  const { color, progress, hasUpdate } = getRefreshStatus();
+
   return (
-    <Stack direction="row" alignItems="center" spacing={0.5}>
-      {/* Always visible timing information */}
-      <Box sx={{ 
-        textAlign: 'right', 
-        minWidth: { xs: 60, sm: 80 }, // Smaller on mobile
-        display: { xs: 'block', sm: 'block' } // Always show but more compact on mobile
-      }}>
-        <Typography variant="caption" sx={{ 
-          display: 'block', 
-          fontSize: { xs: '0.6rem', sm: '0.65rem' }, // Smaller on mobile
-          color: alpha(theme.palette.common.white, 0.9),
-          lineHeight: 1.1,
-          whiteSpace: 'nowrap', // Prevent wrapping
-        }}>
-          Last: {formatTimeDifference(getLastRefreshTime())}
-        </Typography>
-        <Typography variant="caption" sx={{ 
-          display: 'block', 
-          fontSize: { xs: '0.6rem', sm: '0.65rem' }, // Smaller on mobile
-          color: alpha(theme.palette.common.white, 0.9),
-          lineHeight: 1.1,
-          whiteSpace: 'nowrap', // Prevent wrapping
-        }}>
-          Next: {getTimeToNextRefresh()}
-        </Typography>
-      </Box>
+    <Box sx={{ position: 'relative' }}>
+      {/* Background circle (empty state) */}
+      <CircularProgress
+        variant="determinate"
+        value={100}
+        size={40}
+        thickness={3}
+        sx={{
+          color: alpha(theme.palette.common.white, 0.1),
+          position: 'absolute',
+        }}
+      />
+      
+      {/* Progress circle (filling indicator) */}
+      <CircularProgress
+        variant="determinate"
+        value={progress}
+        size={40}
+        thickness={3}
+        sx={{
+          color: alpha(color, 0.8),
+          position: 'absolute',
+          transform: 'rotate(-90deg) !important',
+          '& .MuiCircularProgress-circle': {
+            strokeLinecap: 'round',
+          },
+        }}
+      />
       
       {/* Refresh button */}
       <IconButton
         onClick={refresh}
         disabled={isRefreshing}
         sx={{
+          width: 40,
+          height: 40,
           bgcolor: alpha(theme.palette.common.white, 0.1),
           color: theme.palette.common.white,
-          border: isAutoRefreshEnabled 
-            ? `1px solid ${alpha(theme.palette.success.main, 0.3)}` 
-            : `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+          border: `2px solid ${alpha(color, 0.3)}`,
           '&:hover': {
             bgcolor: alpha(theme.palette.common.white, 0.2),
             transform: 'scale(1.05)',
+            border: `2px solid ${alpha(color, 0.5)}`,
           },
           '&:disabled': {
             bgcolor: alpha(theme.palette.common.white, 0.05),
@@ -140,21 +162,23 @@ export const RefreshControl: React.FC = () => {
       >
         {isRefreshing ? (
           <CircularProgress
-            size={20}
+            size={16}
             sx={{
               color: theme.palette.common.white,
             }}
           />
         ) : (
-          <RefreshIcon sx={{ 
-            fontSize: 20,
-            color: isAutoRefreshEnabled 
-              ? alpha(theme.palette.success.light, 0.9)
-              : theme.palette.common.white
-          }} />
+          <RefreshIcon 
+            sx={{ 
+              fontSize: 16,
+              color: hasUpdate 
+                ? alpha(theme.palette.success.light, 0.9)
+                : theme.palette.common.white
+            }} 
+          />
         )}
       </IconButton>
-    </Stack>
+    </Box>
   );
 };
 

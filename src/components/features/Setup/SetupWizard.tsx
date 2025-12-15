@@ -1,172 +1,328 @@
 import React, { useState } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Stepper,
+  Step,
+  StepLabel,
+  Typography,
+  TextField,
+  InputAdornment,
+  IconButton,
+  CircularProgress,
+  Alert,
+  Autocomplete,
+  useTheme,
+  alpha,
+} from '@mui/material';
+import {
+  Key as KeyIcon,
+  LocationOn as LocationIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
+  Visibility,
+  VisibilityOff,
+  ArrowBack as BackIcon,
+  ArrowForward as ForwardIcon,
+} from '@mui/icons-material';
+import { Button } from '../../ui/Button';
 import { useConfigStore } from '../../../stores/configStore';
 import { useAgencyStore } from '../../../stores/agencyStore';
-import { tranzyApiService } from '../../../services/tranzyApiService';
-import ApiKeySetup from './ApiKeySetup';
-import CitySelection from './CitySelection';
-import { LocationSetup } from './index';
-import { logger } from '../../../utils/logger';
-import type { Coordinates, UserConfig } from '../../../types';
+
+interface CityOption {
+  label: string;
+  value: string;
+  agencyId: string;
+}
 
 interface SetupWizardProps {
-  onSetupComplete?: () => void;
+  onComplete: () => void;
 }
 
-type SetupStep = 'api-key' | 'city' | 'locations' | 'complete';
-
-interface SetupData {
-  apiKey: string;
-  city: string;
-  agencyId: string;
-  homeLocation?: Coordinates;
-  workLocation?: Coordinates;
-  refreshRate: number;
-}
-
-export const SetupWizard: React.FC<SetupWizardProps> = ({ onSetupComplete }) => {
-  const [currentStep, setCurrentStep] = useState<SetupStep>('api-key');
-  const [setupData, setSetupData] = useState<Partial<SetupData>>({
-    refreshRate: 30000, // 30 seconds default
-  });
-
+export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
+  const theme = useTheme();
   const { updateConfig } = useConfigStore();
-  const { isApiValidated } = useAgencyStore();
+  const { agencies, validateAndFetchAgencies } = useAgencyStore();
+  
+  const [activeStep, setActiveStep] = useState(0);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<CityOption | null>(null);
+  const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
+  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If API is already validated, skip to city selection
-  React.useEffect(() => {
-    if (isApiValidated && currentStep === 'api-key') {
-      logger.info('API already validated, skipping to city selection', undefined, 'UI');
-      setCurrentStep('city');
+  const steps = ['API Key', 'City Selection'];
+
+  const cityOptions: CityOption[] = agencies
+    .map(agency => ({ 
+      label: agency.name, 
+      value: agency.name, 
+      agencyId: agency.id 
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  const validateApiKey = async (key: string): Promise<boolean> => {
+    if (!key.trim()) {
+      setApiKeyValid(null);
+      return false;
     }
-  }, [isApiValidated, currentStep]);
 
-  const handleApiKeyValidated = (apiKey: string) => {
-    logger.info('API key validated, proceeding to city selection', undefined, 'UI');
-    setSetupData(prev => ({ ...prev, apiKey }));
-    setCurrentStep('city');
+    setIsValidatingApiKey(true);
+    setError(null);
+    
+    try {
+      const isValid = await validateAndFetchAgencies(key.trim());
+      setApiKeyValid(isValid);
+      
+      if (!isValid) {
+        setError('Invalid API key. Please check your key and try again.');
+      }
+      
+      return isValid;
+    } catch (error) {
+      setApiKeyValid(false);
+      setError('Failed to validate API key. Please check your connection and try again.');
+      return false;
+    } finally {
+      setIsValidatingApiKey(false);
+    }
   };
 
-  const handleCitySelected = (city: string, agencyId: string) => {
-    logger.info('City selected, proceeding to location setup', { city, agencyId }, 'UI');
-    setSetupData(prev => ({ ...prev, city, agencyId }));
-    setCurrentStep('locations');
-  };
-
-  const handleLocationsSet = (homeLocation: Coordinates, workLocation: Coordinates) => {
-    logger.info('Locations set, completing setup', undefined, 'UI');
+  const handleNext = async () => {
+    if (activeStep === 0) {
+      // Validate API key before proceeding
+      const isValid = await validateApiKey(apiKey);
+      if (!isValid) return;
+    }
     
-    const finalConfig: UserConfig = {
-      city: setupData.city!,
-      agencyId: setupData.agencyId!,
-      homeLocation,
-      workLocation,
-      apiKey: setupData.apiKey!,
-      refreshRate: setupData.refreshRate!,
-      staleDataThreshold: 2, // Default to 2 minutes
-    };
-
-    // Update the configuration store
-    updateConfig(finalConfig);
-
-    // Set API key in service
-    const service = tranzyApiService();
-    service.setApiKey(finalConfig.apiKey);
-
-    logger.info('Setup completed successfully', { city: finalConfig.city }, 'UI');
-    
-    if (onSetupComplete) {
-      onSetupComplete();
+    if (activeStep === steps.length - 1) {
+      // Final step - save configuration
+      await handleComplete();
+    } else {
+      setActiveStep(prev => prev + 1);
     }
   };
 
   const handleBack = () => {
-    switch (currentStep) {
-      case 'city':
-        setCurrentStep('api-key');
-        break;
-      case 'locations':
-        setCurrentStep('city');
-        break;
-      default:
-        break;
+    setActiveStep(prev => prev - 1);
+  };
+
+  const handleComplete = async () => {
+    if (!apiKey.trim() || !selectedCity) {
+      setError('Please complete all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateConfig({
+        apiKey: apiKey.trim(),
+        city: selectedCity.value,
+        agencyId: selectedCity.agencyId,
+      });
+      
+      onComplete();
+    } catch (error) {
+      setError('Failed to save configuration. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 'api-key':
-        return (
-          <ApiKeySetup
-            onApiKeyValidated={handleApiKeyValidated}
-          />
-        );
-      
-      case 'city':
-        return (
-          <CitySelection
-            onCitySelected={handleCitySelected}
-            onBack={handleBack}
-          />
-        );
-      
-      case 'locations':
-        return (
-          <LocationSetup
-            onLocationsSet={handleLocationsSet}
-            onBack={handleBack}
-          />
-        );
-      
+  const canProceed = () => {
+    switch (activeStep) {
+      case 0:
+        return apiKey.trim() && apiKeyValid === true;
+      case 1:
+        return selectedCity !== null;
       default:
-        return null;
-    }
-  };
-
-  const getStepNumber = () => {
-    switch (currentStep) {
-      case 'api-key': return 1;
-      case 'city': return 2;
-      case 'locations': return 3;
-      default: return 1;
+        return false;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4">
-      {/* Progress Indicator */}
-      <div className="max-w-md mx-auto mb-8">
-        <div className="flex items-center justify-center space-x-4">
-          {[1, 2, 3].map((step) => (
-            <React.Fragment key={step}>
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step <= getStepNumber()
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-300 text-gray-600'
-                }`}
+    <Card sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+      <CardContent sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, textAlign: 'center' }}>
+          Welcome to Cluj Bus App
+        </Typography>
+        
+        <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mb: 4 }}>
+          Let's get you set up with real-time bus tracking
+        </Typography>
+
+        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Step 0: API Key */}
+        {activeStep === 0 && (
+          <Box>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <KeyIcon color="primary" />
+              Enter Your Tranzy API Key
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Get your free API key from{' '}
+              <a href="https://tranzy.ai" target="_blank" rel="noopener noreferrer" style={{ color: theme.palette.primary.main }}>
+                tranzy.ai
+              </a>{' '}
+              to access live bus tracking data.
+            </Typography>
+
+            <TextField
+              fullWidth
+              label="Tranzy.ai API Key"
+              type={showApiKey ? 'text' : 'password'}
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                setApiKeyValid(null);
+                setError(null);
+              }}
+              placeholder="Enter your API key here..."
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <KeyIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {isValidatingApiKey && <CircularProgress size={16} />}
+                      {apiKeyValid === true && <CheckIcon color="success" />}
+                      {apiKeyValid === false && <CloseIcon color="error" />}
+                      <IconButton
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showApiKey ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </Box>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ mb: 2 }}
+            />
+
+            {apiKey.trim() && apiKeyValid === null && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => validateApiKey(apiKey)}
+                loading={isValidatingApiKey}
+                sx={{ mb: 2 }}
               >
-                {step}
-              </div>
-              {step < 3 && (
-                <div
-                  className={`w-8 h-1 ${
-                    step < getStepNumber() ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}
+                Test API Key
+              </Button>
+            )}
+
+            {apiKeyValid === true && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                ✅ API key is valid! You can now proceed to city selection.
+              </Alert>
+            )}
+          </Box>
+        )}
+
+        {/* Step 1: City Selection */}
+        {activeStep === 1 && (
+          <Box>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocationIcon color="secondary" />
+              Select Your City
+            </Typography>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Choose your city to get accurate bus schedules and routes.
+            </Typography>
+
+            <Autocomplete
+              options={cityOptions}
+              value={selectedCity}
+              onChange={(_, newValue) => {
+                setSelectedCity(newValue);
+                setError(null);
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select your city"
+                  placeholder="Start typing to search..."
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LocationIcon color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               )}
-            </React.Fragment>
-          ))}
-        </div>
-        <div className="flex justify-between mt-2 text-xs text-gray-600">
-          <span>API Key</span>
-          <span>City</span>
-          <span>Locations</span>
-        </div>
-      </div>
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props;
+                return (
+                  <Box component="li" key={key} {...otherProps}>
+                    <LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    {option.label}
+                  </Box>
+                );
+              }}
+              sx={{ mb: 2 }}
+            />
 
-      {/* Current Step */}
-      {renderStep()}
-    </div>
+            {selectedCity && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>Selected:</strong> {selectedCity.label}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This will be saved and used for all bus tracking in this city.
+                </Typography>
+              </Alert>
+            )}
+          </Box>
+        )}
+
+        {/* Navigation Buttons */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+          <Button
+            variant="outlined"
+            onClick={handleBack}
+            disabled={activeStep === 0}
+            icon={<BackIcon />}
+          >
+            Back
+          </Button>
+
+          <Button
+            variant="filled"
+            onClick={handleNext}
+            disabled={!canProceed() || isValidatingApiKey}
+            loading={isSubmitting}
+            icon={activeStep === steps.length - 1 ? <CheckIcon /> : <ForwardIcon />}
+          >
+            {activeStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
+          </Button>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 

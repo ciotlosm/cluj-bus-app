@@ -94,6 +94,34 @@ interface ConfigStore {
 }
 ```
 
+## 🧙‍♂️ Setup Flow
+
+### Initial Setup Wizard (`src/components/features/Setup/SetupWizard.tsx`)
+Two-step wizard for first-time configuration:
+
+```typescript
+// Step 1: API Key validation
+const validateApiKey = async (key: string): Promise<boolean> => {
+  const isValid = await validateAndFetchAgencies(key.trim());
+  // Automatically fetches available cities/agencies
+  return isValid;
+};
+
+// Step 2: City Selection (one-time)
+const handleComplete = async () => {
+  await updateConfig({
+    apiKey: apiKey.trim(),
+    city: selectedCity.value,
+    agencyId: selectedCity.agencyId, // Stored permanently
+  });
+};
+```
+
+### Configuration Storage
+- **API Key**: Stored in config, can be changed in Settings > API Keys tab
+- **City/Agency**: Set once during setup, stored permanently in localStorage
+- **Other settings**: Configurable in main Settings tab
+
 ## 🔧 Key Services
 
 ### Favorite Bus Service (`src/services/favoriteBusService.ts`)

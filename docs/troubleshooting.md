@@ -2,6 +2,32 @@
 
 ## 🚨 Common Issues & Solutions
 
+### Build & Development Issues
+
+#### MUI Menu Fragment Warning
+**Problem**: `The Menu component doesn't accept a Fragment as a child. Consider providing an array instead.`
+
+**Root Cause**: Menu component contained React Fragments (`<>...</>`) as direct children
+
+**Solution**: Replaced Fragment children with arrays using keys
+- Changed `<>...</>` to `[<Element key="..." />, ...]` pattern
+- Added proper keys to array elements for React reconciliation
+- Maintained same functionality without MUI warnings
+
+**Prevention**: Use arrays instead of Fragments when rendering multiple children in MUI components
+
+#### Settings Component Export Error
+**Problem**: `SyntaxError: Indirectly exported binding name 'Settings' is not found`
+
+**Root Cause**: Conflicting named and default exports in Settings component
+
+**Solution**: Fixed by standardizing to named exports only
+- Updated `Settings.tsx` to use only named export
+- Updated `index.ts` to properly re-export named export
+- Removed conflicting default export
+
+**Prevention**: Always use consistent export patterns (prefer named exports)
+
 ### App Won't Start
 
 #### Port Already in Use
@@ -213,7 +239,11 @@ npm run test:coverage
 1. **Check this guide** - most issues are covered here
 2. **Look at browser console** - error messages are helpful
 3. **Try basic fixes** - refresh, clear cache, restart server
-4. **Check if it's a known issue** - look at recent changes
+4. **Check version info** - Click the version icon in Settings to see:
+   - App version and last update check
+   - City name and Agency ID (for troubleshooting)
+   - Service worker status
+5. **Check if it's a known issue** - look at recent changes
 
 ### Providing Debug Information
 When reporting issues, include:
@@ -222,6 +252,7 @@ When reporting issues, include:
 - **Browser and version** (Chrome 91, Safari 14, etc.)
 - **Operating system** (macOS, Windows, Linux)
 - **Node version** (`node --version`)
+- **App version and city info** (from Settings > Version menu)
 
 ### Emergency Fixes
 

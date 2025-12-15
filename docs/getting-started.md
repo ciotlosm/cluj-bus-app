@@ -24,13 +24,19 @@
    - Go to `http://localhost:5175`
    - The app should load without errors
 
-## 🔑 API Key Setup
+## 🧙‍♂️ Setup Wizard
 
-The app needs a Tranzy API key to fetch live bus data:
+The app will guide you through a 2-step setup process:
 
+### Step 1: API Key
 1. **Get an API key** from [Tranzy.ai](https://tranzy.ai)
-2. **Enter it in the app** when prompted
-3. **Test the connection** - you should see live bus data
+2. **Enter it in the setup wizard** when the app first loads
+3. **Test the connection** - the wizard will validate your key
+
+### Step 2: City Selection
+1. **Choose your city** from the available options
+2. **This is set once** and stored locally for all future use
+3. **Complete setup** - you're ready to track buses!
 
 ## ✅ Verify Everything Works
 

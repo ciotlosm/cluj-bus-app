@@ -15,11 +15,13 @@ import {
   Download as DownloadIcon,
   Upload as UploadIcon,
   Backup as BackupIcon,
+  Key as KeyIcon,
 } from '@mui/icons-material';
 
 import { useConfigStore } from '../../../stores/configStore';
 import ConfigurationManager from '../Configuration/ConfigurationManager';
 import { CacheManagerPanel } from './CacheManagerPanel';
+import ApiConfigurationPanel from './ApiConfigurationPanel';
 import { Button } from '../../ui/Button';
 import { InfoCard } from '../../ui/Card';
 import { VersionControl } from '../../ui/VersionControl';
@@ -61,7 +63,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
+const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const { config, updateConfig } = useConfigStore();
   const [activeTab, setActiveTab] = useState(0);
   const [importError, setImportError] = useState<string | null>(null);
@@ -134,6 +136,7 @@ export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
 
   const tabs = [
     { label: 'Config', icon: <SettingsIcon /> },
+    { label: 'API Keys', icon: <KeyIcon /> },
     { label: 'Cache', icon: <DatabaseIcon /> },
     { label: 'Backup', icon: <BackupIcon /> },
   ];
@@ -184,10 +187,14 @@ export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <CacheManagerPanel />
+        <ApiConfigurationPanel />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
+        <CacheManagerPanel />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
         <InfoCard
           title="Backup & Restore"
           subtitle="Export, import, and reset your configuration"
@@ -265,4 +272,4 @@ export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   );
 };
 
-export default Settings;
+export { Settings };

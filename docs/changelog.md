@@ -2,9 +2,40 @@
 
 ## Recent Updates
 
-### December 2024 - Major Fixes & CTP Cluj Integration
+### December 2024 - Settings UI Optimization & Major Fixes
+
+#### 🧙‍♂️ Setup Wizard & Configuration Restructure
+- **New Setup Wizard** - City selection now part of initial API key setup (2-step wizard)
+- **Separated API Configuration** - API keys moved to dedicated "API Keys" tab in Settings
+- **One-time city selection** - City/Agency stored in local storage, set once during setup
+- **Troubleshooting info** - City name and Agency ID now visible in version info for debugging
+- **Streamlined flow** - No more separate city configuration after initial setup
+
+#### 📍 Status Indicators & GPS Integration
+- **Visual Status Indicators** - Internet connectivity and GPS status now visible in app header
+- **Real-time GPS refresh** - Location automatically updated during cache refreshes and manual refresh
+- **Smart GPS handling** - Shows GPS disabled status when location permission denied
+- **Automatic location updates** - GPS refreshed on every auto-refresh cycle for better accuracy
+- **Compact header design** - Status chips integrated seamlessly into main navigation
+
+#### 🎨 UI/UX Improvements
+- **Theme Toggle moved to Settings** - Dark/Light mode control now in Configuration tab for better organization
+- **Animated Refresh Button** - New circular progress indicator shows time until next refresh
+- **Visual Cache Status** - Button color indicates cache health (Green: updated, Red: no updates, Yellow: disabled)
+- **Filling Circle Animation** - Progress ring empties as refresh approaches, fills after successful update
+- **Cleaner Header** - Removed text labels, replaced with intuitive visual indicators
+
+#### 🎨 Settings UI Improvements
+- **Optimized Settings layout** - Replaced "Configuration is complete" alert with green "Valid Config" chip at top
+- **Moved common settings to top** - Refresh Rate and Stale Data Threshold now prominently displayed inline
+- **Improved user experience** - Settings users actually tweak are now easily accessible
+- **Cleaner interface** - Removed redundant "Advanced Settings" section, integrated into main layout
+
+#### ✅ Major Fixes & CTP Cluj Integration
 
 #### ✅ Critical Issues Resolved
+- **Fixed MUI Menu Fragment warning** - Replaced Fragment children with arrays in VersionControl Menu component
+- **Fixed Settings component export error** - Resolved "Indirectly exported binding name 'Settings' is not found" build issue
 - **Fixed "No schedule data available" error** - Station name mismatch between CTP Cluj and Tranzy API resolved
 - **Added CTP Cluj proxy** - Direct integration with official CTP Cluj schedules via `/api/ctp-cluj`
 - **Fixed Route 42 timing** - Now correctly shows 15:45 departure from official CTP Cluj data

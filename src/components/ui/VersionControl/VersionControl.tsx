@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 
 import { appVersionService, type VersionInfo } from '../../../services/appVersionService';
+import { useConfigStore } from '../../../stores/configStore';
 import { logger } from '../../../utils/logger';
 
 export interface VersionControlProps {
@@ -33,6 +34,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({
   size = 'small',
   showLabel = false,
 }) => {
+  const { config } = useConfigStore();
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isChecking, setIsChecking] = useState(false);
@@ -198,22 +200,50 @@ export const VersionControl: React.FC<VersionControlProps> = ({
           </Box>
         </Box>
 
-        {/* Update Alert */}
-        {hasUpdate && (
-          <>
-            <Divider />
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Alert severity="info" sx={{ mb: 0 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Update Available!
-                </Typography>
-                <Typography variant="body2">
-                  A new version is ready to install.
-                </Typography>
-              </Alert>
+        {/* City/Agency Info for Troubleshooting */}
+        {config?.city && [
+          <Divider key="config-divider" />,
+          <Box key="config-info" sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              Configuration
+            </Typography>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                City
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {config.city}
+              </Typography>
             </Box>
-          </>
-        )}
+            
+            {config.agencyId && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Agency ID
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontFamily: 'monospace' }}>
+                  {config.agencyId}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        ]}
+
+        {/* Update Alert */}
+        {hasUpdate && [
+          <Divider key="update-divider" />,
+          <Box key="update-alert" sx={{ px: 2, py: 1.5 }}>
+            <Alert severity="info" sx={{ mb: 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Update Available!
+              </Typography>
+              <Typography variant="body2">
+                A new version is ready to install.
+              </Typography>
+            </Alert>
+          </Box>
+        ]}
 
         <Divider />
 

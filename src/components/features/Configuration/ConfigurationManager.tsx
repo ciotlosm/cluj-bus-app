@@ -3,29 +3,26 @@ import {
   Box,
   TextField,
   Typography,
-  Alert,
   Card,
   CardContent,
-  CardActions,
   Stack,
   InputAdornment,
   useTheme,
   alpha,
+  Chip,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
   Timer as TimerIcon,
+  CheckCircle as CheckIcon,
+  Palette as PaletteIcon,
 } from '@mui/icons-material';
 
 import { useConfigurationManager } from '../../../hooks/useConfigurationManager';
 import { Button } from '../../ui/Button';
-import { InfoCard } from '../../ui/Card';
 import LocationPicker from '../LocationPicker/LocationPicker';
-import { ApiKeySection } from './sections/ApiKeySection';
-import { CitySelectionSection } from './sections/CitySelectionSection';
+import ThemeToggle from '../../ui/ThemeToggle';
 import { LocationSettingsSection } from './sections/LocationSettingsSection';
-import { AdvancedSettingsSection } from './sections/AdvancedSettingsSection';
-import { GoogleMapsApiKeySection } from './sections/GoogleMapsApiKeySection';
 
 interface ConfigurationManagerProps {
   onConfigComplete?: () => void;
@@ -74,38 +71,126 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
 
 
   return (
-    <InfoCard
-      title="App Configuration"
-      subtitle="Configure your API key, city, and locations"
-      icon={<SettingsIcon />}
+    <Card
+      sx={{
+        mb: 2,
+        borderRadius: 3,
+        boxShadow: theme.shadows[1],
+      }}
     >
+      <CardContent>
+        {/* Header with Status Chip */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box
+              sx={{
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main,
+                mr: 2,
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SettingsIcon />
+            </Box>
+            <Box>
+              <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+                App Configuration
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Configure your API key, city, and locations
+              </Typography>
+            </Box>
+          </Box>
+          
+          {isConfigured && (
+            <Chip
+              icon={<CheckIcon />}
+              label="Valid Config"
+              color="success"
+              variant="filled"
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+          )}
+        </Box>
+
       <Stack spacing={3}>
-        {/* API Key Section */}
-        <ApiKeySection
-          apiKey={formData.apiKey || ''}
-          onApiKeyChange={handleApiKeyChange}
-          onValidateApiKey={validateApiKey}
-          isValidating={isValidatingApiKey}
-          isValid={apiKeyValid}
-          error={errors.apiKey}
-          showApiKey={showApiKey}
-          onToggleShowApiKey={() => setShowApiKey(!showApiKey)}
-        />
+        {/* Common Settings - Inline Layout */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TimerIcon sx={{ color: 'primary.main' }} />
+            Common Settings
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <TextField
+              label="Refresh Rate (seconds)"
+              type="number"
+              value={(formData.refreshRate || 30000) / 1000}
+              onChange={(e) => {
+                const seconds = parseInt(e.target.value) || 30;
+                setFormData(prev => ({ ...prev, refreshRate: seconds * 1000 }));
+              }}
+              error={!!errors.refreshRate}
+              helperText={errors.refreshRate || 'How often to refresh bus data (5-300 seconds)'}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <TimerIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  inputProps: { min: 5, max: 300 }
+                }
+              }}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              label="Stale Data Threshold (minutes)"
+              type="number"
+              value={formData.staleDataThreshold || 2}
+              onChange={(e) => {
+                const minutes = parseInt(e.target.value) || 2;
+                setFormData(prev => ({ ...prev, staleDataThreshold: minutes }));
+              }}
+              error={!!errors.staleDataThreshold}
+              helperText={errors.staleDataThreshold || 'When to consider vehicle data as outdated (1-30 minutes)'}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <TimerIcon color="action" />
+                    </InputAdornment>
+                  ),
+                  inputProps: { min: 1, max: 30 }
+                }
+              }}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        </Box>
 
-        {/* City Selection */}
-        <CitySelectionSection
-          city={formData.city || ''}
-          onCityChange={handleCityChange}
-          cityOptions={cityOptions}
-          error={errors.city}
-        />
-
-        {/* Google Maps API Key */}
-        <GoogleMapsApiKeySection
-          googleMapsApiKey={formData.googleMapsApiKey || ''}
-          onGoogleMapsApiKeyChange={(key) => setFormData(prev => ({ ...prev, googleMapsApiKey: key }))}
-          error={errors.googleMapsApiKey}
-        />
+        {/* Theme Settings */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PaletteIcon />
+            Theme
+          </Typography>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: 'background.paper', borderRadius: 2, border: 1, borderColor: 'divider' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Dark Mode
+            </Typography>
+            <ThemeToggle size="medium" />
+            <Typography variant="body2" color="text.secondary">
+              Toggle between light and dark themes
+            </Typography>
+          </Box>
+        </Box>
 
         {/* Location Settings */}
         <LocationSettingsSection
@@ -115,39 +200,19 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
           formatLocationDisplay={formatLocationDisplay}
         />
 
-        {/* Advanced Settings */}
-        <AdvancedSettingsSection
-          refreshRate={formData.refreshRate || 30000}
-          onRefreshRateChange={(rate) => setFormData(prev => ({ ...prev, refreshRate: rate }))}
-          staleDataThreshold={formData.staleDataThreshold || 2}
-          onStaleDataThresholdChange={(threshold) => setFormData(prev => ({ ...prev, staleDataThreshold: threshold }))}
-          refreshRateError={errors.refreshRate}
-          staleDataError={errors.staleDataThreshold}
-        />
-
         {/* Save Button */}
-        <CardActions sx={{ px: 0, pt: 2 }}>
+        <Box sx={{ pt: 2 }}>
           <Button
             variant="filled"
             size="large"
             fullWidth
             onClick={handleSubmit}
             loading={isSubmitting}
-            disabled={isValidatingApiKey || apiKeyValid === false}
             sx={{ py: 1.5 }}
           >
             {isConfigured ? 'Update Configuration' : 'Save Configuration'}
           </Button>
-        </CardActions>
-
-        {/* Status Information */}
-        {isConfigured && (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            <Typography variant="body2">
-              Configuration is complete. You can update individual settings above.
-            </Typography>
-          </Alert>
-        )}
+        </Box>
 
         {/* Location Picker Dialog */}
         <LocationPicker
@@ -159,7 +224,8 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
           currentLocation={locationPickerType === 'home' ? formData.homeLocation : formData.workLocation}
         />
       </Stack>
-    </InfoCard>
+      </CardContent>
+    </Card>
   );
 };
 

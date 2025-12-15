@@ -86,7 +86,20 @@ export const useRefreshSystem = () => {
     async () => {
       const busStore = useEnhancedBusStore.getState();
       const { useFavoriteBusStore } = await import('../stores/favoriteBusStore');
+      const { useLocationStore } = await import('../stores/locationStore');
       const favoriteBusStore = useFavoriteBusStore.getState();
+      const locationStore = useLocationStore.getState();
+      
+      // Refresh GPS location if permission is granted
+      if (locationStore.locationPermission === 'granted') {
+        try {
+          await locationStore.requestLocation();
+          logger.info('GPS location refreshed during auto refresh', {}, 'REFRESH');
+        } catch (locationError) {
+          logger.warn('Failed to refresh GPS location during auto refresh:', locationError, 'REFRESH');
+          // Continue with data refresh even if GPS fails
+        }
+      }
       
       // Refresh both enhanced buses and favorite buses
       await Promise.all([

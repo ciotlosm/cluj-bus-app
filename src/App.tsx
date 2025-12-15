@@ -28,7 +28,7 @@ import {
   Favorite as FavoriteIcon,
 } from '@mui/icons-material';
 
-import ThemeToggle from './components/ui/ThemeToggle';
+
 
 import { 
   ErrorBoundary, 
@@ -36,8 +36,9 @@ import {
 } from './components';
 import RefreshControl from './components/layout/Indicators/RefreshControl';
 
-import ApiKeySetup from './components/features/Setup/ApiKeySetup';
+import { SetupWizard } from './components/features/Setup';
 import OfflineIndicator from './components/layout/Indicators/OfflineIndicator';
+import StatusIndicators from './components/layout/Indicators/StatusIndicators';
 import { useConfigStore, useOfflineStore, useAgencyStore } from './stores';
 import { useRefreshSystem } from './hooks/useRefreshSystem';
 import { useErrorHandler } from './hooks/useErrorHandler';
@@ -54,7 +55,7 @@ import { initializeServiceWorker } from './utils/serviceWorkerManager';
 
 
 // Import Settings component directly to avoid lazy loading issues
-import Settings from './components/features/Settings/Settings';
+import { Settings } from './components/features/Settings';
 
 
 
@@ -100,8 +101,10 @@ const MaterialHeader: React.FC<{
           </Typography>
         </Box>
         
-        {/* Theme Toggle */}
-        <ThemeToggle color="inherit" />
+        {/* Status Indicators */}
+        <Box sx={{ mr: 1 }}>
+          <StatusIndicators compact />
+        </Box>
         
         {/* Manual Refresh Button */}
         {showRefresh && (
@@ -320,12 +323,13 @@ function AppMaterial() {
     }
   }, [isFullyConfigured, currentView]);
 
-  // Show API key setup if not configured
+  // Show setup wizard if not configured (includes API key + city selection)
   if (!isConfigured) {
     return (
       <ErrorBoundary>
-        <ApiKeySetup onApiKeyValidated={(apiKey) => {
-          logger.info('API key validated, user can now access the app', { keyLength: apiKey.length });
+        <SetupWizard onComplete={() => {
+          logger.info('Setup wizard completed, user can now access the app');
+          // Configuration is automatically saved by the wizard
         }} />
       </ErrorBoundary>
     );

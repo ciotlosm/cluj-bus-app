@@ -27,9 +27,13 @@ Designed for your phone with touch-friendly controls and fast loading.
 ### First Time Setup
 
 1. **Open the app** at `http://localhost:5175`
-2. **Enter your Tranzy API key** when prompted
+2. **Setup Wizard will appear** with 2 steps:
+   - **Step 1**: Enter your Tranzy API key and test it
+   - **Step 2**: Select your city (this is saved permanently)
 3. **Allow location access** for better route suggestions
 4. **Add favorite routes** by searching for route numbers
+
+**Note**: City selection is done once during setup and stored locally. You won't need to select it again.
 
 ### Daily Usage
 
@@ -39,6 +43,20 @@ Designed for your phone with touch-friendly controls and fast loading.
 4. **Get directions** - tap routes for detailed information
 
 ### Understanding the Interface
+
+#### Status Indicators (Header)
+The app header shows your current status with colored chips:
+
+**Internet Connection:**
+- 🟢 **"Connected"** - Online with real-time data
+- 🔴 **"No Internet"** - Offline, showing cached data only
+
+**GPS Location:**
+- 🟢 **"GPS Active"** - Location services working, coordinates available
+- 🟡 **"GPS Inactive"** - Location not available but can be enabled
+- 🔴 **"GPS Disabled"** - Location access denied in browser settings
+
+**Tip**: Hover over status chips to see detailed information and coordinates.
 
 #### Route Display
 - **Route Number** (e.g., "42") - the bus line
@@ -81,20 +99,36 @@ The app uses your location to:
 
 ## 🔧 Settings & Customization
 
+### Common Settings (Top of Settings)
+- **Refresh Rate** - how often to update bus data (5-300 seconds)
+- **Stale Data Threshold** - when to consider data outdated (1-30 minutes)
+- **Valid Config indicator** - green chip shows when setup is complete
+
 ### Location Settings
 - **Enable GPS** for automatic stop detection
 - **Set home/work** for smart route suggestions
 - **Privacy**: Location data stays on your device
 
 ### Display Options
-- **Auto-refresh** - updates every 30 seconds
-- **Manual refresh** - pull down to update
+- **Auto-refresh** - updates based on your refresh rate setting (also refreshes GPS location)
+- **Animated refresh button** - circular progress shows time until next refresh
+- **Visual cache status** - button color indicates update health
+- **Automatic GPS refresh** - location updated every refresh cycle for better accuracy
 - **Offline mode** - cached data when no internet
 
-### Notification Preferences
-- **Favorite alerts** - get notified about your routes
-- **Service updates** - important announcements
-- **Battery optimization** - reduce background activity
+#### Refresh Button Colors
+- 🟢 **Green Circle** - Cache updated successfully, counting down to next refresh
+- 🔴 **Red Circle** - No cache updates happening (check connection/settings)
+- 🟡 **Yellow Circle** - Auto-refresh disabled
+
+#### Theme Control
+- **Dark/Light Mode** - Toggle available in Settings > Config tab
+- **Automatic detection** - Respects your system theme preference
+
+### API Configuration (Separate Tab)
+- **Tranzy API Key** - for live bus tracking data
+- **Google Maps API Key** - for enhanced location features
+- **City info** - visible in version menu for troubleshooting (set during initial setup)
 
 ## 📱 Mobile Tips
 

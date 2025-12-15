@@ -181,6 +181,20 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
           const config = useConfigStore.getState().config;
           if (!config?.agencyId || !config?.apiKey) return;
 
+          // Refresh GPS location if permission is granted
+          try {
+            const { useLocationStore } = await import('./locationStore');
+            const locationStore = useLocationStore.getState();
+            
+            if (locationStore.locationPermission === 'granted') {
+              await locationStore.requestLocation();
+              logger.debug('GPS location refreshed during auto refresh', {}, 'BUS_STORE');
+            }
+          } catch (locationError) {
+            logger.warn('Failed to refresh GPS location during auto refresh:', locationError, 'BUS_STORE');
+            // Continue with data refresh even if GPS fails
+          }
+
           enhancedTranzyApi.setApiKey(config.apiKey);
           
           const agencyId = parseInt(config.agencyId);
