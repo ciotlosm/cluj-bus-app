@@ -173,31 +173,7 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
               sx={{ flex: 1 }}
             />
           </Box>
-          
-          {/* Default Location Setting */}
-          <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                Offline Location
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleLocationPicker('offline')}
-              >
-                {formData.defaultLocation ? 'Change Offline' : 'Set Offline Location'}
-              </Button>
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Used when GPS and saved locations are unavailable
-            </Typography>
-            {formData.defaultLocation && (
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                Current: {formatLocationDisplay(formData.defaultLocation)}
-              </Typography>
-            )}
-          </Box>
+
         </Box>
 
         {/* Theme Settings */}
