@@ -1,5 +1,23 @@
 # Cluj Bus App - Developer Guide
 
+## 🚨 **CRITICAL: Deployment Policy**
+
+### **NEVER Deploy to Production Automatically**
+
+**❌ FORBIDDEN**: `netlify deploy --prod` without explicit request  
+**✅ REQUIRED**: Wait for specific "deploy to prod" instruction
+
+#### Workflow:
+1. Make changes and test locally (`npm run build`)
+2. Commit and push to repository (`git commit && git push`)
+3. **STOP** - Do not deploy to production
+4. Wait for explicit deployment request
+5. Only then run `netlify deploy --prod`
+
+This ensures all changes are reviewed before going live to users.
+
+---
+
 ## 🏗️ Architecture Overview
 
 ### Tech Stack

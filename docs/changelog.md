@@ -5,11 +5,12 @@
 ### December 2024 - Settings UI Optimization & Major Fixes
 
 #### 🧙‍♂️ Setup Wizard & Configuration Restructure
-- **New Setup Wizard** - City selection now part of initial API key setup (2-step wizard)
+- **Streamlined Setup Flow** - Removed redundant "API Key Validated" intermediate screen
+- **Optional Location Settings** - Home/work locations no longer required for app functionality
+- **Direct App Access** - Setup wizard now goes straight to main app after completion
+- **2-Step Setup** - API key validation + city selection, then immediate app access
 - **Separated API Configuration** - API keys moved to dedicated "API Keys" tab in Settings
 - **One-time city selection** - City/Agency stored in local storage, set once during setup
-- **Troubleshooting info** - City name and Agency ID now visible in version info for debugging
-- **Streamlined flow** - No more separate city configuration after initial setup
 
 #### 📍 Status Indicators & GPS Integration
 - **Visual Status Indicators** - Internet connectivity and GPS status now visible in app header
@@ -24,6 +25,13 @@
 - **Visual Cache Status** - Button color indicates cache health (Green: updated, Red: no updates, Yellow: disabled)
 - **Filling Circle Animation** - Progress ring empties as refresh approaches, fills after successful update
 - **Cleaner Header** - Removed text labels, replaced with intuitive visual indicators
+
+#### 📍 GPS Location Clarification
+- **Three GPS Location Types** - Clarified Current (device), Home (saved), Work (saved) locations
+- **GPS Permission Display** - Settings now show device GPS permission status with clear descriptions
+- **Smart Button States** - "Use Current Location" buttons disabled when GPS permission denied
+- **Header Status Accuracy** - Status indicators now only show current device GPS, not saved locations
+- **Better User Understanding** - Clear documentation of different location types and their purposes
 
 #### 🎨 Settings UI Improvements
 - **Optimized Settings layout** - Replaced "Configuration is complete" alert with green "Valid Config" chip at top

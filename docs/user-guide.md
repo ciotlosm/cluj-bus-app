@@ -26,14 +26,14 @@ Designed for your phone with touch-friendly controls and fast loading.
 
 ### First Time Setup
 
-1. **Open the app** at `http://localhost:5175`
-2. **Setup Wizard will appear** with 2 steps:
+1. **Open the app** at the production URL
+2. **Setup Wizard appears** with 2 simple steps:
    - **Step 1**: Enter your Tranzy API key and test it
-   - **Step 2**: Select your city (this is saved permanently)
-3. **Allow location access** for better route suggestions
-4. **Add favorite routes** by searching for route numbers
+   - **Step 2**: Select your city (saved permanently)
+3. **Complete Setup** - Immediately access the main app
+4. **Optional**: Set home/work locations later for enhanced route suggestions
 
-**Note**: City selection is done once during setup and stored locally. You won't need to select it again.
+**Note**: The app is fully functional after the 2-step setup. Home and work locations are optional features that can be configured later in Settings.
 
 ### Daily Usage
 
@@ -51,12 +51,12 @@ The app header shows your current status with colored chips:
 - 🟢 **"Connected"** - Online with real-time data
 - 🔴 **"No Internet"** - Offline, showing cached data only
 
-**GPS Location:**
-- 🟢 **"GPS Active"** - Location services working, coordinates available
-- 🟡 **"GPS Inactive"** - Location not available but can be enabled
-- 🔴 **"GPS Disabled"** - Location access denied in browser settings
+**Current GPS Location (Device):**
+- 🟢 **"GPS Active"** - Device location services working, real-time coordinates available
+- 🟡 **"GPS Inactive"** - Device location not available but can be enabled
+- 🔴 **"GPS Disabled"** - Device location access denied in browser settings
 
-**Tip**: Hover over status chips to see detailed information and coordinates.
+**Tip**: This shows your device's current GPS status, not your saved home/work locations.
 
 #### Route Display
 - **Route Number** (e.g., "42") - the bus line
@@ -105,9 +105,32 @@ The app uses your location to:
 - **Valid Config indicator** - green chip shows when setup is complete
 
 ### Location Settings
-- **Enable GPS** for automatic stop detection
-- **Set home/work** for smart route suggestions
-- **Privacy**: Location data stays on your device
+
+#### Three Types of GPS Locations:
+
+**1. Current GPS Location (Device)**
+- Your device's real-time location
+- Shown in header status indicators
+- Used for automatic location updates during refresh
+- Requires browser location permission
+
+**2. Home GPS Location (Saved)**
+- Your saved home address/coordinates
+- Set once in Settings > Config > Location Settings
+- Used for intelligent route direction detection
+- Optional but recommended for better suggestions
+
+**3. Work GPS Location (Saved)**
+- Your saved work address/coordinates  
+- Set once in Settings > Config > Location Settings
+- Used for intelligent route direction detection
+- Optional but recommended for better suggestions
+
+#### GPS Permission Management:
+- **GPS Status** shown in Settings with current permission state
+- **"Use Current Location" buttons** disabled when GPS permission denied
+- **Enable in browser settings** if you want to use current location features
+- **Privacy**: All location data stays on your device
 
 ### Display Options
 - **Auto-refresh** - updates based on your refresh rate setting (also refreshes GPS location)

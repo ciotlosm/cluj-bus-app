@@ -8,12 +8,17 @@ import {
   Chip,
   useTheme,
   alpha,
+  Alert,
 } from '@mui/material';
 import {
   Home as HomeIcon,
   Business as WorkIcon,
+  LocationOn as LocationOnIcon,
+  LocationOff as LocationOffIcon,
+  LocationDisabled as LocationDisabledIcon,
 } from '@mui/icons-material';
 import { Button } from '../../../ui/Button';
+import { useLocationStore } from '../../../../stores/locationStore';
 type Coordinates = { latitude: number; longitude: number; };
 
 interface LocationSettingsSectionProps {
@@ -30,6 +35,40 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
   formatLocationDisplay,
 }) => {
   const theme = useTheme();
+  const { currentLocation, locationPermission } = useLocationStore();
+
+  const getGPSPermissionStatus = () => {
+    switch (locationPermission) {
+      case 'granted':
+        return {
+          icon: <LocationOnIcon sx={{ fontSize: 16 }} />,
+          label: 'GPS Enabled',
+          color: theme.palette.success.main,
+          bgColor: alpha(theme.palette.success.main, 0.1),
+          description: currentLocation 
+            ? `Current location available: ${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}`
+            : 'GPS permission granted, location will be available when requested',
+        };
+      case 'denied':
+        return {
+          icon: <LocationDisabledIcon sx={{ fontSize: 16 }} />,
+          label: 'GPS Disabled',
+          color: theme.palette.error.main,
+          bgColor: alpha(theme.palette.error.main, 0.1),
+          description: 'GPS access denied. Enable location services in browser settings to use "Use Current Location" features.',
+        };
+      default:
+        return {
+          icon: <LocationOffIcon sx={{ fontSize: 16 }} />,
+          label: 'GPS Not Requested',
+          color: theme.palette.warning.main,
+          bgColor: alpha(theme.palette.warning.main, 0.1),
+          description: 'GPS permission not yet requested. Click "Use Current Location" to enable.',
+        };
+    }
+  };
+
+  const gpsStatus = getGPSPermissionStatus();
 
   return (
     <Card variant="outlined" sx={{ bgcolor: alpha(theme.palette.info.main, 0.02) }}>
@@ -45,6 +84,26 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
           <Typography variant="body2" color="text.secondary">
             Set your home and work locations for intelligent routing (optional)
           </Typography>
+
+          {/* GPS Permission Status */}
+          <Alert 
+            severity={locationPermission === 'granted' ? 'success' : locationPermission === 'denied' ? 'error' : 'info'}
+            sx={{ 
+              bgcolor: gpsStatus.bgColor,
+              border: `1px solid ${alpha(gpsStatus.color, 0.3)}`,
+              '& .MuiAlert-icon': {
+                color: gpsStatus.color,
+              },
+            }}
+            icon={gpsStatus.icon}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Device GPS Status: {gpsStatus.label}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {gpsStatus.description}
+            </Typography>
+          </Alert>
           
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Box sx={{ flex: 1 }}>
