@@ -179,18 +179,18 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOnIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                Default Location (Fallback)
+                Offline Location
               </Typography>
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => handleLocationPicker('fallback')}
+                onClick={() => handleLocationPicker('offline')}
               >
-                {formData.defaultLocation ? 'Change Default' : 'Set Default Location'}
+                {formData.defaultLocation ? 'Change Offline' : 'Set Offline Location'}
               </Button>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Used when GPS and saved locations are unavailable for direction detection
+              Used when GPS and saved locations are unavailable
             </Typography>
             {formData.defaultLocation && (
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
@@ -251,7 +251,7 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
               ? 'Set Home Location' 
               : locationPickerType === 'work' 
                 ? 'Set Work Location'
-                : 'Set Fallback Location'
+                : 'Set Offline Location'
           }
           type={locationPickerType}
           currentLocation={

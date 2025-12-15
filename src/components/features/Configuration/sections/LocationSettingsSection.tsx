@@ -23,7 +23,7 @@ interface LocationSettingsSectionProps {
   homeLocation?: Coordinates;
   workLocation?: Coordinates;
   defaultLocation?: Coordinates;
-  onLocationPicker: (type: 'home' | 'work' | 'fallback') => void;
+  onLocationPicker: (type: 'home' | 'work' | 'offline') => void;
   formatLocationDisplay: (location: Coordinates | undefined) => string | null;
 }
 
@@ -37,25 +37,7 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
   const theme = useTheme();
   const { locationPermission, currentLocation } = useLocationStore();
 
-  // Helper function to render coordinates as chips
-  const renderCoordinatesChip = (location: Coordinates | undefined) => {
-    if (!location) return null;
-    
-    return (
-      <Chip
-        label={formatLocationDisplay(location)}
-        size="small"
-        variant="outlined"
-        sx={{ 
-          mt: 0.5, 
-          fontSize: '0.65rem', 
-          height: 20,
-          bgcolor: alpha(theme.palette.primary.main, 0.05),
-          borderColor: alpha(theme.palette.primary.main, 0.2),
-        }}
-      />
-    );
-  };
+
 
   // Determine if GPS is available (less prominent fallback when GPS works)
   const isGpsAvailable = locationPermission === 'granted' && currentLocation;
@@ -94,7 +76,7 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
           }}>
             {/* Home Location */}
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
                 <HomeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   Home
@@ -107,6 +89,19 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
                     sx={{ height: 18, fontSize: '0.65rem' }}
                   />
                 )}
+                {homeLocation && (
+                  <Chip
+                    label={formatLocationDisplay(homeLocation)}
+                    size="small"
+                    variant="outlined"
+                    sx={{ 
+                      fontSize: '0.6rem', 
+                      height: 18,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderColor: alpha(theme.palette.primary.main, 0.2),
+                    }}
+                  />
+                )}
               </Stack>
               <Button
                 variant="outlined"
@@ -117,12 +112,11 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
               >
                 {homeLocation ? 'Change' : 'Set Home'}
               </Button>
-              {renderCoordinatesChip(homeLocation)}
             </Box>
             
             {/* Work Location */}
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
                 <WorkIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   Work
@@ -135,6 +129,19 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
                     sx={{ height: 18, fontSize: '0.65rem' }}
                   />
                 )}
+                {workLocation && (
+                  <Chip
+                    label={formatLocationDisplay(workLocation)}
+                    size="small"
+                    variant="outlined"
+                    sx={{ 
+                      fontSize: '0.6rem', 
+                      height: 18,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderColor: alpha(theme.palette.primary.main, 0.2),
+                    }}
+                  />
+                )}
               </Stack>
               <Button
                 variant="outlined"
@@ -145,16 +152,15 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
               >
                 {workLocation ? 'Change' : 'Set Work'}
               </Button>
-              {renderCoordinatesChip(workLocation)}
             </Box>
 
-            {/* Fallback Location - Less prominent when GPS available */}
+            {/* Offline Location - Less prominent when GPS available */}
             <Box sx={{ 
               opacity: isGpsAvailable ? 0.7 : 1,
               transform: isGpsAvailable ? 'scale(0.95)' : 'scale(1)',
               transition: 'all 0.2s ease-in-out'
             }}>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
                 <LocationOnIcon sx={{ 
                   fontSize: 16, 
                   color: isGpsAvailable ? 'text.disabled' : 'text.secondary' 
@@ -163,7 +169,7 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
                   fontWeight: 600,
                   color: isGpsAvailable ? 'text.disabled' : 'text.primary'
                 }}>
-                  Fallback
+                  Offline
                 </Typography>
                 {defaultLocation && (
                   <Chip
@@ -173,20 +179,32 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
                     sx={{ height: 18, fontSize: '0.65rem' }}
                   />
                 )}
+                {defaultLocation && (
+                  <Chip
+                    label={formatLocationDisplay(defaultLocation)}
+                    size="small"
+                    variant="outlined"
+                    sx={{ 
+                      fontSize: '0.6rem', 
+                      height: 18,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderColor: alpha(theme.palette.primary.main, 0.2),
+                    }}
+                  />
+                )}
               </Stack>
               <Button
                 variant="outlined"
                 size="small"
                 fullWidth
-                onClick={() => onLocationPicker('fallback')}
+                onClick={() => onLocationPicker('offline')}
                 sx={{
                   color: isGpsAvailable ? 'text.disabled' : 'primary.main',
                   borderColor: isGpsAvailable ? 'divider' : 'primary.main',
                 }}
               >
-                {defaultLocation ? 'Change' : 'Set Fallback'}
+                {defaultLocation ? 'Change' : 'Set Offline'}
               </Button>
-              {renderCoordinatesChip(defaultLocation)}
               {!isGpsAvailable && (
                 <Typography variant="caption" color="warning.main" sx={{ 
                   fontSize: '0.65rem', 
