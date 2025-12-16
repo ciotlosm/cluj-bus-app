@@ -2,6 +2,62 @@
 
 ## Recent Updates
 
+### December 16, 2024 - Major Code Refactoring: Shared Vehicle Processing Hook
+**Refactored**: Eliminated massive code duplication by creating shared `useVehicleProcessing` hook
+
+**Changes**:
+- **Code reduction**: Removed 670+ lines of duplicate code between FavoriteRoutesView and StationDisplay components
+- **Shared hook**: Created `src/hooks/useVehicleProcessing.ts` with configurable options for both view types
+- **Single source of truth**: All vehicle processing logic now centralized in one location
+- **Maintained functionality**: All existing features preserved while improving maintainability
+- **Configurable behavior**: Hook supports different filtering modes, station limits, and vehicle display options
+
+**Technical Details**:
+- **Hook configuration**: Supports `filterByFavorites`, `maxStations`, `maxVehiclesPerStation`, `showAllVehiclesPerRoute` options
+- **FavoriteRoutesView**: Now uses hook with favorites filtering, single station, unlimited vehicles per route
+- **StationDisplay**: Uses hook with all routes, 2 stations max, limited vehicles with deduplication
+- **Consistent algorithms**: Both views now use identical vehicle processing, direction analysis, and sorting logic
+- **Performance optimized**: Configurable search radius, station limits, and proximity thresholds
+
+**Impact**: Significantly improved code maintainability - bug fixes and enhancements now automatically apply to both views. Reduced technical debt while preserving all user-facing functionality.
+
+### December 16, 2024 - Trip Headsign Data Fix: Accurate Destination Display
+**Fixed**: Vehicle destination chips now show actual trip headsigns instead of full route descriptions
+
+**Changes**:
+- **Accurate destinations**: Destination chips now display proper trip headsigns like "VIVO Sosire", "Disp. Zorilor", "Snagov Nord"
+- **Eliminated confusion**: No longer shows full route descriptions like "Cart. Grigorescu - Str. Aurel Vlaicu" in destination chips
+- **Real GTFS data**: Uses actual trip headsign data from Tranzy API for precise destination information
+- **Station view fixed**: StationDisplay component now properly fetches and uses trip data for destinations
+- **Debug logging**: Added development logging to track headsign data usage and verify correct implementation
+
+**Technical Details**:
+- **Enhanced StationDisplay**: Modified to fetch trips data in parallel with vehicles and routes
+- **Trip headsign priority**: Uses `tripData?.headsign` as primary source, falls back to `route?.routeDesc` if unavailable
+- **Proper data flow**: Fixed vehicle destination assignment to use enhanced API service method with trip data
+- **API integration**: Added trips data fetching to both main processing and expanded search logic
+- **Development debugging**: Added console logging to verify headsign data is being used correctly
+
+**Impact**: Users now see accurate, concise destination information that matches real bus destination signs, making route selection much clearer.
+
+### December 16, 2024 - UI Enhancement: Destination Display in Vehicle Cards
+**Improved**: Added destination chip to vehicle cards in closest station view for better route information
+
+**Changes**:
+- **Destination chip**: Vehicle cards now show the bus destination with a green chip and arrow (→)
+- **Better layout**: Chips are now properly arranged in a responsive flex layout that works on mobile and desktop
+- **Consistent styling**: Destination chip uses the same green color scheme as end station chips in favorites view
+- **Truncated text**: Long destination names are properly truncated with ellipsis to prevent layout issues
+- **Visual hierarchy**: Clear indication of where each bus is heading alongside arrival information
+
+**Technical Details**:
+- **Enhanced VehicleCard**: Added destination chip display using `vehicle.destination` from GTFS trip data
+- **Improved API integration**: Enhanced tranzyApiService to properly fetch and use trip destination data
+- **Responsive design**: Chips stack vertically on mobile, horizontally on desktop for optimal space usage
+- **Accessibility**: Proper text truncation and sizing for readability across devices
+
+**Impact**: Users can now quickly see both when a bus is arriving AND where it's heading, making route selection more informed.
+
 ### December 16, 2024 - UI Improvement: Theme Toggle Moved to Settings
 **Improved**: Moved dark/light mode toggle from bottom navigation to Settings > Config tab for better organization
 

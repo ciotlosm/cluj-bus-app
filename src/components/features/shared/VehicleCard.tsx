@@ -210,48 +210,81 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
               }}>
                 Vehicle: {vehicle.vehicle?.label || vehicle.vehicle?.id || 'Unknown'}
               </Typography>
-              {vehicle._internalDirection !== 'unknown' && (
-                <Chip
-                  label={
-                    vehicle._internalDirection === 'arriving' 
-                      ? vehicle.minutesAway === 0 
-                        ? 'At station'
-                        : vehicle.minutesAway === 1 
-                          ? 'Arriving next'
-                          : `Arriving in ${vehicle.minutesAway}min`
-                      : `Already left`
-                  }
-                  size="small"
-                  sx={{
-                    bgcolor: vehicle._internalDirection === 'arriving' 
-                      ? vehicle.minutesAway === 0
-                        ? alpha(theme.palette.warning.main, 0.1) // Warning color for "At station"
-                        : alpha(theme.palette.success.main, 0.1) // Success color for "Arriving"
-                      : alpha(theme.palette.error.main, 0.1), // Error color for "Already left"
-                    color: vehicle._internalDirection === 'arriving' 
-                      ? vehicle.minutesAway === 0
-                        ? isDeparted 
-                          ? alpha(theme.palette.warning.main, 0.6)
-                          : theme.palette.warning.main
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 0.5, sm: 1 },
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                flexWrap: 'wrap'
+              }}>
+                {vehicle._internalDirection !== 'unknown' && (
+                  <Chip
+                    label={
+                      vehicle._internalDirection === 'arriving' 
+                        ? vehicle.minutesAway === 0 
+                          ? 'At station'
+                          : vehicle.minutesAway === 1 
+                            ? 'Arriving next'
+                            : `Arriving in ${vehicle.minutesAway}min`
+                        : `Already left`
+                    }
+                    size="small"
+                    sx={{
+                      bgcolor: vehicle._internalDirection === 'arriving' 
+                        ? vehicle.minutesAway === 0
+                          ? alpha(theme.palette.warning.main, 0.1) // Warning color for "At station"
+                          : alpha(theme.palette.success.main, 0.1) // Success color for "Arriving"
+                        : alpha(theme.palette.error.main, 0.1), // Error color for "Already left"
+                      color: vehicle._internalDirection === 'arriving' 
+                        ? vehicle.minutesAway === 0
+                          ? isDeparted 
+                            ? alpha(theme.palette.warning.main, 0.6)
+                            : theme.palette.warning.main
+                          : isDeparted 
+                            ? alpha(theme.palette.success.main, 0.6)
+                            : theme.palette.success.main
                         : isDeparted 
-                          ? alpha(theme.palette.success.main, 0.6)
-                          : theme.palette.success.main
-                      : isDeparted 
-                        ? alpha(theme.palette.error.main, 0.6)
-                        : theme.palette.error.main,
-                    border: vehicle._internalDirection === 'arriving' 
-                      ? vehicle.minutesAway === 0
-                        ? `1px solid ${alpha(theme.palette.warning.main, isDeparted ? 0.2 : 0.3)}`
-                        : `1px solid ${alpha(theme.palette.success.main, isDeparted ? 0.2 : 0.3)}`
-                      : `1px solid ${alpha(theme.palette.error.main, isDeparted ? 0.2 : 0.3)}`,
-                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                    height: { xs: 18, sm: 20 },
-                    opacity: isDeparted ? 0.7 : 1,
-                    flexShrink: 0,
-                    alignSelf: { xs: 'flex-start', sm: 'center' }
-                  }}
-                />
-              )}
+                          ? alpha(theme.palette.error.main, 0.6)
+                          : theme.palette.error.main,
+                      border: vehicle._internalDirection === 'arriving' 
+                        ? vehicle.minutesAway === 0
+                          ? `1px solid ${alpha(theme.palette.warning.main, isDeparted ? 0.2 : 0.3)}`
+                          : `1px solid ${alpha(theme.palette.success.main, isDeparted ? 0.2 : 0.3)}`
+                        : `1px solid ${alpha(theme.palette.error.main, isDeparted ? 0.2 : 0.3)}`,
+                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                      height: { xs: 18, sm: 20 },
+                      opacity: isDeparted ? 0.7 : 1,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                
+                {/* Destination Chip */}
+                {vehicle.destination && (
+                  <Chip
+                    label={`→ ${vehicle.destination}`}
+                    size="small"
+                    sx={{
+                      bgcolor: alpha(theme.palette.success.main, 0.1),
+                      color: isDeparted 
+                        ? alpha(theme.palette.success.main, 0.6)
+                        : theme.palette.success.main,
+                      border: `1px solid ${alpha(theme.palette.success.main, isDeparted ? 0.2 : 0.3)}`,
+                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                      height: { xs: 18, sm: 20 },
+                      opacity: isDeparted ? 0.7 : 1,
+                      flexShrink: 0,
+                      maxWidth: { xs: '140px', sm: '180px' },
+                      '& .MuiChip-label': {
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        px: { xs: 0.5, sm: 0.75 }
+                      }
+                    }}
+                  />
+                )}
+              </Box>
             </Box>
             
             {/* Short stop list (always visible for favorite routes) */}

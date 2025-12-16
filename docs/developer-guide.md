@@ -140,6 +140,100 @@ const handleComplete = async () => {
 - **City/Agency**: Set once during setup, stored permanently in localStorage
 - **Other settings**: Configurable in main Settings tab
 
+## 📍 View Components Data Architecture
+
+### Favorite Routes View vs Closest Station View
+
+Both views share the same core data structures but implement different filtering and display philosophies:
+
+#### **Data Structure Differences**
+
+| Aspect | Favorite Routes View | Closest Station View |
+|--------|---------------------|---------------------|
+| **Data Source** | Filters by `config.favoriteBuses` | Shows ALL vehicles at nearby stations |
+| **Station Selection** | Single closest station serving favorites | Up to 2 stations within 200m |
+| **Vehicle Filtering** | Shows ALL vehicles from favorite routes | Deduplicates by route (best vehicle per route) |
+| **Vehicle Limits** | No limits - shows everything | `maxVehiclesPerStation` limit (default: 5) |
+| **Stop List Display** | `showShortStopList={true}` (always visible) | `showShortStopList={false}` (expandable only) |
+
+#### **Shared Data Structures**
+
+Both views use identical core interfaces:
+
+```typescript
+interface EnhancedVehicleInfoWithDirection extends EnhancedVehicleInfo {
+  _internalDirection?: 'arriving' | 'departing' | 'unknown';
+  stopSequence?: Array<{
+    stopId: string;
+    stopName: string;
+    sequence: number;
+    isCurrent: boolean;
+    isDestination: boolean;
+  }>;
+}
+
+// Station Vehicle Groups (identical structure)
+Array<{
+  station: { station: Station; distance: number };
+  vehicles: EnhancedVehicleInfoWithDirection[];
+  allRoutes: Array<{
+    routeId: string;
+    routeName: string;
+    vehicleCount: number;
+  }>;
+}>
+```
+
+#### **Processing Logic Differences**
+
+**Favorite Routes View Processing:**
+1. Maps favorite route names to route IDs via `routesMap.get(routeName)`
+2. Filters vehicles: `vehicles.filter(v => favoriteRouteIds.includes(v.routeId))`
+3. Finds stations serving those specific vehicles only
+4. Shows closest station with ALL favorite route vehicles (no deduplication)
+5. No vehicle count limits - comprehensive view of user's routes
+
+**Closest Station View Processing:**
+1. Finds nearby stations within 5km radius: `calculateDistance(userLocation, station.coordinates)`
+2. Gets ALL vehicles serving those stations (any route)
+3. Deduplicates by route: `bestVehiclePerRoute = routeGroups.map(vehicles => vehicles.sort(prioritySort)[0])`
+4. Applies limits: `finalVehicles.slice(0, maxVehicles)`
+5. Shows up to 2 stations if within 200m proximity
+
+#### **Code Duplication Refactoring (COMPLETED)**
+
+**✅ Successfully Refactored (December 2024):**
+Created shared `useVehicleProcessing` hook that eliminated ~670 lines of duplicate code between FavoriteRoutesView and StationDisplay components.
+
+**Shared Hook Implementation:**
+```typescript
+// src/hooks/useVehicleProcessing.ts
+const useVehicleProcessing = (options: VehicleProcessingOptions) => {
+  // Configurable vehicle processing for both views
+  return { 
+    stationVehicleGroups, 
+    isLoading, 
+    effectiveLocationForDisplay,
+    favoriteRoutes,
+    allStations 
+  };
+};
+```
+
+**Configuration Options:**
+- `filterByFavorites`: Route filtering mode (favorites vs all routes)
+- `maxStations`: Number of stations to display (1 for favorites, 2 for station view)
+- `maxVehiclesPerStation`: Vehicle limit per station
+- `showAllVehiclesPerRoute`: Show all vehicles vs best per route
+- `maxSearchRadius`: Search area in meters
+- `proximityThreshold`: Station proximity rules
+
+**Results:**
+- **Code Reduction**: 670+ lines eliminated
+- **Maintainability**: Single source of truth for vehicle processing
+- **Consistency**: Both views use identical algorithms
+- **Performance**: Optimized with configurable options
+
 ## 📍 Station Display Component
 
 ### Overview (`src/components/features/StationDisplay/StationDisplay.tsx`)

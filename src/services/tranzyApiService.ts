@@ -280,17 +280,19 @@ export class TranzyApiService {
   ): Promise<EnhancedVehicleInfo[]> {
     try {
       // Get all required data in parallel
-      const [stops, routes, vehicles, stopTimes] = await Promise.allSettled([
+      const [stops, routes, vehicles, stopTimes, trips] = await Promise.allSettled([
         this.getStops(agencyId, forceRefresh),
         this.getRoutes(agencyId, forceRefresh),
         this.getVehicles(agencyId, routeId),
         stopId ? this.getStopTimes(agencyId, stopId, undefined, forceRefresh) : Promise.resolve([]),
+        this.getTrips(agencyId, routeId, forceRefresh),
       ]);
 
       const stopsData = stops.status === 'fulfilled' ? stops.value : [];
       const routesData = routes.status === 'fulfilled' ? routes.value : [];
       const vehiclesData = vehicles.status === 'fulfilled' ? vehicles.value : [];
       const stopTimesData = stopTimes.status === 'fulfilled' ? stopTimes.value : [];
+      const tripsData = trips.status === 'fulfilled' ? trips.value : [];
 
       // Combine the data
       return this.combineScheduleAndLiveData(
@@ -298,6 +300,7 @@ export class TranzyApiService {
         routesData,
         vehiclesData,
         stopTimesData,
+        tripsData,
         stopId,
         routeId
       );
@@ -462,6 +465,7 @@ export class TranzyApiService {
     routes: Route[],
     vehicles: LiveVehicle[],
     stopTimes: StopTime[],
+    trips: Trip[],
     stopId?: number,
     routeId?: number
   ): EnhancedVehicleInfo[] {
@@ -471,6 +475,7 @@ export class TranzyApiService {
     // Create a map for quick lookups
     const stopsMap = new Map(stops.map(stop => [stop.id, stop]));
     const routesMap = new Map(routes.map(route => [route.id, route]));
+    const tripsMap = new Map(trips.map(trip => [trip.tripId, trip]));
 
     // Process live vehicles
     for (const vehicle of vehicles) {
@@ -496,14 +501,29 @@ export class TranzyApiService {
       const estimatedArrival = this.calculateArrivalTime(vehicle, closestStop, scheduleData);
       const minutesAway = Math.max(0, Math.round((estimatedArrival.getTime() - now.getTime()) / 60000));
 
+      // Get trip data for headsign
+      const tripData = tripsMap.get(vehicle.tripId);
+      const destination = tripData?.headsign || route.routeDesc;
+
+      // Debug logging to see what headsign data we're getting
+      if (import.meta.env.DEV) {
+        logger.debug('Vehicle destination data', {
+          vehicleId: vehicle.id,
+          tripId: vehicle.tripId,
+          tripHeadsign: tripData?.headsign,
+          routeDesc: route.routeDesc,
+          finalDestination: destination
+        }, 'API');
+      }
+
       enhancedVehicles.push({
         vehicle,
         schedule: scheduleData ? {
           stopId: scheduleData.stopId,
           routeId: vehicle.routeId,
           tripId: scheduleData.tripId,
-          direction: 'inbound', // This would need more logic to determine
-          headsign: scheduleData.headsign || route.routeDesc,
+          direction: tripData?.direction || 'inbound',
+          headsign: tripData?.headsign || scheduleData.headsign || route.routeDesc,
           scheduledTimes: [{
             arrival: this.parseTimeToDate(scheduleData.arrivalTime),
             departure: this.parseTimeToDate(scheduleData.departureTime),
@@ -512,7 +532,7 @@ export class TranzyApiService {
         id: vehicle.id,
         route: route.routeName,
         routeId: vehicle.routeId,
-        destination: route.routeDesc,
+        destination: destination,
         direction: this.determineDirection(vehicle, closestStop), // Simplified
         scheduledArrival: scheduleData ? this.parseTimeToDate(scheduleData.arrivalTime) : undefined,
         liveArrival: estimatedArrival,
@@ -548,13 +568,17 @@ export class TranzyApiService {
         const scheduledArrival = this.parseTimeToDate(stopTime.arrivalTime);
         const minutesAway = Math.max(0, Math.round((scheduledArrival.getTime() - now.getTime()) / 60000));
 
+        // Get trip data for headsign (schedule-only vehicles)
+        const tripData = tripsMap.get(stopTime.tripId);
+        const destination = tripData?.headsign || stopTime.headsign || route.routeDesc;
+
         enhancedVehicles.push({
           schedule: {
             stopId: stopTime.stopId,
             routeId: route.id,
             tripId: stopTime.tripId,
-            direction: 'inbound',
-            headsign: stopTime.headsign || route.routeDesc,
+            direction: tripData?.direction || 'inbound',
+            headsign: destination,
             scheduledTimes: [{
               arrival: scheduledArrival,
               departure: this.parseTimeToDate(stopTime.departureTime),
@@ -563,7 +587,7 @@ export class TranzyApiService {
           id: `schedule-${stopTime.tripId}-${stopTime.stopId}`,
           route: route.routeName,
           routeId: route.id,
-          destination: route.routeDesc,
+          destination: destination,
           direction: 'unknown',
           scheduledArrival,
           estimatedArrival: scheduledArrival,
