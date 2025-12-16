@@ -36,7 +36,13 @@ interface StationDisplayProps {
 const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
   const { config } = useConfigStore();
   
+  // State for route filtering per station (must be declared before use)
+  const [selectedRoutePerStation, setSelectedRoutePerStation] = React.useState<Map<string, string>>(new Map());
+  
   // Use the shared vehicle processing hook
+  // When route filtering is active, show all vehicles per route
+  const hasActiveFilters = selectedRoutePerStation.size > 0;
+  
   const {
     stationVehicleGroups,
     isLoading,
@@ -45,8 +51,8 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
   } = useVehicleProcessing({
     filterByFavorites: false,
     maxStations: 2,
-    maxVehiclesPerStation: config?.maxVehiclesPerStation || 5,
-    showAllVehiclesPerRoute: false,
+    maxVehiclesPerStation: hasActiveFilters ? 999 : (config?.maxVehiclesPerStation || 5),
+    showAllVehiclesPerRoute: hasActiveFilters,
     maxSearchRadius: 5000,
     maxStationsToCheck: 20,
     proximityThreshold: 200,
@@ -59,9 +65,28 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
   const [mapModalOpen, setMapModalOpen] = React.useState(false);
   const [selectedVehicleForMap, setSelectedVehicleForMap] = React.useState<EnhancedVehicleInfoWithDirection | null>(null);
   const [targetStationId, setTargetStationId] = React.useState<string>('');
-  
-  // State for route filtering per station
-  const [selectedRoutePerStation, setSelectedRoutePerStation] = React.useState<Map<string, string>>(new Map());
+
+  // Process station groups with route filtering
+  const processedStationGroups = React.useMemo(() => {
+    return stationVehicleGroups.map(stationGroup => {
+      const selectedRoute = selectedRoutePerStation.get(stationGroup.station.station.id);
+      
+      if (!selectedRoute) {
+        // No filter for this station, return as-is
+        return stationGroup;
+      }
+
+      // Filter vehicles to show only the selected route
+      const filteredVehicles = stationGroup.vehicles.filter(vehicle => 
+        vehicle.routeId === selectedRoute
+      );
+
+      return {
+        ...stationGroup,
+        vehicles: filteredVehicles
+      };
+    });
+  }, [stationVehicleGroups, selectedRoutePerStation]);
 
   // Convert vehicle to FavoriteBusInfo format for map modal
   const convertVehicleToFavoriteBusInfo = (vehicle: EnhancedVehicleInfoWithDirection, targetStationId: string): FavoriteBusInfo => {
@@ -207,7 +232,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
     <Box sx={{ p: 3 }}>
       <Stack spacing={4}>
         {/* Only show stations that have vehicles serving them */}
-        {stationVehicleGroups.map((stationGroup, stationIndex) => {
+        {processedStationGroups.map((stationGroup, stationIndex) => {
           // Skip if no vehicles
           if (!stationGroup.vehicles.length) {
             return null;
