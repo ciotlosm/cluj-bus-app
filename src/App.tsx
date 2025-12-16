@@ -70,8 +70,7 @@ const MaterialHeader: React.FC<{
   title: string; 
   showRefresh?: boolean;
   isLoading?: boolean;
-  onLocationPicker?: (type: 'home' | 'work' | 'offline') => void;
-}> = React.memo(({ title, showRefresh = false, isLoading = false, onLocationPicker }) => {
+}> = React.memo(({ title, showRefresh = false, isLoading = false }) => {
   const theme = useTheme();
   
   return (
@@ -110,7 +109,7 @@ const MaterialHeader: React.FC<{
         
         {/* Status Indicators */}
         <Box sx={{ mr: 1 }}>
-          <StatusIndicators compact onLocationPicker={onLocationPicker} />
+          <StatusIndicators compact />
         </Box>
         
         {/* Manual Refresh Button */}
@@ -550,7 +549,6 @@ function AppMaterial() {
         <MaterialHeader 
           title={getHeaderTitle()}
           showRefresh={currentView === 'station' || currentView === 'routes'}
-          onLocationPicker={handleLocationPicker}
           isLoading={isInitializing}
         />
         

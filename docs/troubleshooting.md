@@ -288,14 +288,27 @@ nvm use 18
 
 ### API Issues
 
-#### "API Key Invalid" Error
-**Problem**: Can't fetch bus data, API key rejected
+#### "API Key Invalid" Error / 403 Forbidden
+**Problem**: Can't fetch bus data, getting 403 Forbidden or API key rejected
+
+**Root Cause**: API authentication is failing, but network connectivity is working
+
+**Diagnostic Tool**: Open `tools/debug/check-api-status.html` in your browser to:
+- Check if API key is stored correctly
+- Test API calls with detailed error information
+- Verify network connectivity vs API authentication
 
 **Solutions**:
-1. **Double-check the key**: Copy-paste carefully from Tranzy.ai
-2. **Verify key is active**: Log into your Tranzy account
-3. **Check network**: Try accessing Tranzy.ai directly
-4. **Clear browser cache**: Sometimes old keys get cached
+1. **Check API key format**: Ensure it's the correct format from Tranzy.ai
+2. **Verify key permissions**: Log into Tranzy account and check key status
+3. **Test key directly**: Use the diagnostic tool to test API calls
+4. **Clear and re-enter**: Delete and re-enter the API key in Settings
+5. **Check account status**: Ensure your Tranzy.ai account is active
+
+**Enhanced Connectivity Tracking (December 2024)**: Online/offline indicator now shows actual API connectivity status:
+- **Green "Online"**: Network connected AND API accessible
+- **Red "Offline"**: No network connection
+- **Red "API Error"**: Network connected but API unavailable (403, timeouts, etc.)
 
 #### "No Schedule Data Available"
 **Problem**: Routes show no departure times
@@ -379,6 +392,26 @@ npm run test:watch
 ```
 
 ### Performance Issues
+
+#### Storage Quota Exceeded Error
+**Problem**: Browser console shows "QuotaExceededError: The quota has been exceeded"
+
+**Root Cause**: App cache grows too large for browser's localStorage limit (5-10MB)
+
+**Solution Applied (December 2024)**: 
+- **Intelligent cache management**: Monitors both total size and individual entry sizes
+- **Large entry prevention**: Blocks individual entries over 2MB from being cached
+- **Size-based cleanup**: Removes largest entries first (more effective than age-based)
+- **Conservative limits**: Warning at 2MB, hard limit at 3MB (more aggressive prevention)
+- **Enhanced emergency handling**: Keeps only 20 smallest entries if quota exceeded
+- **Graceful fallback**: Continues working even if storage completely fails
+
+**Manual Solutions**:
+- **Clear browser data**: Go to browser settings and clear site data
+- **Restart browser**: Sometimes helps reset storage quotas
+- **Check available space**: Ensure device has sufficient storage
+
+**Prevention**: Cache now self-manages storage size automatically
 
 #### Slow Loading
 **Solutions**:

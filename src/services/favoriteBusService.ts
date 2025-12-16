@@ -655,7 +655,7 @@ class FavoriteBusService {
         return timeSinceUpdate <= 11;
       });
       
-      // Sort buses by arrival time (shortest to longest) for arriving buses
+      // Sort buses by arrival time (shortest to longest), but put already departed buses at the end
       const sortedBuses = filteredBuses.sort((a, b) => {
         // Helper function to calculate arrival time based on stop sequence
         const getArrivalTimeMinutes = (bus: FavoriteBusInfo): number => {
@@ -673,6 +673,11 @@ class FavoriteBusService {
           const userStopIndex = bus.stopSequence.findIndex(stop => stop.isClosestToUser);
           const currentStopIndex = bus.stopSequence.findIndex(stop => stop.isCurrent);
           
+          // Safety check: if indices are invalid, treat as no data
+          if (userStopIndex === -1 || currentStopIndex === -1) {
+            return Infinity;
+          }
+          
           if (currentStopIndex > userStopIndex) {
             return Infinity; // Bus has passed user's stop - put at end
           } else if (currentStopIndex === userStopIndex) {
@@ -680,13 +685,15 @@ class FavoriteBusService {
           } else {
             // Bus is approaching - estimate time based on stops remaining
             const stopsRemaining = userStopIndex - currentStopIndex;
-            return stopsRemaining * 1; // Rough estimate: 1 minute per stop
+            // Safety check: if somehow we get negative, treat as departed
+            return stopsRemaining > 0 ? stopsRemaining * 1 : Infinity;
           }
         };
         
         const aTime = getArrivalTimeMinutes(a);
         const bTime = getArrivalTimeMinutes(b);
         
+        // Simple numeric sort: 0 first, numbers second, Infinity last
         return aTime - bTime;
       });
       

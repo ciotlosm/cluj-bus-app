@@ -2,6 +2,70 @@
 
 ## Recent Updates
 
+### December 16, 2024 - Code Cleanup: Removed Unused Components
+**Cleaned**: Removed legacy components that were no longer used in the main application
+
+**Removed Components**:
+- **`FavoriteBusDisplay.tsx`** - Legacy component replaced by `FavoriteRoutesView`
+- **`GroupedFavoriteBusDisplay.tsx`** - Only used by the removed `FavoriteBusDisplay`
+- **`EmptyStates.tsx`** - Only used by the removed `FavoriteBusDisplay`
+- **`useFavoriteBusDisplay.ts`** - Hook only used by the removed `FavoriteBusDisplay`
+
+**Updated Files**:
+- **`FavoriteBuses/index.ts`** - Cleaned up exports for removed components
+- **`integration-complete.test.tsx`** - Removed unused `BusDisplay` import
+
+**Impact**: Reduced bundle size, eliminated dead code, and simplified the codebase. All active components remain functional.
+
+**Note**: `BusDisplay.tsx` was kept as it has tests, though it's not used in the main app.
+
+### December 16, 2024 - Reduced Console Log Spam
+**Fixed**: Location access warnings were being logged repeatedly during auto-refresh cycles
+
+**Changes**:
+- **Centralized warning tracking**: Added `locationWarningTracker` utility to manage warning frequency
+- **Session-based warnings**: Location warnings now appear only once per session instead of repeatedly
+- **Cleaner console output**: Reduced spam while maintaining important warning visibility
+- **Multiple store updates**: Applied fix to `favoriteBusStore`, `enhancedBusStore`, and `useRefreshSystem`
+
+**Impact**: Developers see cleaner console output during development while still being notified of location access issues.
+
+### December 16, 2024 - Enhanced Connectivity Tracking
+**Enhanced**: Online/offline indicators now track actual API connectivity, not just network status
+
+**Changes**:
+- **Smart connectivity detection**: Monitors API request success/failure in real-time
+- **Accurate status display**: Shows "API Error" when network works but API fails (403, etc.)
+- **Better user feedback**: Distinguishes between network issues and API authentication problems
+- **Automatic recovery**: Status updates to "Online" when API requests succeed again
+- **Enhanced tooltips**: Shows last success/error times and specific error types
+
+**Impact**: Users now see accurate connectivity status that reflects actual app functionality, not just network availability.
+
+### December 16, 2024 - Storage Quota Management Fix
+**Fixed**: QuotaExceededError that occurred when app cache grew too large
+
+**Changes**:
+- **Enhanced cache management**: Monitors both total cache size and individual entry sizes
+- **Large entry prevention**: Blocks entries over 2MB from being cached (prevents bloat)
+- **Size-based cleanup**: Removes largest entries first instead of oldest (more effective)
+- **Conservative limits**: Warning at 2MB, hard limit at 3MB (more aggressive prevention)
+- **Improved emergency handling**: Keeps only 20 smallest entries with 1MB total limit
+- **Better diagnostics**: Reports largest entries and provides detailed size breakdowns
+
+**Impact**: Users will no longer see storage quota errors, and the app will maintain better performance with automatic cache management.
+
+### December 16, 2024 - GPS Off Modal Removal & Station Map Features
+
+#### 🗑️ **REMOVED: GPS Off Modal Functionality**
+- **Removed**: Click functionality on GPS off/disabled indicators in header
+- **Previous behavior**: Clicking GPS off button opened location picker modal
+- **New behavior**: GPS indicators are now display-only status indicators
+- **Rationale**: Simplified UI - location settings should be configured in Settings tab
+- **Impact**: Users must use Settings > Location Settings to configure offline location
+- **Components updated**: StatusIndicators, MaterialHeader, App.tsx
+- **Cleanup**: Removed onLocationPicker prop drilling and click handlers
+
 ### December 16, 2024 - Light Mode Contrast & Station Map Features
 
 #### ✨ **NEW FEATURE: Clickable Station Names with Map View & Route Shapes**
@@ -95,15 +159,6 @@
   - **Dimmed colors**: Route badges, text, and status indicators use muted colors
   - **Clear distinction**: Easy to distinguish between arriving and departed vehicles
 - **Impact**: Users can quickly identify which buses are still coming vs. already gone
-
-#### 🐛 **BUG FIX: GPS Off Button Now Works**
-- **Problem**: GPS off button in status indicators didn't open location picker modal
-- **Root Cause**: StatusIndicators component had its own useConfigurationManager instance, separate from the main app's LocationPicker modal
-- **Solution**: 
-  - **Prop drilling**: Pass handleLocationPicker function from App component down to StatusIndicators
-  - **Component updates**: Modified MaterialHeader and StatusIndicators to accept onLocationPicker prop
-  - **State sharing**: Now both components share the same location picker state
-- **Impact**: Users can now click GPS off/disabled buttons to set offline location
 
 #### 🐛 **MAJOR FIX: Station Filtering Logic for Favorite Routes**
 - **Problem**: Users with configured favorite routes were seeing "No nearby stations" or "No stations found that serve your favorite routes" even when stations should be available

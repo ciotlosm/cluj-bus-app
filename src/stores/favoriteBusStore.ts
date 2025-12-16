@@ -7,6 +7,7 @@ import { useConfigStore } from './configStore';
 import { useLocationStore } from './locationStore';
 import { cacheManager, CacheKeys } from '../services/cacheManager';
 import { logger } from '../utils/logger';
+import { locationWarningTracker } from '../utils/locationWarningTracker';
 
 export interface FavoriteBusStore {
   // Data
@@ -98,18 +99,20 @@ export const useFavoriteBusStore = create<FavoriteBusStore>()(
             try {
               location = await requestLocation();
             } catch (locationError) {
-              logger.warn('Could not get current location, trying saved locations');
+              // Only warn once per session to avoid spam
+              locationWarningTracker.warnLocationAccess(logger);
+              
               // Fallback to saved locations
               if (config.homeLocation) {
                 location = config.homeLocation;
-                logger.info('Using home location as fallback');
+                logger.debug('Using home location as fallback');
               } else if (config.workLocation) {
                 location = config.workLocation;
-                logger.info('Using work location as fallback');
+                logger.debug('Using work location as fallback');
               } else {
                 // Use configurable default location or Cluj-Napoca center as fallback
                 location = config.defaultLocation || { latitude: 46.7712, longitude: 23.6236 };
-                logger.info('Using default fallback location for direction detection', { location });
+                logger.debug('Using default fallback location for direction detection', { location });
               }
             }
           }

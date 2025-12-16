@@ -3,6 +3,7 @@ import { useEnhancedBusStore } from '../stores/enhancedBusStore';
 import { useConfigStore } from '../stores/configStore';
 import { useDebounceCallback } from '../utils/debounce';
 import { logger } from '../utils/logger';
+import { locationWarningTracker } from '../utils/locationWarningTracker';
 
 /**
  * Custom hook to manage the real-time refresh system
@@ -96,7 +97,7 @@ export const useRefreshSystem = () => {
           await locationStore.requestLocation();
           logger.info('GPS location refreshed during auto refresh', {}, 'REFRESH');
         } catch (locationError) {
-          logger.warn('Failed to refresh GPS location during auto refresh:', locationError, 'REFRESH');
+          locationWarningTracker.warnLocationRefresh(logger, locationError, 'REFRESH');
           // Continue with data refresh even if GPS fails
         }
       }

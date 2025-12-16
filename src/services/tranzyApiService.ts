@@ -78,8 +78,15 @@ export class TranzyApiService {
     );
 
     this.axiosInstance.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Update API status to online on successful response
+        this.updateApiStatus(true);
+        return response;
+      },
       (error) => {
+        // Update API status to offline on error
+        this.updateApiStatus(false, error);
+        
         logger.error('API request failed', {
           url: error.config?.url,
           status: error.response?.status,
@@ -93,6 +100,15 @@ export class TranzyApiService {
   setApiKey(apiKey: string): void {
     this.apiKey = apiKey;
     logger.debug('API key updated', { hasKey: !!apiKey }, 'API');
+  }
+
+  private updateApiStatus(isOnline: boolean, error?: any): void {
+    // Dynamically import to avoid circular dependency
+    import('../stores/offlineStore').then(({ useOfflineStore }) => {
+      useOfflineStore.getState().updateApiStatus(isOnline, error);
+    }).catch(() => {
+      // Ignore import errors in case store is not available
+    });
   }
 
   /**

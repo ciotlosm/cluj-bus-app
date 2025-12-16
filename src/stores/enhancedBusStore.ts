@@ -4,6 +4,7 @@ import type { ErrorState, EnhancedVehicleInfo } from '../types';
 import { useConfigStore } from './configStore';
 import { enhancedTranzyApi } from '../services/tranzyApiService';
 import { logger } from '../utils/logger';
+import { locationWarningTracker } from '../utils/locationWarningTracker';
 
 export interface EnhancedBusStore {
   // Data
@@ -191,7 +192,7 @@ export const useEnhancedBusStore = create<EnhancedBusStore>()(
               logger.debug('GPS location refreshed during auto refresh', {}, 'BUS_STORE');
             }
           } catch (locationError) {
-            logger.warn('Failed to refresh GPS location during auto refresh:', locationError, 'BUS_STORE');
+            locationWarningTracker.warnLocationRefresh(logger, locationError, 'BUS_STORE');
             // Continue with data refresh even if GPS fails
           }
 

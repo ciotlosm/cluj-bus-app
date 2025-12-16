@@ -69,7 +69,7 @@ export const FavoriteBusManager: React.FC<FavoriteBusManagerProps> = ({ classNam
 
   return (
     <Box className={className}>
-      <InfoCard>
+      <InfoCard title="Favorite Routes">
         <Stack spacing={3}>
 
           {/* Favorite Routes Section */}

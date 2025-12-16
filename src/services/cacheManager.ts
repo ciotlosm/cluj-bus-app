@@ -180,6 +180,24 @@ export class CacheManager {
     const now = Date.now();
     const existingEntry = this.cache.get(key);
     
+    // Check if this single entry is too large
+    try {
+      const entrySize = JSON.stringify(data).length;
+      const entrySizeMB = entrySize / (1024 * 1024);
+      
+      if (entrySizeMB > 2) { // Single entry over 2MB
+        logger.warn('Large cache entry detected, skipping cache', {
+          key,
+          sizeMB: entrySizeMB.toFixed(2),
+          maxAllowed: '2MB'
+        });
+        return; // Don't cache extremely large entries
+      }
+    } catch (error) {
+      logger.warn('Failed to calculate entry size, skipping cache', { key, error });
+      return;
+    }
+    
     const entry: CacheEntry<T> = {
       data,
       timestamp: now,
@@ -191,6 +209,17 @@ export class CacheManager {
     };
 
     this.cache.set(key, entry);
+    
+    // Check storage limits before saving
+    const storageInfo = this.getStorageInfo();
+    if (storageInfo.isNearLimit) {
+      logger.warn('Cache approaching storage limit, performing cleanup', {
+        sizeMB: storageInfo.estimatedSizeMB,
+        entries: this.cache.size
+      });
+      this.performStorageCleanup();
+    }
+    
     this.saveToStorage();
     
     // Notify listeners of cache update
@@ -336,6 +365,53 @@ export class CacheManager {
   }
 
   /**
+   * Get storage usage information
+   */
+  getStorageInfo(): {
+    estimatedSizeMB: number;
+    isNearLimit: boolean;
+    canSaveToStorage: boolean;
+    largestEntries?: Array<{ key: string; sizeMB: number }>;
+  } {
+    try {
+      const entriesWithSizes = Array.from(this.cache.entries()).map(([key, entry]) => {
+        try {
+          const entryData = JSON.stringify({
+            ...entry,
+            data: JSON.parse(JSON.stringify(entry.data)),
+          });
+          const sizeInMB = new Blob([entryData]).size / (1024 * 1024);
+          return { key, sizeInMB, serialized: [key, JSON.parse(entryData)] };
+        } catch (error) {
+          return { key, sizeInMB: 0, serialized: null };
+        }
+      });
+      
+      const totalSizeMB = entriesWithSizes.reduce((sum, entry) => sum + entry.sizeInMB, 0);
+      
+      // Get largest entries for debugging
+      const largestEntries = entriesWithSizes
+        .sort((a, b) => b.sizeInMB - a.sizeInMB)
+        .slice(0, 5)
+        .map(({ key, sizeInMB }) => ({ key, sizeMB: Number(sizeInMB.toFixed(2)) }));
+      
+      return {
+        estimatedSizeMB: Number(totalSizeMB.toFixed(2)),
+        isNearLimit: totalSizeMB > 2, // Warning at 2MB (more conservative)
+        canSaveToStorage: totalSizeMB < 3, // Block at 3MB (more conservative)
+        largestEntries,
+      };
+    } catch (error) {
+      logger.warn('Failed to calculate storage size', { error });
+      return {
+        estimatedSizeMB: 0,
+        isNearLimit: false,
+        canSaveToStorage: true,
+      };
+    }
+  }
+
+  /**
    * Get cache statistics
    */
   getStats(): {
@@ -348,6 +424,11 @@ export class CacheManager {
     entriesWithTimestamps: Record<string, { createdAt: number; updatedAt: number; age: number }>;
     lastCacheUpdate: number;
     oldestEntry?: { key: string; age: number };
+    storageInfo: {
+      estimatedSizeMB: number;
+      isNearLimit: boolean;
+      canSaveToStorage: boolean;
+    };
   } {
     const now = Date.now();
     let validEntries = 0;
@@ -405,6 +486,7 @@ export class CacheManager {
       entriesWithTimestamps,
       lastCacheUpdate,
       oldestEntry,
+      storageInfo: this.getStorageInfo(),
     };
   }
 
@@ -539,6 +621,84 @@ export class CacheManager {
     }
   }
 
+  private performStorageCleanup(): void {
+    const now = Date.now();
+    const entries = Array.from(this.cache.entries());
+    
+    // Sort by age (oldest first)
+    entries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
+    
+    // Remove oldest 30% of entries
+    const toRemove = Math.floor(entries.length * 0.3);
+    const keysToRemove = entries.slice(0, toRemove).map(([key]) => key);
+    
+    keysToRemove.forEach(key => {
+      this.cache.delete(key);
+      this.notifyListeners(key, {
+        type: 'expired',
+        key,
+        timestamp: now,
+      });
+    });
+    
+    logger.info('Storage cleanup completed', { 
+      removedEntries: keysToRemove.length,
+      remainingEntries: this.cache.size 
+    });
+  }
+
+  private performEmergencyCleanup(): void {
+    const now = Date.now();
+    const entries = Array.from(this.cache.entries());
+    
+    logger.warn('Emergency cleanup starting', { 
+      totalEntries: entries.length,
+      cacheSize: this.cache.size 
+    });
+    
+    // Calculate entry sizes to identify large entries
+    const entriesWithSizes = entries.map(([key, entry]) => {
+      try {
+        const size = JSON.stringify(entry.data).length;
+        return { key, entry, size, timestamp: entry.timestamp };
+      } catch (error) {
+        return { key, entry, size: 0, timestamp: entry.timestamp };
+      }
+    });
+    
+    // Sort by size (largest first) to remove biggest entries first
+    entriesWithSizes.sort((a, b) => b.size - a.size);
+    
+    // Remove largest entries until we have reasonable size
+    const maxEntriesToKeep = Math.min(20, Math.floor(entries.length * 0.5)); // Keep max 20 or 50% of entries
+    const toKeep = entriesWithSizes.slice(-maxEntriesToKeep); // Keep smallest entries
+    const keysToKeep = new Set(toKeep.map(({ key }) => key));
+    
+    // Remove everything else
+    const keysToRemove: string[] = [];
+    for (const [key] of this.cache.entries()) {
+      if (!keysToKeep.has(key)) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => {
+      this.cache.delete(key);
+      this.notifyListeners(key, {
+        type: 'expired',
+        key,
+        timestamp: now,
+      });
+    });
+    
+    logger.warn('Emergency cleanup completed', { 
+      removedEntries: keysToRemove.length,
+      keptEntries: this.cache.size,
+      maxKeptEntries: maxEntriesToKeep,
+      largestRemovedSizes: entriesWithSizes.slice(0, 5).map(e => ({ key: e.key, size: e.size }))
+    });
+  }
+
   private saveToStorage(): void {
     if (typeof window === 'undefined') return;
     
@@ -552,9 +712,101 @@ export class CacheManager {
         },
       ]);
       
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(serialized));
+      const serializedData = JSON.stringify(serialized);
+      
+      // Check if data is too large (localStorage limit is usually 5-10MB)
+      const sizeInMB = new Blob([serializedData]).size / (1024 * 1024);
+      
+      if (sizeInMB > 3) { // Keep under 3MB to be safe
+        logger.warn('Cache too large for storage, performing cleanup', { 
+          sizeMB: sizeInMB.toFixed(2),
+          entries: this.cache.size 
+        });
+        
+        // Perform aggressive cleanup and try again
+        this.performStorageCleanup();
+        
+        // Re-serialize after cleanup
+        const cleanedSerialized = Array.from(this.cache.entries()).map(([key, entry]) => [
+          key,
+          {
+            ...entry,
+            data: JSON.parse(JSON.stringify(entry.data)),
+          },
+        ]);
+        
+        const cleanedData = JSON.stringify(cleanedSerialized);
+        const newSizeInMB = new Blob([cleanedData]).size / (1024 * 1024);
+        
+        if (newSizeInMB > 4) {
+          logger.error('Cache still too large after cleanup, skipping storage save', {
+            originalSizeMB: sizeInMB.toFixed(2),
+            cleanedSizeMB: newSizeInMB.toFixed(2),
+            entries: this.cache.size
+          });
+          return;
+        }
+        
+        localStorage.setItem(this.STORAGE_KEY, cleanedData);
+        logger.info('Cache saved after cleanup', { 
+          sizeMB: newSizeInMB.toFixed(2),
+          entries: this.cache.size 
+        });
+      } else {
+        localStorage.setItem(this.STORAGE_KEY, serializedData);
+      }
     } catch (error) {
-      logger.warn('Failed to save cache to storage', { error });
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        logger.error('Storage quota exceeded, performing emergency cleanup', { error });
+        
+        // Emergency cleanup - remove oldest entries
+        this.performEmergencyCleanup();
+        
+        // Try to save again with minimal data
+        try {
+          // Get remaining entries and sort by size (smallest first)
+          const remainingEntries = Array.from(this.cache.entries());
+          const entriesWithSizes = remainingEntries.map(([key, entry]) => {
+            try {
+              const serializedEntry = JSON.stringify({
+                ...entry,
+                data: JSON.parse(JSON.stringify(entry.data)),
+              });
+              return { key, entry, size: serializedEntry.length, serialized: [key, JSON.parse(serializedEntry)] };
+            } catch (error) {
+              return null;
+            }
+          }).filter(Boolean);
+          
+          // Sort by size (smallest first) and take only the smallest entries
+          entriesWithSizes.sort((a, b) => a.size - b.size);
+          
+          // Keep adding entries until we approach size limit
+          const minimalSerialized = [];
+          let totalSize = 0;
+          const maxSize = 1024 * 1024; // 1MB limit for emergency save
+          
+          for (const entryData of entriesWithSizes) {
+            if (totalSize + entryData.size < maxSize && minimalSerialized.length < 10) {
+              minimalSerialized.push(entryData.serialized);
+              totalSize += entryData.size;
+            } else {
+              break;
+            }
+          }
+          
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(minimalSerialized));
+          logger.info('Emergency cache save completed', { 
+            entries: minimalSerialized.length,
+            sizeMB: (totalSize / (1024 * 1024)).toFixed(2)
+          });
+        } catch (emergencyError) {
+          logger.error('Emergency cache save failed, clearing storage', { emergencyError });
+          localStorage.removeItem(this.STORAGE_KEY);
+        }
+      } else {
+        logger.warn('Failed to save cache to storage', { error });
+      }
     }
   }
 

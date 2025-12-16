@@ -20,11 +20,10 @@ import { useLocationStore } from '../../../stores/locationStore';
 
 interface StatusIndicatorsProps {
   compact?: boolean;
-  onLocationPicker?: (type: 'home' | 'work' | 'offline') => void;
 }
 
-export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = false, onLocationPicker }) => {
-  const { isOnline } = useOfflineStore();
+export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = false }) => {
+  const { isOnline, isApiOnline, lastApiError, lastApiSuccess } = useOfflineStore();
   const { currentLocation, locationPermission } = useLocationStore();
   const theme = useTheme();
 
@@ -35,7 +34,7 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
         label: compact ? 'GPS Off' : 'GPS Disabled',
         color: theme.palette.error.main,
         bgColor: alpha(theme.palette.error.main, 0.1),
-        tooltip: 'GPS access denied. Click to set an offline location.',
+        tooltip: 'GPS access denied.',
       };
     }
     
@@ -54,27 +53,41 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
       label: compact ? 'No GPS' : 'GPS Inactive',
       color: theme.palette.warning.main,
       bgColor: alpha(theme.palette.warning.main, 0.1),
-      tooltip: 'GPS location not available. Click to set an offline location.',
+      tooltip: 'GPS location not available.',
     };
   };
 
   const getConnectivityStatus = () => {
-    if (isOnline) {
+    // Show API connectivity status, not just network status
+    if (isApiOnline && isOnline) {
+      const lastSuccessTime = lastApiSuccess ? new Date(lastApiSuccess).toLocaleTimeString() : 'unknown';
       return {
         icon: <OnlineIcon sx={{ fontSize: 16 }} />,
         label: compact ? 'Online' : 'Connected',
         color: theme.palette.success.main,
         bgColor: alpha(theme.palette.success.main, 0.1),
-        tooltip: 'Internet connection active. Real-time data available.',
+        tooltip: `API connection active. Real-time data available. Last success: ${lastSuccessTime}`,
       };
     }
     
+    if (!isOnline) {
+      return {
+        icon: <OfflineIcon sx={{ fontSize: 16 }} />,
+        label: compact ? 'Offline' : 'No Internet',
+        color: theme.palette.error.main,
+        bgColor: alpha(theme.palette.error.main, 0.1),
+        tooltip: 'No internet connection. Showing cached data only.',
+      };
+    }
+    
+    // Network is online but API is not accessible
+    const lastErrorTime = lastApiError ? new Date(lastApiError).toLocaleTimeString() : 'unknown';
     return {
       icon: <OfflineIcon sx={{ fontSize: 16 }} />,
-      label: compact ? 'Offline' : 'No Internet',
+      label: compact ? 'API Error' : 'API Unavailable',
       color: theme.palette.error.main,
       bgColor: alpha(theme.palette.error.main, 0.1),
-      tooltip: 'No internet connection. Showing cached data only.',
+      tooltip: `Network connected but API unavailable. Check API key or service status. Last error: ${lastErrorTime}`,
     };
   };
 
@@ -116,7 +129,6 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
           icon={locationStatus.icon}
           label={locationStatus.label}
           size={compact ? 'small' : 'medium'}
-          onClick={(locationPermission === 'denied' || !currentLocation) && onLocationPicker ? () => onLocationPicker('offline') : undefined}
           sx={{
             bgcolor: locationStatus.bgColor,
             color: locationStatus.color,
@@ -124,12 +136,6 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
             fontWeight: 600,
             fontSize: compact ? '0.7rem' : '0.75rem',
             height: compact ? 24 : 32,
-            cursor: (locationPermission === 'denied' || !currentLocation) && onLocationPicker ? 'pointer' : 'default',
-            '&:hover': (locationPermission === 'denied' || !currentLocation) && onLocationPicker ? {
-              bgcolor: alpha(locationStatus.color, 0.2),
-              transform: 'scale(1.02)',
-            } : {},
-            transition: 'all 0.2s ease-in-out',
             '& .MuiChip-icon': {
               color: locationStatus.color,
             },

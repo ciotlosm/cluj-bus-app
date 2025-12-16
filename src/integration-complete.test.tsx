@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { useConfigStore, useBusStore, useFavoritesStore, useLocationStore, useOfflineStore } from './stores';
 import { ConfigurationManager } from './components/features/Configuration';
-import { BusDisplay } from './components/features/BusDisplay';
 import { Settings } from './components/features/Settings';
 import App from './AppMaterial';
 import type { UserConfig, BusInfo, ErrorState } from './types';

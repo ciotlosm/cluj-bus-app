@@ -5,7 +5,10 @@ import { logger } from '../utils/logger';
 export interface OfflineStore {
   // Connection state
   isOnline: boolean;
+  isApiOnline: boolean; // Tracks actual API connectivity
   isOfflineCapable: boolean;
+  lastApiSuccess: Date | null;
+  lastApiError: Date | null;
   
   // Service worker state
   serviceWorkerStatus: ServiceWorkerStatus;
@@ -20,6 +23,7 @@ export interface OfflineStore {
   
   // Actions
   updateConnectionStatus: (isOnline: boolean) => void;
+  updateApiStatus: (isOnline: boolean, error?: any) => void;
   updateServiceWorkerStatus: (status: ServiceWorkerStatus) => void;
   refreshCacheInfo: () => Promise<void>;
   clearCache: (cacheType?: 'api' | 'static') => Promise<void>;
@@ -37,7 +41,10 @@ let serviceWorkerCleanup: (() => void) | null = null;
 export const useOfflineStore = create<OfflineStore>((set, get) => ({
   // Initial state
   isOnline: navigator.onLine,
+  isApiOnline: true, // Assume API is online initially
   isOfflineCapable: false,
+  lastApiSuccess: null,
+  lastApiError: null,
   serviceWorkerStatus: {
     isSupported: false,
     isRegistered: false,
@@ -52,7 +59,44 @@ export const useOfflineStore = create<OfflineStore>((set, get) => ({
   // Actions
   updateConnectionStatus: (isOnline: boolean) => {
     set({ isOnline });
-    logger.info('Connection status changed', { isOnline });
+    logger.info('Network connection status changed', { isOnline });
+  },
+
+  updateApiStatus: (isApiOnline: boolean, error?: any) => {
+    const now = new Date();
+    
+    if (isApiOnline) {
+      set({ 
+        isApiOnline: true, 
+        lastApiSuccess: now,
+        isUsingCachedData: false 
+      });
+      logger.debug('API connectivity restored', { timestamp: now });
+    } else {
+      set({ 
+        isApiOnline: false, 
+        lastApiError: now 
+      });
+      
+      // Log different types of API errors
+      if (error?.response?.status === 403) {
+        logger.warn('API authentication failed (403 Forbidden)', { 
+          timestamp: now,
+          status: error.response.status 
+        });
+      } else if (error?.code === 'NETWORK_ERROR' || !navigator.onLine) {
+        logger.warn('Network connectivity lost', { 
+          timestamp: now,
+          error: error?.message 
+        });
+      } else {
+        logger.warn('API connectivity lost', { 
+          timestamp: now,
+          error: error?.message,
+          status: error?.response?.status 
+        });
+      }
+    }
   },
 
   updateServiceWorkerStatus: (status: ServiceWorkerStatus) => {
