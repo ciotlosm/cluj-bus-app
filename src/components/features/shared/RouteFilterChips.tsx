@@ -93,7 +93,7 @@ export const RouteFilterChips: React.FC<RouteFilterChipsProps> = ({
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: 'white',
+                  color: isSelected ? 'primary.contrastText' : 'success.contrastText',
                   fontWeight: 'bold',
                   fontSize: '0.65rem',
                   lineHeight: 1,
