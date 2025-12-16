@@ -1,6 +1,6 @@
 // Service Worker for Bus Tracker offline functionality
 // Update this version number with each deployment to force cache refresh
-const VERSION = '2025-12-16-1754';
+const VERSION = '2025-12-16-1948';
 const CACHE_NAME = `bus-tracker-${VERSION}`;
 const API_CACHE_NAME = `bus-tracker-api-${VERSION}`;
 

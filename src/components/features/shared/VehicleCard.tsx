@@ -24,6 +24,8 @@ import {
 } from '@mui/icons-material';
 import { formatTime24 } from '../../../utils/timeFormat';
 import type { EnhancedVehicleInfo } from '../../../types';
+import { useConfigStore } from '../../../stores/configStore';
+import { useOfflineStore } from '../../../stores/offlineStore';
 
 interface EnhancedVehicleInfoWithDirection extends EnhancedVehicleInfo {
   _internalDirection?: 'arriving' | 'departing' | 'unknown';
@@ -58,6 +60,38 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
   showFullStopsButton = true
 }) => {
   const theme = useTheme();
+  const { config } = useConfigStore();
+  const { isOnline, isApiOnline } = useOfflineStore();
+
+  // Determine status dot color based on data freshness and connectivity
+  const getStatusDotColor = () => {
+    // If offline, show red
+    if (!isOnline || !isApiOnline) {
+      return theme.palette.error.main;
+    }
+
+    // Get the vehicle's last update timestamp
+    const vehicleTimestamp = vehicle.vehicle?.timestamp;
+    if (!vehicleTimestamp) {
+      return theme.palette.warning.main; // Yellow for unknown timestamp
+    }
+
+    const lastUpdate = vehicleTimestamp instanceof Date 
+      ? vehicleTimestamp 
+      : new Date(vehicleTimestamp);
+    
+    const now = new Date();
+    const minutesSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60);
+    
+    // Use configured stale threshold or default to 5 minutes
+    const staleThreshold = config?.staleDataThreshold || 5;
+    
+    if (minutesSinceUpdate <= staleThreshold) {
+      return theme.palette.success.main; // Green for fresh data
+    } else {
+      return theme.palette.warning.main; // Yellow for stale data
+    }
+  };
 
   // Determine which stops to show based on showShortStopList
   const stopsToShow = React.useMemo(() => {
@@ -457,18 +491,23 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
             minWidth: { xs: 40, sm: 60 },
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'flex-end'
+            alignItems: 'flex-end',
+            gap: 0.5
           }}>
-            <Typography variant="body2" sx={{ 
-              color: isDeparted 
-                ? alpha(theme.palette.success.main, 0.5) 
-                : theme.palette.success.main, 
-              fontWeight: 600,
-              fontSize: { xs: '0.8rem', sm: '0.875rem' },
-              lineHeight: 1
-            }}>
-              Live
-            </Typography>
+            {/* Status dot */}
+            <Box
+              sx={{
+                width: { xs: 8, sm: 10 },
+                height: { xs: 8, sm: 10 },
+                borderRadius: '50%',
+                bgcolor: isDeparted 
+                  ? alpha(getStatusDotColor(), 0.5) 
+                  : getStatusDotColor(),
+                border: `1px solid ${alpha(getStatusDotColor(), 0.3)}`,
+                boxShadow: `0 0 4px ${alpha(getStatusDotColor(), 0.4)}`,
+                flexShrink: 0,
+              }}
+            />
             <Typography variant="caption" sx={{ 
               color: isDeparted 
                 ? alpha(theme.palette.text.secondary, 0.6) 

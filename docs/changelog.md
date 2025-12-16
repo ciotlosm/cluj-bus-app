@@ -2,6 +2,74 @@
 
 ## Recent Updates
 
+### December 16, 2024 - Vehicle Status Dot: Smart Data Freshness Indicator
+**Enhanced**: Replaced "Live" text with intelligent status dot showing data freshness and connectivity
+
+**Visual Improvements**:
+- **Status dot indicator**: Replaced "Live" text with colored circular dot
+- **Smart color coding**:
+  - 🟢 **Green dot**: Data is fresh (within configured stale time threshold)
+  - 🟡 **Yellow dot**: Data is stale (older than threshold) or timestamp unknown
+  - 🔴 **Red dot**: Offline or API connection lost
+- **Subtle glow effect**: Dots have soft shadow for better visibility
+- **Responsive sizing**: Smaller dots on mobile, larger on desktop
+- **Dimmed for departed vehicles**: Status dots are semi-transparent for buses that already left
+
+**Smart Logic**:
+- **Configurable threshold**: Uses user's stale data threshold setting (default: 5 minutes)
+- **Real-time connectivity**: Monitors both network and API connectivity status
+- **Timestamp validation**: Handles various timestamp formats and missing data gracefully
+- **Immediate feedback**: Status updates instantly when connectivity changes
+
+**Technical Implementation**:
+- **Store integration**: Uses configStore for stale threshold and offlineStore for connectivity
+- **Timestamp handling**: Supports both Date objects and string timestamps
+- **Performance optimized**: Efficient color calculation with memoization
+- **Theme-aware**: Colors adapt to light/dark mode themes
+
+**User Benefits**:
+- **Cleaner interface**: Less visual clutter without "Live" text labels
+- **Instant status awareness**: Users can quickly see data quality at a glance
+- **Better decision making**: Know if bus timing data is reliable or outdated
+- **Connectivity feedback**: Immediate indication when app goes offline
+
+**Impact**: More intuitive vehicle status display that helps users understand data reliability and make informed transit decisions.
+
+### December 16, 2024 - GPS Status Enhancement: Professional GPS Icon with Accuracy Display
+**Enhanced**: GPS status indicator now uses proper GPS icons with accuracy meter display
+
+**Visual Improvements**:
+- **Professional GPS icons**: 
+  - 🛰️ **GpsFixed**: Green icon when GPS is active with good signal
+  - 🚫 **GpsOff**: Red icon when GPS is disabled or access denied
+- **Accuracy meter display**: Shows GPS accuracy in meters next to the icon (e.g., "15m", "45m")
+- **Color-coded accuracy**: 
+  - 🟢 **Green**: High accuracy (≤20m) 
+  - 🟡 **Yellow**: Low accuracy (>20m) or unknown accuracy
+  - 🔴 **Red**: GPS offline, disabled, or access denied (shows "OFF")
+- **Rounded pill design**: Modern rounded rectangle containers instead of circles
+- **Consistent layout**: Both GPS and connectivity indicators use same pill-style design
+
+**Connectivity Indicator Updates**:
+- **WiFi icons**: Uses proper WiFi on/off icons for network status
+- **Status labels**: Shows "ON", "OFF", or "ERR" next to connectivity icon
+- **Matching design**: Same pill-style layout as GPS indicator for visual consistency
+
+**Technical Implementation**:
+- **Accuracy tracking**: Enhanced Coordinates interface to include GPS accuracy in meters
+- **LocationService updates**: Captures accuracy from browser geolocation API
+- **Smart accuracy thresholds**: 20m for high accuracy, 100m for medium accuracy
+- **Material-UI GPS icons**: Uses GpsFixed and GpsOff icons from @mui/icons-material
+- **Responsive design**: Compact mode for mobile, full size for desktop
+
+**User Benefits**:
+- **Clear GPS status**: Professional GPS icons that users recognize from other apps
+- **Accuracy awareness**: Exact meter readings help users understand GPS quality
+- **Better decision making**: Users can see if GPS is accurate enough for their needs
+- **Consistent interface**: Unified design language across all status indicators
+
+**Impact**: Professional GPS status display that clearly communicates both availability and accuracy, helping users make informed decisions about location-based features.
+
 ### December 16, 2024 - Map UI Enhancement: Solid Station Circles & Complete Vehicle Visibility
 **Enhanced**: Improved map visual consistency and station map modal now shows ALL vehicles
 

@@ -72,6 +72,7 @@ export class LocationService {
           const coordinates: Coordinates = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
           };
           
           // Validate coordinates before returning
@@ -124,6 +125,7 @@ export class LocationService {
           const coordinates: Coordinates = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
           };
           
           if (validateCoordinates(coordinates)) {

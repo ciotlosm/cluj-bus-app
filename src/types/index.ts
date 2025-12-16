@@ -3,6 +3,7 @@
 export interface Coordinates {
   latitude: number;
   longitude: number;
+  accuracy?: number; // GPS accuracy in meters
 }
 
 export interface Station {

@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Chip,
   Stack,
   useTheme,
   alpha,
@@ -10,9 +9,8 @@ import {
 import {
   Wifi as OnlineIcon,
   WifiOff as OfflineIcon,
-  LocationOn as LocationOnIcon,
-  LocationOff as LocationOffIcon,
-  LocationDisabled as LocationDisabledIcon,
+  GpsFixed as GpsIcon,
+  GpsOff as GpsDisabledIcon,
 } from '@mui/icons-material';
 
 import { useOfflineStore } from '../../../stores/offlineStore';
@@ -28,31 +26,59 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
   const theme = useTheme();
 
   const getLocationStatus = () => {
+    // GPS denied - red GPS disabled icon
     if (locationPermission === 'denied') {
       return {
-        icon: <LocationDisabledIcon sx={{ fontSize: 16 }} />,
-        label: compact ? 'GPS Off' : 'GPS Disabled',
+        icon: <GpsDisabledIcon sx={{ fontSize: 16 }} />,
+        label: 'OFF',
         color: theme.palette.error.main,
         bgColor: alpha(theme.palette.error.main, 0.1),
         tooltip: 'GPS access denied.',
       };
     }
     
+    // GPS active with location data
     if (currentLocation) {
+      const accuracy = currentLocation.accuracy;
+      let color, bgColor, tooltip, label;
+      
+      if (accuracy && accuracy <= 20) {
+        // High accuracy (≤20m) - green GPS fixed
+        color = theme.palette.success.main;
+        bgColor = alpha(theme.palette.success.main, 0.1);
+        label = `${accuracy.toFixed(0)}m`;
+        tooltip = `GPS active with high accuracy (±${accuracy.toFixed(0)}m)`;
+      } else if (accuracy && accuracy <= 100) {
+        // Medium accuracy (21-100m) - yellow GPS fixed
+        color = theme.palette.warning.main;
+        bgColor = alpha(theme.palette.warning.main, 0.1);
+        label = `${accuracy.toFixed(0)}m`;
+        tooltip = `GPS active with low accuracy (±${accuracy.toFixed(0)}m)`;
+      } else {
+        // Unknown or poor accuracy - yellow GPS not fixed
+        color = theme.palette.warning.main;
+        bgColor = alpha(theme.palette.warning.main, 0.1);
+        label = accuracy ? `${accuracy.toFixed(0)}m` : '?';
+        tooltip = accuracy 
+          ? `GPS active with poor accuracy (±${accuracy.toFixed(0)}m)`
+          : 'GPS active (accuracy unknown)';
+      }
+      
       return {
-        icon: <LocationOnIcon sx={{ fontSize: 16 }} />,
-        label: compact ? 'GPS On' : 'GPS Active',
-        color: theme.palette.success.main,
-        bgColor: alpha(theme.palette.success.main, 0.1),
-        tooltip: `GPS location available: ${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)}`,
+        icon: <GpsIcon sx={{ fontSize: 16 }} />,
+        label,
+        color,
+        bgColor,
+        tooltip,
       };
     }
     
+    // No GPS location - red GPS disabled
     return {
-      icon: <LocationOffIcon sx={{ fontSize: 16 }} />,
-      label: compact ? 'No GPS' : 'GPS Inactive',
-      color: theme.palette.warning.main,
-      bgColor: alpha(theme.palette.warning.main, 0.1),
+      icon: <GpsDisabledIcon sx={{ fontSize: 16 }} />,
+      label: 'OFF',
+      color: theme.palette.error.main,
+      bgColor: alpha(theme.palette.error.main, 0.1),
       tooltip: 'GPS location not available.',
     };
   };
@@ -63,7 +89,7 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
       const lastSuccessTime = lastApiSuccess ? new Date(lastApiSuccess).toLocaleTimeString() : 'unknown';
       return {
         icon: <OnlineIcon sx={{ fontSize: 16 }} />,
-        label: compact ? 'Online' : 'Connected',
+        label: 'ON',
         color: theme.palette.success.main,
         bgColor: alpha(theme.palette.success.main, 0.1),
         tooltip: `API connection active. Real-time data available. Last success: ${lastSuccessTime}`,
@@ -73,7 +99,7 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
     if (!isOnline) {
       return {
         icon: <OfflineIcon sx={{ fontSize: 16 }} />,
-        label: compact ? 'Offline' : 'No Internet',
+        label: 'OFF',
         color: theme.palette.error.main,
         bgColor: alpha(theme.palette.error.main, 0.1),
         tooltip: 'No internet connection. Showing cached data only.',
@@ -84,7 +110,7 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
     const lastErrorTime = lastApiError ? new Date(lastApiError).toLocaleTimeString() : 'unknown';
     return {
       icon: <OfflineIcon sx={{ fontSize: 16 }} />,
-      label: compact ? 'API Error' : 'API Unavailable',
+      label: 'ERR',
       color: theme.palette.error.main,
       bgColor: alpha(theme.palette.error.main, 0.1),
       tooltip: `Network connected but API unavailable. Check API key or service status. Last error: ${lastErrorTime}`,
@@ -102,48 +128,62 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
     >
       {/* Connectivity Status */}
       <Tooltip title={connectivityStatus.tooltip} arrow>
-        <Chip
-          icon={connectivityStatus.icon}
-          label={connectivityStatus.label}
-          size={compact ? 'small' : 'medium'}
+        <Box
           sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            px: compact ? 0.5 : 1,
+            py: compact ? 0.25 : 0.5,
+            borderRadius: compact ? '12px' : '16px',
             bgcolor: connectivityStatus.bgColor,
-            color: connectivityStatus.color,
             border: `1px solid ${alpha(connectivityStatus.color, 0.3)}`,
-            fontWeight: 600,
-            fontSize: compact ? '0.7rem' : '0.75rem',
-            height: compact ? 24 : 32,
-            '& .MuiChip-icon': {
-              color: connectivityStatus.color,
-            },
-            '& .MuiChip-label': {
-              px: compact ? 0.5 : 1,
-            },
+            color: connectivityStatus.color,
+            minWidth: 'auto',
           }}
-        />
+        >
+          {connectivityStatus.icon}
+          <Box
+            component="span"
+            sx={{
+              fontSize: compact ? '0.7rem' : '0.75rem',
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            {connectivityStatus.label}
+          </Box>
+        </Box>
       </Tooltip>
 
       {/* GPS Location Status */}
       <Tooltip title={locationStatus.tooltip} arrow>
-        <Chip
-          icon={locationStatus.icon}
-          label={locationStatus.label}
-          size={compact ? 'small' : 'medium'}
+        <Box
           sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            px: compact ? 0.5 : 1,
+            py: compact ? 0.25 : 0.5,
+            borderRadius: compact ? '12px' : '16px',
             bgcolor: locationStatus.bgColor,
-            color: locationStatus.color,
             border: `1px solid ${alpha(locationStatus.color, 0.3)}`,
-            fontWeight: 600,
-            fontSize: compact ? '0.7rem' : '0.75rem',
-            height: compact ? 24 : 32,
-            '& .MuiChip-icon': {
-              color: locationStatus.color,
-            },
-            '& .MuiChip-label': {
-              px: compact ? 0.5 : 1,
-            },
+            color: locationStatus.color,
+            minWidth: 'auto',
           }}
-        />
+        >
+          {locationStatus.icon}
+          <Box
+            component="span"
+            sx={{
+              fontSize: compact ? '0.7rem' : '0.75rem',
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            {locationStatus.label}
+          </Box>
+        </Box>
       </Tooltip>
     </Stack>
   );
