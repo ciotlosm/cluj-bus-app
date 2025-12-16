@@ -475,7 +475,7 @@ export class TranzyApiService {
     // Create a map for quick lookups
     const stopsMap = new Map(stops.map(stop => [stop.id, stop]));
     const routesMap = new Map(routes.map(route => [route.id, route]));
-    const tripsMap = new Map(trips.map(trip => [trip.tripId, trip]));
+    const tripsMap = new Map(trips.map(trip => [trip.id, trip]));
 
     // Process live vehicles
     for (const vehicle of vehicles) {

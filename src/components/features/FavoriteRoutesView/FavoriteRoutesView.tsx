@@ -24,7 +24,7 @@ import { RouteFilterChips } from '../shared/RouteFilterChips';
 import { StationHeader } from '../shared/StationHeader';
 import { StationMapModal } from '../shared/StationMapModal';
 import { useVehicleProcessing } from '../../../hooks/useVehicleProcessing';
-import type { EnhancedVehicleInfo } from '../../../types';
+import type { EnhancedVehicleInfo, Station } from '../../../types';
 import type { FavoriteBusInfo } from '../../../services/favoriteBusService';
 
 interface EnhancedVehicleInfoWithDirection extends EnhancedVehicleInfo {
