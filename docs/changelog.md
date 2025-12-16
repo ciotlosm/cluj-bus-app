@@ -2,6 +2,23 @@
 
 ## Recent Updates
 
+### December 16, 2024 - Mobile UI Fixes: Theme Toggle & Console Errors
+**Fixed**: Console errors and mobile display issues with theme toggle in bottom navigation
+
+**Changes**:
+- **Fixed nested button HTML error**: Modified `ThemeToggle` component to support `iconOnly` mode that renders just the icon without button wrapper when used inside `BottomNavigationAction`
+- **Proper theme toggle positioning**: Moved theme toggle to be the last (rightmost) item in bottom navigation
+- **Console error elimination**: Resolved "button inside button" HTML validation errors that were appearing in browser console
+- **Clean theme toggle functionality**: Theme toggle now works properly without nested button elements
+- **Code cleanup**: Removed unused imports in App.tsx (Fab, Badge, RefreshIcon, etc.)
+
+**Technical Details**:
+- **ThemeToggle enhancement**: Added `iconOnly` prop to render just the icon when used inside other button components
+- **Click handler fix**: Theme toggle click is now handled by the BottomNavigationAction wrapper instead of nested IconButton
+- **Import optimization**: Cleaned up unused Material-UI imports to reduce bundle size
+
+**Impact**: Cleaner console output for developers, proper HTML structure, and better mobile theme toggle experience.
+
 ### December 16, 2024 - Code Cleanup: Removed Unused Components
 **Cleaned**: Removed legacy components that were no longer used in the main application
 
@@ -29,6 +46,24 @@
 - **Multiple store updates**: Applied fix to `favoriteBusStore`, `enhancedBusStore`, and `useRefreshSystem`
 
 **Impact**: Developers see cleaner console output during development while still being notified of location access issues.
+
+### December 16, 2024 - Station View: Fixed Empty Stations Display
+**Fixed**: Station view no longer shows nearby stations that have no bus service
+
+**Problem**: Station view was displaying stations like "Test_CJ" that showed "No buses currently at this station" because the filtering logic only considered distance proximity (within 2km) without verifying if any vehicles actually serve those stations.
+
+**Solution**:
+- **Smart station filtering**: Only display stations that have confirmed bus service via trip_id matching
+- **Removed empty station display**: Eliminated "always show stations" logic that displayed all nearby stations regardless of service
+- **Better user experience**: Users now only see stations with actual buses, not empty stations
+- **Maintained distance info**: Proper distance calculations preserved for stations that do have service
+
+**Technical Changes**:
+- Modified `StationDisplay.tsx` to iterate over `stationVehicleGroups` (stations with vehicles) instead of `targetStations` (all nearby stations)
+- Added preliminary vehicle proximity check (5km radius) in station filtering
+- Updated rendering logic to filter out null entries and only show meaningful data
+
+**Impact**: Cleaner station view that only shows stations with active bus service, eliminating confusion from empty stations.
 
 ### December 16, 2024 - Enhanced Connectivity Tracking
 **Enhanced**: Online/offline indicators now track actual API connectivity, not just network status

@@ -203,6 +203,25 @@
 - **Result**: Much faster with fewer API calls
 
 **Prevention**: Use bulk operations and in-memory filtering instead of individual API calls in loops
+
+#### Station View Showing Stations with No Buses
+**Problem**: Station view displays nearby stations (like "Test_CJ") that show "No buses currently at this station" message
+
+**Root Cause**: Station filtering logic only considered distance proximity (within 2km) but didn't verify if any vehicles actually serve those stations
+
+**Solution Applied (December 2024)**: Modified station display logic to only show stations with active bus service
+- **Changed rendering approach**: Only display stations that have vehicles serving them (from `stationVehicleGroups`)
+- **Removed "always show stations" logic**: Eliminated code that displayed all nearby stations regardless of bus service
+- **Added vehicle-station validation**: Stations are only shown after confirming vehicles serve them via trip_id matching
+- **Improved user experience**: Users no longer see empty stations, only stations with actual bus service
+
+**Technical Changes**:
+- Updated `StationDisplay.tsx` rendering logic to iterate over `stationVehicleGroups` instead of `targetStations`
+- Added `.filter(Boolean)` to remove null entries from station list
+- Modified station filtering to include preliminary vehicle proximity check (5km radius)
+- Maintained proper distance information by cross-referencing with `targetStations`
+
+**Prevention**: Always validate that displayed data has meaningful content for users before showing UI elements
 - Removed conflicting default export
 
 **Prevention**: Always use consistent export patterns (prefer named exports)

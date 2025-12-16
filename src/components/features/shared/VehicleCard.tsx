@@ -126,12 +126,21 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
         } : {},
       }}
     >
-      <CardContent sx={{ py: 2, position: 'relative', zIndex: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <CardContent sx={{ 
+        py: { xs: 1.5, sm: 2 }, 
+        px: { xs: 1.5, sm: 2 },
+        position: 'relative', 
+        zIndex: 2,
+        '&:last-child': {
+          pb: { xs: 1.5, sm: 2 }
+        }
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, width: '100%' }}>
           <Box 
             onClick={onRouteClick}
             sx={{
               minWidth: 48,
+              width: 48,
               height: 48,
               borderRadius: 2,
               bgcolor: isDeparted ? alpha(theme.palette.primary.main, 0.4) : 'primary.main',
@@ -140,6 +149,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
               justifyContent: 'center',
               cursor: onRouteClick ? 'pointer' : 'default',
               transition: 'all 0.2s ease-in-out',
+              flexShrink: 0,
               ...(onRouteClick && {
                 '&:hover': {
                   bgcolor: isDeparted ? alpha(theme.palette.primary.main, 0.5) : 'primary.dark',
@@ -155,26 +165,48 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
               color: isDeparted 
                 ? alpha(theme.palette.primary.contrastText, 0.7) 
                 : theme.palette.primary.contrastText, 
-              fontWeight: 'bold' 
+              fontWeight: 'bold',
+              fontSize: '1rem'
             }}>
               {vehicle.route}
             </Typography>
           </Box>
           
-          <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ 
+            flexGrow: 1, 
+            minWidth: 0, // Allow shrinking below content size
+            overflow: 'hidden' // Prevent overflow
+          }}>
             <Typography variant="body1" sx={{ 
               color: isDeparted 
                 ? alpha(theme.palette.text.primary, 0.6) 
                 : theme.palette.text.primary, 
-              fontWeight: 600 
+              fontWeight: 600,
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              lineHeight: 1.2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
             }}>
               {vehicle.destination || 'Unknown destination'}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' }, 
+              gap: { xs: 0.5, sm: 1 }, 
+              mt: 0.5,
+              width: '100%'
+            }}>
               <Typography variant="body2" sx={{ 
                 color: isDeparted 
                   ? alpha(theme.palette.text.secondary, 0.6) 
-                  : theme.palette.text.secondary 
+                  : theme.palette.text.secondary,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flexShrink: 1
               }}>
                 Vehicle: {vehicle.vehicle?.label || vehicle.vehicle?.id || 'Unknown'}
               </Typography>
@@ -212,9 +244,11 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                         ? `1px solid ${alpha(theme.palette.warning.main, isDeparted ? 0.2 : 0.3)}`
                         : `1px solid ${alpha(theme.palette.success.main, isDeparted ? 0.2 : 0.3)}`
                       : `1px solid ${alpha(theme.palette.error.main, isDeparted ? 0.2 : 0.3)}`,
-                    fontSize: '0.75rem',
-                    height: 20,
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    height: { xs: 18, sm: 20 },
                     opacity: isDeparted ? 0.7 : 1,
+                    flexShrink: 0,
+                    alignSelf: { xs: 'flex-start', sm: 'center' }
                   }}
                 />
               )}
@@ -326,7 +360,15 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
 
             {/* Expandable stops toggle and map button */}
             {vehicle.stopSequence && vehicle.stopSequence.length > 0 && (
-              <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+              <Box sx={{ 
+                mt: 1, 
+                display: 'flex', 
+                gap: 1,
+                width: '100%',
+                alignItems: 'stretch', // Make buttons same height
+                mx: 0, // Ensure no horizontal margin
+                px: 0  // Ensure no horizontal padding
+              }}>
                 {/* Stops toggle button (only show if showFullStopsButton is true) */}
                 {showFullStopsButton && (
                   <Box
@@ -339,7 +381,9 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                       px: 1,
                       borderRadius: 1,
                       bgcolor: alpha(theme.palette.action.hover, 0.5),
-                      flex: 1,
+                      flex: 1, // Take up all available space on the left
+                      minWidth: 0, // Allow shrinking
+                      maxWidth: 'calc(100% - 52px)', // Reserve space for map button (44px + 8px gap)
                       '&:hover': {
                         bgcolor: alpha(theme.palette.action.hover, 0.7),
                       },
@@ -348,7 +392,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                       }
                     }}
                   >
-                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                       {isExpanded ? (
                         <ExpandLess fontSize="small" />
                       ) : (
@@ -359,12 +403,14 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                       variant="caption" 
                       color="text.secondary"
                       sx={{ 
-                        whiteSpace: 'nowrap',
+                        fontSize: { xs: '0.65rem', sm: '0.7rem' }, // Smaller font for mobile
+                        flexGrow: 1,
+                        whiteSpace: 'nowrap', // Prevent text wrapping
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
                       }}
                     >
-                      {isExpanded ? 'Hide' : 'Show'} all stops ({vehicle.stopSequence.length})
+                      Stops ({vehicle.stopSequence.length})
                     </Typography>
                   </Box>
                 )}
@@ -375,13 +421,20 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     cursor: 'pointer',
                     py: 0.5,
-                    px: 1,
+                    px: { xs: 1.5, sm: 1 },
                     borderRadius: 1,
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                    ...(showFullStopsButton ? {} : { flex: 1, justifyContent: 'center' }),
+                    flexShrink: 0, // Don't shrink the map button
+                    minWidth: { xs: 44, sm: 36 },
+                    ...(showFullStopsButton ? {} : { 
+                      flex: 1, 
+                      justifyContent: 'center',
+                      minWidth: 'auto'
+                    }),
                     '&:hover': {
                       bgcolor: alpha(theme.palette.primary.main, 0.2),
                     },
@@ -390,9 +443,22 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                     }
                   }}
                 >
-                  <MapIcon fontSize="small" sx={{ color: theme.palette.primary.main }} />
+                  <MapIcon 
+                    fontSize="small" 
+                    sx={{ 
+                      color: theme.palette.primary.main,
+                      fontSize: { xs: '1rem', sm: '1.25rem' }
+                    }} 
+                  />
                   {!showFullStopsButton && (
-                    <Typography variant="caption" sx={{ ml: 1, color: theme.palette.primary.main }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        ml: 1, 
+                        color: theme.palette.primary.main,
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                      }}
+                    >
                       View on map
                     </Typography>
                   )}
@@ -401,19 +467,31 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
             )}
           </Box>
 
-          <Box sx={{ textAlign: 'right' }}>
+          <Box sx={{ 
+            textAlign: 'right',
+            flexShrink: 0,
+            minWidth: { xs: 40, sm: 60 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end'
+          }}>
             <Typography variant="body2" sx={{ 
               color: isDeparted 
                 ? alpha(theme.palette.success.main, 0.5) 
                 : theme.palette.success.main, 
-              fontWeight: 600 
+              fontWeight: 600,
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              lineHeight: 1
             }}>
               Live
             </Typography>
             <Typography variant="caption" sx={{ 
               color: isDeparted 
                 ? alpha(theme.palette.text.secondary, 0.6) 
-                : theme.palette.text.secondary 
+                : theme.palette.text.secondary,
+              fontSize: { xs: '0.7rem', sm: '0.75rem' },
+              lineHeight: 1,
+              whiteSpace: 'nowrap'
             }}>
               {formatTime24(
                 vehicle.vehicle?.timestamp instanceof Date 
