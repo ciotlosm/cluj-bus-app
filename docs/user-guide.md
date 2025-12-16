@@ -234,8 +234,9 @@ The app uses locations in this priority order for route suggestions:
 - 🟡 **Yellow Circle** - Auto-refresh disabled
 
 #### Theme Control
-- **Dark/Light Mode** - Toggle available in Settings > Config tab
+- **Dark/Light Mode** - Toggle available in Settings > Config tab under Theme section
 - **Automatic detection** - Respects your system theme preference
+- **Persistent setting** - Your theme choice is saved and restored when you reopen the app
 
 ### API Configuration (Separate Tab)
 - **Tranzy API Key** - for live bus tracking data

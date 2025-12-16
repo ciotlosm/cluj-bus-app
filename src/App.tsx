@@ -23,7 +23,7 @@ import {
   Favorite as FavoriteIcon,
   LocationOn as StationIcon,
 } from '@mui/icons-material';
-import ThemeToggle from './components/ui/ThemeToggle';
+
 
 import LocationPicker from './components/features/LocationPicker/LocationPicker';
 import { useConfigurationManager } from './hooks/useConfigurationManager';
@@ -236,26 +236,7 @@ const MaterialBottomNav: React.FC<{
             },
           }}
         />
-        <BottomNavigationAction
-          label="Theme"
-          value="theme"
-          icon={<ThemeToggle size="small" iconOnly />}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            // Handle theme toggle click here since we're using iconOnly
-            const { toggleTheme } = useThemeStore.getState();
-            toggleTheme();
-          }}
-          sx={{
-            '&:hover': {
-              backgroundColor: 'transparent',
-            },
-            '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.75rem',
-            },
-          }}
-        />
+
         </BottomNavigation>
       </Box>
     </Paper>

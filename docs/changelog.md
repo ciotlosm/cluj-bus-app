@@ -2,6 +2,22 @@
 
 ## Recent Updates
 
+### December 16, 2024 - UI Improvement: Theme Toggle Moved to Settings
+**Improved**: Moved dark/light mode toggle from bottom navigation to Settings > Config tab for better organization
+
+**Changes**:
+- **Relocated theme control**: Theme toggle now appears in the Config tab within Settings, making it more discoverable and less cluttered
+- **Cleaner bottom navigation**: Removed theme toggle from bottom navigation, reducing visual noise and focusing on main app sections
+- **Better integration**: Theme control is now part of the configuration settings where users expect to find appearance options
+- **Consistent sizing**: Theme toggle uses smaller, more appropriate sizing within the settings context
+
+**Technical Details**:
+- **Removed from App.tsx**: Eliminated theme toggle from bottom navigation and cleaned up imports
+- **Added to ConfigurationManager**: Integrated theme control into the Config tab with proper Material Design styling
+- **Improved UX**: Theme setting is now grouped with other app preferences in a logical location
+
+**Impact**: More intuitive settings organization and cleaner main navigation interface.
+
 ### December 16, 2024 - Mobile UI Fixes: Theme Toggle & Console Errors
 **Fixed**: Console errors and mobile display issues with theme toggle in bottom navigation
 
@@ -47,23 +63,34 @@
 
 **Impact**: Developers see cleaner console output during development while still being notified of location access issues.
 
-### December 16, 2024 - Station View: Fixed Empty Stations Display
-**Fixed**: Station view no longer shows nearby stations that have no bus service
+### December 16, 2024 - Station Display & Mobile Layout Fixes
+**Fixed**: Major improvements to station display logic and mobile user experience
 
-**Problem**: Station view was displaying stations like "Test_CJ" that showed "No buses currently at this station" because the filtering logic only considered distance proximity (within 2km) without verifying if any vehicles actually serve those stations.
+**Station Display Improvements**:
+- **Fixed empty stations bug**: Station view no longer shows nearby stations that have no bus service (like "Test_CJ")
+- **Applied 200m proximity rule**: Shows closest station with vehicles + second station only if within 200m of the first
+- **Smart station filtering**: Only display stations with confirmed bus service via trip_id matching
+- **Expanded search capability**: If closest stations have no vehicles, automatically searches up to 20 nearby stations (within 5km) to find ones with active service
 
-**Solution**:
-- **Smart station filtering**: Only display stations that have confirmed bus service via trip_id matching
-- **Removed empty station display**: Eliminated "always show stations" logic that displayed all nearby stations regardless of service
-- **Better user experience**: Users now only see stations with actual buses, not empty stations
-- **Maintained distance info**: Proper distance calculations preserved for stations that do have service
+**Mobile Layout Fixes**:
+- **Fixed text cutting issues**: Station names and content no longer get cut off on mobile screens
+- **Improved vehicle card layout**: "Live" indicator and timestamps now properly visible on mobile
+- **Optimized button layout**: "Stops (x)" button uses full available width, map button stays on same line
+- **Enhanced responsive design**: Proper text truncation with ellipsis, responsive font sizes, better spacing
+- **Simplified button text**: Changed from "Show all stops (x)" to just "Stops (x)" for better mobile fit
 
 **Technical Changes**:
-- Modified `StationDisplay.tsx` to iterate over `stationVehicleGroups` (stations with vehicles) instead of `targetStations` (all nearby stations)
-- Added preliminary vehicle proximity check (5km radius) in station filtering
-- Updated rendering logic to filter out null entries and only show meaningful data
+- Modified `StationDisplay.tsx` with progressive station discovery and 200m proximity filtering
+- Enhanced `VehicleCard.tsx` with responsive flex layout and proper mobile constraints
+- Added fallback logic to find stations with service when closest stations are empty
+- Improved button alignment and text handling for mobile screens
 
-**Impact**: Cleaner station view that only shows stations with active bus service, eliminating confusion from empty stations.
+**Impact**: 
+- Users now see only meaningful stations with actual bus service
+- Mobile experience is significantly improved with proper text display and button functionality
+- App works seamlessly across desktop and mobile devices
+
+**Deployed**: Version 1.3.3 - https://gentle-fenglisu-4cdfcc.netlify.app
 
 ### December 16, 2024 - Enhanced Connectivity Tracking
 **Enhanced**: Online/offline indicators now track actual API connectivity, not just network status

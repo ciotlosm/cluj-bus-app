@@ -21,6 +21,7 @@ import {
   CheckCircle as CheckIcon,
   LocationOn as LocationOnIcon,
   BugReport as BugReportIcon,
+  Palette as PaletteIcon,
 } from '@mui/icons-material';
 
 import { useConfigurationManager } from '../../../hooks/useConfigurationManager';
@@ -28,6 +29,8 @@ import { Button } from '../../ui/Button';
 import LocationPicker from '../LocationPicker/LocationPicker';
 import { LocationSettingsSection } from './sections/LocationSettingsSection';
 import { AdvancedSettingsSection } from './sections/AdvancedSettingsSection';
+import { ThemeToggle } from '../../ui/ThemeToggle';
+import { useThemeStore } from '../../../stores/themeStore';
 import { logger, LogLevel } from '../../../utils/logger';
 
 interface ConfigurationManagerProps {
@@ -134,7 +137,49 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
           maxVehiclesError={errors.maxVehiclesPerStation}
         />
 
-
+        {/* Theme Settings */}
+        <Card
+          sx={{
+            borderRadius: 2,
+            border: `1px solid ${alpha(theme.palette.outline.main, 0.12)}`,
+            boxShadow: 'none',
+          }}
+        >
+          <CardContent sx={{ py: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                  color: theme.palette.secondary.main,
+                  mr: 2,
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <PaletteIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Theme
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Choose your preferred appearance
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                {useThemeStore.getState().mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+              </Typography>
+              <ThemeToggle size="small" />
+            </Box>
+          </CardContent>
+        </Card>
 
         {/* Location Settings */}
         <LocationSettingsSection
