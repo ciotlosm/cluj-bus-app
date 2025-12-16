@@ -225,7 +225,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
 
   if (!effectiveLocationForDisplay) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ px: 3, pb: 3, pt: 1 }}>
         <Card sx={{ 
           bgcolor: 'rgba(30, 41, 59, 0.3)',
           backdropFilter: 'blur(16px)',
@@ -260,7 +260,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
 
   if (isLoading) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ px: 3, pb: 3, pt: 1 }}>
         <Card sx={{ 
           bgcolor: 'rgba(30, 41, 59, 0.3)',
           backdropFilter: 'blur(16px)',
@@ -284,7 +284,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
 
   if (!effectiveLocationForDisplay) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ px: 3, pb: 3, pt: 1 }}>
         <Card sx={{ 
           bgcolor: 'rgba(30, 41, 59, 0.3)',
           backdropFilter: 'blur(16px)',
@@ -318,7 +318,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ px: 3, pb: 3, pt: 1 }}>
       <Stack spacing={4}>
         {/* Only show stations that have vehicles serving them */}
         {processedStationGroups.map((stationGroup, stationIndex) => {

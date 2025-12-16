@@ -19,7 +19,8 @@ import {
   DirectionsBus, 
   FlagOutlined,
   Map as MapIcon,
-  LocationOn
+  LocationOn,
+  PersonPin
 } from '@mui/icons-material';
 import { formatTime24 } from '../../../utils/timeFormat';
 import type { EnhancedVehicleInfo } from '../../../types';
@@ -64,27 +65,16 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
       return vehicle.stopSequence || [];
     }
 
-    // For short list in Routes view, show: current vehicle station, closest station (target), and end station
+    // For short list in Routes view, show: current vehicle station and closest station (target)
+    // Destination is now shown in the title, so we don't need it in the stop list
     const allStops = vehicle.stopSequence;
     const currentStop = allStops.find(stop => stop.isCurrent);
     const targetStop = allStops.find(stop => stop.stopId === stationId); // The station from the group header
-    const endStop = allStops.find(stop => stop.isDestination);
 
-    // Create a set of unique stops in route order
-    const uniqueStops = new Map<string, typeof allStops[0]>();
-    
-    // Add all stops to maintain order, then filter to our target stops
-    allStops.forEach(stop => {
-      uniqueStops.set(stop.stopId, stop);
-    });
-
-    // Get the stops we want to show
+    // Get the stops we want to show (excluding destination since it's in the title)
     const stopsToInclude = [];
     if (currentStop) stopsToInclude.push(currentStop);
     if (targetStop && targetStop.stopId !== currentStop?.stopId) stopsToInclude.push(targetStop);
-    if (endStop && endStop.stopId !== currentStop?.stopId && endStop.stopId !== targetStop?.stopId) {
-      stopsToInclude.push(endStop);
-    }
 
     // Sort by sequence to maintain route order
     return stopsToInclude.sort((a, b) => a.sequence - b.sequence);
@@ -258,32 +248,6 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                     }}
                   />
                 )}
-                
-                {/* Destination Chip */}
-                {vehicle.destination && (
-                  <Chip
-                    label={`→ ${vehicle.destination}`}
-                    size="small"
-                    sx={{
-                      bgcolor: alpha(theme.palette.success.main, 0.1),
-                      color: isDeparted 
-                        ? alpha(theme.palette.success.main, 0.6)
-                        : theme.palette.success.main,
-                      border: `1px solid ${alpha(theme.palette.success.main, isDeparted ? 0.2 : 0.3)}`,
-                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                      height: { xs: 18, sm: 20 },
-                      opacity: isDeparted ? 0.7 : 1,
-                      flexShrink: 0,
-                      maxWidth: { xs: '140px', sm: '180px' },
-                      '& .MuiChip-label': {
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        px: { xs: 0.5, sm: 0.75 }
-                      }
-                    }}
-                  />
-                )}
               </Box>
             </Box>
             
@@ -308,15 +272,11 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                           ? alpha(theme.palette.primary.main, 0.1)
                           : stop.stopId === stationId
                           ? alpha(theme.palette.info.main, 0.1)
-                          : stop.isDestination
-                          ? alpha(theme.palette.success.main, 0.1)
                           : alpha(theme.palette.action.hover, 0.5),
                         border: stop.isCurrent
                           ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
                           : stop.stopId === stationId
                           ? `1px solid ${alpha(theme.palette.info.main, 0.3)}`
-                          : stop.isDestination
-                          ? `1px solid ${alpha(theme.palette.success.main, 0.3)}`
                           : `1px solid ${alpha(theme.palette.divider, 0.5)}`,
                       }}
                     >
@@ -348,13 +308,6 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                               color: theme.palette.info.main
                             }} 
                           />
-                        ) : stop.isDestination ? (
-                          <FlagOutlined 
-                            sx={{ 
-                              fontSize: 10, 
-                              color: theme.palette.success.main
-                            }} 
-                          />
                         ) : (
                           <Box
                             sx={{
@@ -377,8 +330,6 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                             ? theme.palette.primary.main 
                             : stop.stopId === stationId
                             ? theme.palette.info.main
-                            : stop.isDestination
-                            ? theme.palette.success.main
                             : theme.palette.text.secondary,
                           lineHeight: 1,
                         }}
@@ -541,9 +492,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
       {/* Collapsible stops list (always shows full route) */}
       <Collapse in={isExpanded}>
         <Box sx={{ px: 2, pb: 2 }}>
-          <Typography variant="caption" sx={{ color: 'grey.500', mb: 1, display: 'block' }}>
-            All route stops for {vehicle.route}
-          </Typography>
+
           <List dense sx={{ py: 0 }}>
             {(vehicle.stopSequence || []).map((stop) => (
               <ListItem
@@ -554,9 +503,13 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                   borderRadius: 1,
                   bgcolor: stop.isCurrent
                     ? alpha(theme.palette.primary.main, 0.1)
+                    : stop.stopId === stationId
+                    ? alpha(theme.palette.info.main, 0.1)
                     : 'transparent',
                   border: stop.isCurrent
                     ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
+                    : stop.stopId === stationId
+                    ? `1px solid ${alpha(theme.palette.info.main, 0.3)}`
                     : '1px solid transparent',
                   mb: 0.5,
                 }}
@@ -579,6 +532,13 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                         sx={{ 
                           fontSize: 14, 
                           color: theme.palette.primary.main
+                        }} 
+                      />
+                    ) : stop.stopId === stationId ? (
+                      <PersonPin 
+                        sx={{ 
+                          fontSize: 14, 
+                          color: theme.palette.info.main
                         }} 
                       />
                     ) : stop.isDestination ? (
@@ -606,9 +566,11 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                       variant="body2" 
                       sx={{
                         fontSize: '0.8rem',
-                        fontWeight: stop.isCurrent ? 600 : 400,
+                        fontWeight: stop.isCurrent || stop.stopId === stationId ? 600 : 400,
                         color: stop.isCurrent 
                           ? theme.palette.primary.main 
+                          : stop.stopId === stationId
+                          ? theme.palette.info.main
                           : theme.palette.text.primary,
                         lineHeight: 1.2,
                       }}
@@ -619,8 +581,9 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                   secondary={
                     <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
                       {stop.isCurrent && 'Bus is currently closest to this stop'}
+                      {stop.stopId === stationId && 'Your closest station'}
                       {stop.isDestination && 'Final destination'}
-                      {!stop.isCurrent && !stop.isDestination && `Stop ${stop.sequence}`}
+                      {!stop.isCurrent && !stop.isDestination && stop.stopId !== stationId && `Stop ${stop.sequence}`}
                     </Typography>
                   }
                 />
