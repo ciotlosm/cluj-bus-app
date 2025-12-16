@@ -73,6 +73,7 @@ interface VehicleInfo {
   destination: string;
   vehicle?: {
     position: Coordinates;
+    tripId?: string;
   };
   minutesAway: number;
   _internalDirection?: 'arriving' | 'departing' | 'unknown';
@@ -130,36 +131,49 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
 
         const shapes = new Map<string, Coordinates[]>();
         
-        // Get trips for each route to find shape IDs
-        for (const routeId of uniqueRouteIds) {
+        // Get unique trip IDs from vehicles that have them
+        const vehicleTrips = vehicles
+          .filter(vehicle => vehicle.vehicle?.tripId)
+          .map(vehicle => ({
+            routeId: vehicle.routeId,
+            tripId: vehicle.vehicle!.tripId!,
+            route: vehicle.route
+          }));
+
+        logger.debug(`Found ${vehicleTrips.length} vehicles with trip IDs`, {
+          vehicleTrips: vehicleTrips.map(vt => ({ routeId: vt.routeId, tripId: vt.tripId }))
+        }, 'STATION_MAP');
+
+        if (vehicleTrips.length === 0) {
+          logger.warn('No vehicles have trip IDs, cannot load route shapes', {}, 'STATION_MAP');
+          setRouteShapes(new Map());
+          return;
+        }
+
+        // Get trips to find shape IDs for the specific trips our vehicles are on
+        for (const vehicleTrip of vehicleTrips) {
           try {
-            logger.debug(`Loading trips for route ${routeId}`, {}, 'STATION_MAP');
+            logger.debug(`Loading trip data for trip ${vehicleTrip.tripId}`, {}, 'STATION_MAP');
             
-            // Get trips for this route
-            const parsedRouteId = parseInt(routeId);
+            // Get all trips for this route to find the specific trip
+            const parsedRouteId = parseInt(vehicleTrip.routeId);
             if (isNaN(parsedRouteId)) {
-              logger.warn(`Invalid route ID: ${routeId}`, {}, 'STATION_MAP');
+              logger.warn(`Invalid route ID: ${vehicleTrip.routeId}`, {}, 'STATION_MAP');
               continue;
             }
             
             const trips = await enhancedTranzyApi.getTrips(parsedAgencyId, parsedRouteId);
             
             if (trips && trips.length > 0) {
-              // Get unique shape IDs from trips
-              const shapeIds = Array.from(new Set(
-                trips
-                  .map(trip => trip.shapeId)
-                  .filter(shapeId => shapeId && shapeId.trim() !== '')
-              ));
-
-              logger.debug(`Found ${shapeIds.length} shape IDs for route ${routeId}`, {
-                shapeIds
-              }, 'STATION_MAP');
-
-              // Load shapes for each shape ID
-              for (const shapeId of shapeIds) {
+              // Find the specific trip for this vehicle
+              const specificTrip = trips.find(trip => trip.id === vehicleTrip.tripId);
+              
+              if (specificTrip && specificTrip.shapeId) {
+                logger.debug(`Found shape ID ${specificTrip.shapeId} for trip ${vehicleTrip.tripId}`, {}, 'STATION_MAP');
+                
                 try {
-                  const shapeData = await enhancedTranzyApi.getShapes(parsedAgencyId, shapeId);
+                  // Load the shape for this specific trip
+                  const shapeData = await enhancedTranzyApi.getShapes(parsedAgencyId, specificTrip.shapeId);
                   
                   if (shapeData && shapeData.length > 0) {
                     // Transform shape data to coordinates
@@ -171,22 +185,23 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
                       }));
 
                     if (coordinates.length > 0) {
-                      // Use route ID as key, but if multiple shapes exist, we'll use the first one
-                      if (!shapes.has(routeId)) {
-                        shapes.set(routeId, coordinates);
-                        logger.debug(`Loaded ${coordinates.length} shape points for route ${routeId}`, {}, 'STATION_MAP');
-                      }
+                      // Use route ID as key - this will show one shape per route
+                      // If multiple vehicles on same route have different shapes, the last one wins
+                      shapes.set(vehicleTrip.routeId, coordinates);
+                      logger.debug(`Loaded ${coordinates.length} shape points for route ${vehicleTrip.routeId} (trip ${vehicleTrip.tripId})`, {}, 'STATION_MAP');
                     }
                   }
                 } catch (shapeError) {
-                  logger.warn(`Failed to load shape ${shapeId} for route ${routeId}`, { 
+                  logger.warn(`Failed to load shape ${specificTrip.shapeId} for trip ${vehicleTrip.tripId}`, { 
                     shapeError 
                   }, 'STATION_MAP');
                 }
+              } else {
+                logger.warn(`Trip ${vehicleTrip.tripId} not found or has no shape ID`, {}, 'STATION_MAP');
               }
             }
           } catch (routeError) {
-            logger.warn(`Failed to load trips for route ${routeId}`, { routeError }, 'STATION_MAP');
+            logger.warn(`Failed to load trips for route ${vehicleTrip.routeId}`, { routeError }, 'STATION_MAP');
           }
         }
         

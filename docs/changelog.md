@@ -22,10 +22,11 @@
   - **Route path visualization** with color-coded polylines
   - **Responsive design** with proper mobile support
 - **Route Shapes Implementation**:
-  - **Trip-based loading**: Gets trips for each route to find shape IDs
-  - **Shape data fetching**: Loads actual GTFS shape data from API
+  - **🔧 FIXED: Vehicle-specific shapes**: Now loads shapes only for the specific trips that vehicles are currently on
+  - **Trip ID targeting**: Uses actual vehicle trip IDs instead of loading all route shapes
+  - **Shape data fetching**: Loads precise GTFS shape data for active trips
   - **Path rendering**: Draws route paths as colored polylines on map
-  - **Performance optimized**: Loads shapes only when modal opens
+  - **Performance optimized**: Loads only relevant shapes when modal opens
   - **Error handling**: Graceful fallbacks if shape data unavailable
 - **User Benefit**: Complete visual context showing where buses travel, not just current positions
 - **Technical**: Enhanced StationMapModal with GTFS shapes integration

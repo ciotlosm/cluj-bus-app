@@ -69,26 +69,13 @@ export const FavoriteBusManager: React.FC<FavoriteBusManagerProps> = ({ classNam
 
   return (
     <Box className={className}>
-      <InfoCard
-        title="Favorite Routes"
-        subtitle={`Manage your favorite routes in ${config.city}`}
-        icon={<FavoriteIcon />}
-      >
+      <InfoCard>
         <Stack spacing={3}>
-          {/* Auto-save info */}
-          <Alert 
-            severity="info" 
-            sx={{ borderRadius: 2 }}
-          >
-            <Typography variant="body2">
-              Changes are automatically saved when you click the heart icon ❤️
-            </Typography>
-          </Alert>
 
           {/* Favorite Routes Section */}
           <Box>
             <RoutesList
-              title="Your Favorite Routes"
+              title="Favorites"
               routes={favoriteRoutes as any}
               isFavoriteList={true}
               onToggleRoute={handleToggleRoute}
