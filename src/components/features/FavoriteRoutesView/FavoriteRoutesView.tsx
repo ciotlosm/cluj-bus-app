@@ -48,6 +48,7 @@ const FavoriteRoutesViewComponent: React.FC<FavoriteRoutesViewProps> = ({ onNavi
   const { currentLocation } = useLocationStore();
   const { config } = useConfigStore();
   const { favoriteBusResult } = useFavoriteBusStore();
+  const theme = useTheme();
   
   const [allStations, setAllStations] = React.useState<Station[]>([]);
   const [isLoadingStations, setIsLoadingStations] = React.useState(false);
@@ -788,8 +789,6 @@ const FavoriteRoutesViewComponent: React.FC<FavoriteRoutesViewProps> = ({ onNavi
       </Box>
     );
   }
-
-  const theme = useTheme();
 
   return (
     <Box sx={{ position: 'relative', p: 3 }}>
