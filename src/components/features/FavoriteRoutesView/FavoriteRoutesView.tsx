@@ -112,15 +112,28 @@ const FavoriteRoutesViewComponent: React.FC<FavoriteRoutesViewProps> = ({ onNavi
       stopSequence: vehicle.stopSequence?.map(stop => {
         const stationCoords = allStations.find(s => s.id === stop.stopId)?.coordinates;
         
+        // Calculate distance from user to this station if user location is available
+        let distanceToUser: number | undefined;
+        if (effectiveLocationForDisplay && stationCoords) {
+          try {
+            distanceToUser = calculateDistance(effectiveLocationForDisplay, stationCoords);
+          } catch (error) {
+            logger.warn('Failed to calculate distance to station', { 
+              stationId: stop.stopId, 
+              error 
+            }, 'COMPONENT');
+          }
+        }
+        
         return {
           id: stop.stopId,
           name: stop.stopName,
           sequence: stop.sequence,
           coordinates: stationCoords || { latitude: 0, longitude: 0 },
           arrivalTime: undefined,
-          isCurrent: false,
+          isCurrent: stop.isCurrent,
           isClosestToUser: stop.stopId === targetStationId,
-          distanceToUser: undefined,
+          distanceToUser,
           distanceFromBus: undefined
         };
       }),
@@ -876,7 +889,7 @@ const FavoriteRoutesViewComponent: React.FC<FavoriteRoutesViewProps> = ({ onNavi
             setTargetStationId('');
           }}
           bus={convertVehicleToFavoriteBusInfo(selectedVehicleForMap, targetStationId)}
-          userLocation={null}
+          userLocation={effectiveLocationForDisplay}
           cityName={config?.city || 'Cluj-Napoca'}
         />
       )}

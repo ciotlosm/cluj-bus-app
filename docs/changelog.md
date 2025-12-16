@@ -2,6 +2,29 @@
 
 ## Recent Updates
 
+### December 16, 2024 - Light Mode Contrast & Accessibility Improvements
+
+#### 🎨 **THEME IMPROVEMENT: Fixed Light Mode Contrast Issues**
+- **Problem**: Vehicle cards had poor contrast in light mode due to hardcoded dark theme colors
+- **Solution**: 
+  - **Theme-aware colors**: Converted all hardcoded colors to use Material-UI theme system
+  - **Status chip colors**: Now use theme.palette.success/warning/error instead of hardcoded RGB values
+  - **Dimming logic**: Departed vehicles properly dim colors based on current theme
+  - **Contrast compliance**: Improved accessibility with proper color contrast ratios
+- **Technical**: Updated VehicleCard component to use `theme.palette` and `alpha()` functions throughout
+- **Impact**: Better readability and accessibility in both light and dark modes
+
+#### ♿ **ACCESSIBILITY FIX: Dialog Focus Management**
+- **Problem**: Accessibility warnings about aria-hidden elements retaining focus
+- **Solution**: Added `disableRestoreFocus` and `keepMounted={false}` to Dialog components
+- **Components Updated**: LocationPicker, BusRouteMapModal, MapPicker
+- **Impact**: Improved screen reader compatibility and focus management
+
+#### 🧹 **CODE CLEANUP: Removed Unused Imports**
+- **Cleanup**: Removed unused `Stack` import from VehicleCard component
+- **Cleanup**: Fixed unused `index` parameter in map functions
+- **Impact**: Cleaner code with no TypeScript warnings
+
 ### December 15, 2024 - UI Consistency & Visual Improvements
 
 #### 🎨 **MAJOR REFACTOR: Unified Vehicle Card Components**

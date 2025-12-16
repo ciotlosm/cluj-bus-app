@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Stack,
   Typography,
   Chip,
   Card,
@@ -97,14 +96,20 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
     <Card
       sx={{
         position: 'relative',
-        bgcolor: isDeparted ? 'rgba(30, 41, 59, 0.15)' : 'rgba(30, 41, 59, 0.3)',
+        bgcolor: isDeparted 
+          ? alpha(theme.palette.background.paper, 0.3)
+          : theme.palette.background.paper,
         backdropFilter: 'blur(16px)',
-        border: isDeparted ? '1px solid rgba(100, 116, 139, 0.1)' : '1px solid rgba(100, 116, 139, 0.2)',
+        border: `1px solid ${alpha(theme.palette.divider, isDeparted ? 0.3 : 0.5)}`,
         transition: 'all 0.2s ease-in-out',
-        opacity: isDeparted ? 0.6 : 1,
+        opacity: isDeparted ? 0.7 : 1,
+        boxShadow: theme.shadows[1],
         '&:hover': {
-          bgcolor: isDeparted ? 'rgba(30, 41, 59, 0.25)' : 'rgba(30, 41, 59, 0.5)',
-          border: isDeparted ? '1px solid rgba(100, 116, 139, 0.2)' : '1px solid rgba(100, 116, 139, 0.4)',
+          bgcolor: isDeparted 
+            ? alpha(theme.palette.background.paper, 0.5)
+            : alpha(theme.palette.background.paper, 0.9),
+          border: `1px solid ${alpha(theme.palette.divider, isDeparted ? 0.5 : 0.7)}`,
+          boxShadow: theme.shadows[2],
         },
         // Add overlay for departed vehicles
         '&::before': isDeparted ? {
@@ -114,7 +119,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          bgcolor: 'rgba(0, 0, 0, 0.3)',
+          bgcolor: alpha(theme.palette.action.disabled, 0.2),
           borderRadius: 'inherit',
           pointerEvents: 'none',
           zIndex: 1,
@@ -129,7 +134,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
               minWidth: 48,
               height: 48,
               borderRadius: 2,
-              bgcolor: isDeparted ? 'rgba(59, 130, 246, 0.4)' : 'primary.main',
+              bgcolor: isDeparted ? alpha(theme.palette.primary.main, 0.4) : 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -137,7 +142,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
               transition: 'all 0.2s ease-in-out',
               ...(onRouteClick && {
                 '&:hover': {
-                  bgcolor: isDeparted ? 'rgba(59, 130, 246, 0.5)' : 'primary.dark',
+                  bgcolor: isDeparted ? alpha(theme.palette.primary.main, 0.5) : 'primary.dark',
                   transform: 'scale(1.05)',
                 },
                 '&:active': {
@@ -146,17 +151,31 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
               })
             }}
           >
-            <Typography variant="h6" sx={{ color: isDeparted ? 'rgba(255, 255, 255, 0.7)' : 'white', fontWeight: 'bold' }}>
+            <Typography variant="h6" sx={{ 
+              color: isDeparted 
+                ? alpha(theme.palette.primary.contrastText, 0.7) 
+                : theme.palette.primary.contrastText, 
+              fontWeight: 'bold' 
+            }}>
               {vehicle.route}
             </Typography>
           </Box>
           
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="body1" sx={{ color: isDeparted ? 'rgba(255, 255, 255, 0.6)' : 'white', fontWeight: 600 }}>
+            <Typography variant="body1" sx={{ 
+              color: isDeparted 
+                ? alpha(theme.palette.text.primary, 0.6) 
+                : theme.palette.text.primary, 
+              fontWeight: 600 
+            }}>
               {vehicle.destination || 'Unknown destination'}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-              <Typography variant="body2" sx={{ color: isDeparted ? 'rgba(156, 163, 175, 0.6)' : 'grey.400' }}>
+              <Typography variant="body2" sx={{ 
+                color: isDeparted 
+                  ? alpha(theme.palette.text.secondary, 0.6) 
+                  : theme.palette.text.secondary 
+              }}>
                 Vehicle: {vehicle.vehicle?.label || vehicle.vehicle?.id || 'Unknown'}
               </Typography>
               {vehicle._internalDirection !== 'unknown' && (
@@ -174,21 +193,28 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                   sx={{
                     bgcolor: vehicle._internalDirection === 'arriving' 
                       ? vehicle.minutesAway === 0
-                        ? 'rgba(251, 191, 36, 0.1)' // Yellow background for "At station"
-                        : 'rgba(34, 197, 94, 0.1)'  // Green background for "Arriving"
-                      : 'rgba(239, 68, 68, 0.1)', // Red background for "Already left"
+                        ? alpha(theme.palette.warning.main, 0.1) // Warning color for "At station"
+                        : alpha(theme.palette.success.main, 0.1) // Success color for "Arriving"
+                      : alpha(theme.palette.error.main, 0.1), // Error color for "Already left"
                     color: vehicle._internalDirection === 'arriving' 
                       ? vehicle.minutesAway === 0
-                        ? 'rgb(252, 211, 77)' // Yellow text for "At station"
-                        : 'rgb(134, 239, 172)' // Green text for "Arriving"
-                      : 'rgb(248, 113, 113)', // Red text for "Already left"
+                        ? isDeparted 
+                          ? alpha(theme.palette.warning.main, 0.6)
+                          : theme.palette.warning.main
+                        : isDeparted 
+                          ? alpha(theme.palette.success.main, 0.6)
+                          : theme.palette.success.main
+                      : isDeparted 
+                        ? alpha(theme.palette.error.main, 0.6)
+                        : theme.palette.error.main,
                     border: vehicle._internalDirection === 'arriving' 
                       ? vehicle.minutesAway === 0
-                        ? '1px solid rgba(251, 191, 36, 0.3)' // Yellow border for "At station"
-                        : '1px solid rgba(34, 197, 94, 0.3)'  // Green border for "Arriving"
-                      : '1px solid rgba(239, 68, 68, 0.3)', // Red border for "Already left"
+                        ? `1px solid ${alpha(theme.palette.warning.main, isDeparted ? 0.2 : 0.3)}`
+                        : `1px solid ${alpha(theme.palette.success.main, isDeparted ? 0.2 : 0.3)}`
+                      : `1px solid ${alpha(theme.palette.error.main, isDeparted ? 0.2 : 0.3)}`,
                     fontSize: '0.75rem',
                     height: 20,
+                    opacity: isDeparted ? 0.7 : 1,
                   }}
                 />
               )}
@@ -217,14 +243,14 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                           ? alpha(theme.palette.info.main, 0.1)
                           : stop.isDestination
                           ? alpha(theme.palette.success.main, 0.1)
-                          : 'rgba(100, 116, 139, 0.1)',
+                          : alpha(theme.palette.action.hover, 0.5),
                         border: stop.isCurrent
                           ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
                           : stop.stopId === stationId
                           ? `1px solid ${alpha(theme.palette.info.main, 0.3)}`
                           : stop.isDestination
                           ? `1px solid ${alpha(theme.palette.success.main, 0.3)}`
-                          : '1px solid rgba(100, 116, 139, 0.2)',
+                          : `1px solid ${alpha(theme.palette.divider, 0.5)}`,
                       }}
                     >
                       {/* Icon circle */}
@@ -312,13 +338,13 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                       py: 0.5,
                       px: 1,
                       borderRadius: 1,
-                      bgcolor: 'rgba(100, 116, 139, 0.1)',
+                      bgcolor: alpha(theme.palette.action.hover, 0.5),
                       flex: 1,
                       '&:hover': {
-                        bgcolor: 'rgba(100, 116, 139, 0.2)',
+                        bgcolor: alpha(theme.palette.action.hover, 0.7),
                       },
                       '&:active': {
-                        bgcolor: 'rgba(100, 116, 139, 0.3)',
+                        bgcolor: alpha(theme.palette.action.hover, 0.9),
                       }
                     }}
                   >
@@ -345,20 +371,20 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
                     py: 0.5,
                     px: 1,
                     borderRadius: 1,
-                    bgcolor: 'rgba(59, 130, 246, 0.1)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     ...(showFullStopsButton ? {} : { flex: 1, justifyContent: 'center' }),
                     '&:hover': {
-                      bgcolor: 'rgba(59, 130, 246, 0.2)',
+                      bgcolor: alpha(theme.palette.primary.main, 0.2),
                     },
                     '&:active': {
-                      bgcolor: 'rgba(59, 130, 246, 0.3)',
+                      bgcolor: alpha(theme.palette.primary.main, 0.3),
                     }
                   }}
                 >
-                  <MapIcon fontSize="small" sx={{ color: 'rgb(147, 197, 253)' }} />
+                  <MapIcon fontSize="small" sx={{ color: theme.palette.primary.main }} />
                   {!showFullStopsButton && (
-                    <Typography variant="caption" sx={{ ml: 1, color: 'rgb(147, 197, 253)' }}>
+                    <Typography variant="caption" sx={{ ml: 1, color: theme.palette.primary.main }}>
                       View on map
                     </Typography>
                   )}
@@ -368,10 +394,19 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
           </Box>
 
           <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="body2" sx={{ color: isDeparted ? 'rgba(34, 197, 94, 0.5)' : 'success.main', fontWeight: 600 }}>
+            <Typography variant="body2" sx={{ 
+              color: isDeparted 
+                ? alpha(theme.palette.success.main, 0.5) 
+                : theme.palette.success.main, 
+              fontWeight: 600 
+            }}>
               Live
             </Typography>
-            <Typography variant="caption" sx={{ color: isDeparted ? 'rgba(107, 114, 128, 0.6)' : 'grey.500' }}>
+            <Typography variant="caption" sx={{ 
+              color: isDeparted 
+                ? alpha(theme.palette.text.secondary, 0.6) 
+                : theme.palette.text.secondary 
+            }}>
               {formatTime24(
                 vehicle.vehicle?.timestamp instanceof Date 
                   ? vehicle.vehicle.timestamp 
