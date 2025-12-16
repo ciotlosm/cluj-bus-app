@@ -85,6 +85,7 @@ interface StationMapModalProps {
   vehicles: VehicleInfo[];
   userLocation?: Coordinates;
   cityName?: string;
+  agencyId?: string;
 }
 
 export const StationMapModal: React.FC<StationMapModalProps> = ({
@@ -93,7 +94,8 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
   station,
   vehicles,
   userLocation,
-  cityName = 'Cluj-Napoca'
+  cityName = 'Cluj-Napoca',
+  agencyId
 }) => {
   const [routeShapes, setRouteShapes] = useState<Map<string, Coordinates[]>>(new Map());
   const [isLoadingRoutes, setIsLoadingRoutes] = useState(false);
@@ -113,13 +115,86 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
       setError(null);
       
       try {
-        // For now, we'll skip route shapes as they require complex trip->shape mapping
-        // This can be enhanced later if needed
-        logger.debug('Skipping route shapes for station map - feature can be enhanced later', {
+        logger.debug('Loading route shapes for station map', {
           routeIds: uniqueRouteIds
         }, 'STATION_MAP');
+
+        // Check if we have agency ID
+        if (!agencyId) {
+          logger.warn('No agency ID provided for route shapes', {}, 'STATION_MAP');
+          setRouteShapes(new Map());
+          return;
+        }
+
+        const parsedAgencyId = parseInt(agencyId);
+
+        const shapes = new Map<string, Coordinates[]>();
         
-        setRouteShapes(new Map());
+        // Get trips for each route to find shape IDs
+        for (const routeId of uniqueRouteIds) {
+          try {
+            logger.debug(`Loading trips for route ${routeId}`, {}, 'STATION_MAP');
+            
+            // Get trips for this route
+            const parsedRouteId = parseInt(routeId);
+            if (isNaN(parsedRouteId)) {
+              logger.warn(`Invalid route ID: ${routeId}`, {}, 'STATION_MAP');
+              continue;
+            }
+            
+            const trips = await enhancedTranzyApi.getTrips(parsedAgencyId, parsedRouteId);
+            
+            if (trips && trips.length > 0) {
+              // Get unique shape IDs from trips
+              const shapeIds = Array.from(new Set(
+                trips
+                  .map(trip => trip.shapeId)
+                  .filter(shapeId => shapeId && shapeId.trim() !== '')
+              ));
+
+              logger.debug(`Found ${shapeIds.length} shape IDs for route ${routeId}`, {
+                shapeIds
+              }, 'STATION_MAP');
+
+              // Load shapes for each shape ID
+              for (const shapeId of shapeIds) {
+                try {
+                  const shapeData = await enhancedTranzyApi.getShapes(parsedAgencyId, shapeId);
+                  
+                  if (shapeData && shapeData.length > 0) {
+                    // Transform shape data to coordinates
+                    const coordinates: Coordinates[] = shapeData
+                      .sort((a, b) => a.sequence - b.sequence)
+                      .map(point => ({
+                        latitude: point.latitude,
+                        longitude: point.longitude
+                      }));
+
+                    if (coordinates.length > 0) {
+                      // Use route ID as key, but if multiple shapes exist, we'll use the first one
+                      if (!shapes.has(routeId)) {
+                        shapes.set(routeId, coordinates);
+                        logger.debug(`Loaded ${coordinates.length} shape points for route ${routeId}`, {}, 'STATION_MAP');
+                      }
+                    }
+                  }
+                } catch (shapeError) {
+                  logger.warn(`Failed to load shape ${shapeId} for route ${routeId}`, { 
+                    shapeError 
+                  }, 'STATION_MAP');
+                }
+              }
+            }
+          } catch (routeError) {
+            logger.warn(`Failed to load trips for route ${routeId}`, { routeError }, 'STATION_MAP');
+          }
+        }
+        
+        logger.debug(`Loaded shapes for ${shapes.size} routes`, {
+          routesWithShapes: Array.from(shapes.keys())
+        }, 'STATION_MAP');
+        
+        setRouteShapes(shapes);
       } catch (err) {
         logger.error('Failed to load route shapes for station map', { error: err }, 'STATION_MAP');
         setError('Failed to load route information');
@@ -129,7 +204,7 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
     };
 
     loadRouteShapes();
-  }, [open, uniqueRouteIds]);
+  }, [open, uniqueRouteIds, vehicles, agencyId]);
 
   // Calculate map bounds to fit all vehicles and station
   const mapBounds = React.useMemo(() => {

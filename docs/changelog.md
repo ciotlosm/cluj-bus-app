@@ -4,7 +4,7 @@
 
 ### December 16, 2024 - Light Mode Contrast & Station Map Features
 
-#### ✨ **NEW FEATURE: Clickable Station Names with Map View**
+#### ✨ **NEW FEATURE: Clickable Station Names with Map View & Route Shapes**
 - **Feature**: Station names in favorite routes view are now clickable
 - **Functionality**: Clicking a station name opens a detailed map modal showing:
   - **All vehicles** at that station with real-time positions
@@ -13,14 +13,22 @@
   - **Vehicle status** (arriving/departing) with color coding
   - **Route information** with color-coded legend
   - **Interactive popups** with vehicle details and ETAs
+  - **🆕 Route shapes**: Actual bus route paths drawn on the map
 - **Map Features**:
   - **Auto-fit bounds** to show all vehicles and station
   - **Custom icons** for user, station, and vehicles
   - **Color coding** by route with legend
   - **Status indicators** (dimmed for departed vehicles)
+  - **Route path visualization** with color-coded polylines
   - **Responsive design** with proper mobile support
-- **User Benefit**: Visual overview of all buses at a station with geographic context
-- **Technical**: New StationMapModal component with Leaflet integration
+- **Route Shapes Implementation**:
+  - **Trip-based loading**: Gets trips for each route to find shape IDs
+  - **Shape data fetching**: Loads actual GTFS shape data from API
+  - **Path rendering**: Draws route paths as colored polylines on map
+  - **Performance optimized**: Loads shapes only when modal opens
+  - **Error handling**: Graceful fallbacks if shape data unavailable
+- **User Benefit**: Complete visual context showing where buses travel, not just current positions
+- **Technical**: Enhanced StationMapModal with GTFS shapes integration
 
 #### ✨ **NEW FEATURE: Heart Icon Button with Tooltip in Favorite Routes**
 - **Feature**: Added heart icon button in top right corner of favorite routes view

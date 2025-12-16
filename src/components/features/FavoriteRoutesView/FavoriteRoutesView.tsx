@@ -1003,6 +1003,7 @@ const FavoriteRoutesViewComponent: React.FC<FavoriteRoutesViewProps> = ({ onNavi
           vehicles={selectedStationForMap.vehicles}
           userLocation={effectiveLocationForDisplay}
           cityName={config?.city || 'Cluj-Napoca'}
+          agencyId={config?.agencyId}
         />
       )}
     </Box>
