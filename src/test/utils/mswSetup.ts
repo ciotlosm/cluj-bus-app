@@ -44,8 +44,8 @@ export const handlers = [
       return new HttpResponse(null, { status: 400 });
     }
 
-    // Generate mock routes (reduced from 10 to 3)
-    const mockRoutes = fc.sample(tranzyRouteResponseArb, 3).map(route => ({
+    // Generate mock routes (minimal for memory efficiency)
+    const mockRoutes = fc.sample(tranzyRouteResponseArb, 2).map(route => ({
       ...route,
       agency_id: parseInt(agencyId)
     }));
@@ -62,8 +62,8 @@ export const handlers = [
       return new HttpResponse(null, { status: 400 });
     }
 
-    // Generate mock stops (reduced from 20 to 5)
-    const mockStops = fc.sample(tranzyStopResponseArb, 5);
+    // Generate mock stops (minimal for memory efficiency)
+    const mockStops = fc.sample(tranzyStopResponseArb, 2);
     return HttpResponse.json(mockStops);
   }),
 
@@ -76,8 +76,8 @@ export const handlers = [
       return new HttpResponse(null, { status: 400 });
     }
 
-    // Generate mock vehicles (reduced from 15 to 3)
-    const mockVehicles = fc.sample(tranzyVehicleResponseArb, 3);
+    // Generate mock vehicles (minimal for memory efficiency)
+    const mockVehicles = fc.sample(tranzyVehicleResponseArb, 2);
     return HttpResponse.json(mockVehicles);
   }),
 
@@ -92,8 +92,8 @@ export const handlers = [
       return new HttpResponse(null, { status: 400 });
     }
 
-    // Generate mock stop times (reduced from 30 to 5)
-    let mockStopTimes = fc.sample(tranzyStopTimeResponseArb, 5);
+    // Generate mock stop times (minimal for memory efficiency)
+    let mockStopTimes = fc.sample(tranzyStopTimeResponseArb, 2);
     
     // Filter by trip_id if provided
     if (tripId) {
