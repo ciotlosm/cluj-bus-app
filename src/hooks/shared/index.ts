@@ -36,3 +36,9 @@ export {
   type DependencyTracker,
   type DependencyStats
 } from './dependencyTracker';
+
+// Store subscription hooks (reactive data access)
+export { useVehicleStoreData, type UseVehicleStoreDataOptions } from './useVehicleStoreData';
+export { useStationStoreData, type UseStationStoreDataOptions } from './useStationStoreData';
+export { useRouteStoreData, type UseRouteStoreDataOptions } from './useRouteStoreData';
+export { useStopTimesStoreData, type UseStopTimesStoreDataOptions } from './useStopTimesStoreData';

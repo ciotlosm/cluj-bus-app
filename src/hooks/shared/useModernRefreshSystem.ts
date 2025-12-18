@@ -1,17 +1,14 @@
 /**
  * Modern Refresh System
  * 
- * Replaces legacy bus store refresh functionality with modern data hooks.
- * Provides centralized refresh control for all data types.
+ * Provides centralized refresh control for all data types using store-based architecture.
+ * Replaces data hooks with direct store method calls for better performance and consistency.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useConfigStore } from '../../stores/configStore';
-import { useStoreEvent, StoreEvents } from '../../stores/shared/storeEvents';
-import { useStationData } from '../data/useStationData';
-import { useVehicleData } from '../data/useVehicleData';
-import { useRouteData } from '../data/useRouteData';
-import { useStopTimesData } from '../data/useStopTimesData';
+import { useVehicleStore } from '../../stores/vehicleStore';
+import { useStoreEvent, StoreEvents, StoreEventManager } from '../../stores/shared/storeEvents';
 import { logger } from '../../utils/logger';
 
 export interface ModernRefreshSystemState {
@@ -34,7 +31,7 @@ export interface ModernRefreshSystemActions {
 }
 
 export interface ModernRefreshSystemResult extends ModernRefreshSystemState, ModernRefreshSystemActions {
-  // Data access (for components that need it)
+  // Data access (for components that need it) - now from stores
   stations: any[];
   vehicles: any[];
   routes: any[];
@@ -42,10 +39,11 @@ export interface ModernRefreshSystemResult extends ModernRefreshSystemState, Mod
 }
 
 /**
- * Modern refresh system hook that replaces legacy bus store functionality
+ * Modern refresh system hook using store-based architecture
  */
 export const useModernRefreshSystem = (): ModernRefreshSystemResult => {
   const { config: initialConfig } = useConfigStore();
+  const vehicleStore = useVehicleStore();
   const [config, setConfig] = useState(initialConfig);
   const agencyId = config?.agencyId;
   
@@ -58,96 +56,225 @@ export const useModernRefreshSystem = (): ModernRefreshSystemResult => {
     []
   );
 
-  // State management
+  // State management - synchronized with store state
   const [state, setState] = useState<ModernRefreshSystemState>({
-    isLoading: false,
-    lastUpdate: null,
-    lastApiUpdate: null,
-    error: null,
-    isAutoRefreshEnabled: false
+    isLoading: vehicleStore.isLoading,
+    lastUpdate: vehicleStore.lastUpdate,
+    lastApiUpdate: vehicleStore.lastApiUpdate,
+    error: vehicleStore.error?.message || null,
+    isAutoRefreshEnabled: vehicleStore.isAutoRefreshEnabled
   });
 
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number | null>(null);
-
-  // Data hooks with refresh capabilities
-  const stationDataResult = useStationData({
-    agencyId,
-    forceRefresh: false,
-    cacheMaxAge: 60000 // 1 minute
+  // Data state from stores
+  const [dataState, setDataState] = useState({
+    stations: vehicleStore.stations || [],
+    vehicles: vehicleStore.vehicles || [],
+    routes: [] as any[],
+    stopTimes: [] as any[]
   });
 
-  const vehicleDataResult = useVehicleData({
-    agencyId,
-    forceRefresh: false,
-    cacheMaxAge: 30000, // 30 seconds for live data
-    autoRefresh: state.isAutoRefreshEnabled,
-    refreshInterval: 30000
-  });
+  // Subscribe to store updates via events
+  useStoreEvent(
+    StoreEvents.VEHICLES_UPDATED,
+    useCallback((data: any) => {
+      const now = new Date();
+      setState(prev => ({
+        ...prev,
+        lastUpdate: now,
+        lastApiUpdate: data.source === 'api' ? now : prev.lastApiUpdate,
+        isLoading: false
+      }));
+      setDataState(prev => ({
+        ...prev,
+        vehicles: data.vehicles
+      }));
+    }, []),
+    []
+  );
 
-  const routeDataResult = useRouteData({
-    agencyId,
-    forceRefresh: false,
-    cacheMaxAge: 60000 // 1 minute
-  });
-
-  const stopTimesDataResult = useStopTimesData({
-    agencyId,
-    forceRefresh: false,
-    cacheMaxAge: 120000 // 2 minutes
-  });
-
-  // Aggregate loading state
-  const isLoading = stationDataResult.isLoading || 
-                   vehicleDataResult.isLoading || 
-                   routeDataResult.isLoading || 
-                   stopTimesDataResult.isLoading;
-
-  // Update state when data changes
+  // Sync with store state changes
   useEffect(() => {
-    const now = new Date();
-    const hasData = stationDataResult.data || vehicleDataResult.data || 
-                   routeDataResult.data || stopTimesDataResult.data;
-
     setState(prev => ({
       ...prev,
-      isLoading,
-      lastUpdate: hasData ? now : prev.lastUpdate,
-      lastApiUpdate: hasData ? now : prev.lastApiUpdate,
-      error: (stationDataResult.error || vehicleDataResult.error || 
-             routeDataResult.error || stopTimesDataResult.error)?.message || null
+      isLoading: vehicleStore.isLoading,
+      lastUpdate: vehicleStore.lastUpdate,
+      lastApiUpdate: vehicleStore.lastApiUpdate,
+      error: vehicleStore.error?.message || null,
+      isAutoRefreshEnabled: vehicleStore.isAutoRefreshEnabled
+    }));
+    
+    setDataState(prev => ({
+      ...prev,
+      stations: vehicleStore.stations || [],
+      vehicles: vehicleStore.vehicles || []
     }));
   }, [
-    isLoading,
-    stationDataResult.data, stationDataResult.error,
-    vehicleDataResult.data, vehicleDataResult.error,
-    routeDataResult.data, routeDataResult.error,
-    stopTimesDataResult.data, stopTimesDataResult.error
+    vehicleStore.isLoading,
+    vehicleStore.lastUpdate,
+    vehicleStore.lastApiUpdate,
+    vehicleStore.error,
+    vehicleStore.isAutoRefreshEnabled,
+    vehicleStore.stations,
+    vehicleStore.vehicles
   ]);
 
-  // Refresh functions
+  // Refresh functions using store methods
   const refreshStations = useCallback(async (forceRefresh = false) => {
     if (!agencyId) return;
-    logger.debug('Refreshing stations data', { forceRefresh }, 'MODERN_REFRESH');
-    await stationDataResult.refetch?.();
-  }, [agencyId, stationDataResult.refetch]);
+    logger.debug('Refreshing stations data via store', { forceRefresh }, 'MODERN_REFRESH');
+    
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      const result = await vehicleStore.getStationData({
+        agencyId,
+        forceRefresh,
+        cacheMaxAge: 60000 // 1 minute
+      });
+      
+      if (result.data) {
+        setDataState(prev => ({ ...prev, stations: result.data }));
+        
+        // Emit event for coordination
+        StoreEventManager.emit(StoreEvents.CACHE_INVALIDATED, {
+          cacheKeys: [`stations:${agencyId}`],
+          reason: 'manual_refresh'
+        });
+      }
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: result.error?.message || null,
+        lastUpdate: result.lastUpdated,
+        lastApiUpdate: result.lastUpdated
+      }));
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }));
+    }
+  }, [agencyId, vehicleStore]);
 
   const refreshVehicles = useCallback(async (forceRefresh = false) => {
     if (!agencyId) return;
-    logger.debug('Refreshing vehicles data', { forceRefresh }, 'MODERN_REFRESH');
-    await vehicleDataResult.refetch?.();
-  }, [agencyId, vehicleDataResult.refetch]);
+    logger.debug('Refreshing vehicles data via store', { forceRefresh }, 'MODERN_REFRESH');
+    
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      const result = await vehicleStore.getVehicleData({
+        agencyId,
+        forceRefresh,
+        cacheMaxAge: 30000 // 30 seconds for live data
+      });
+      
+      if (result.data) {
+        setDataState(prev => ({ ...prev, vehicles: result.data }));
+        
+        // Emit event for coordination
+        StoreEventManager.emit(StoreEvents.VEHICLES_UPDATED, {
+          vehicles: result.data,
+          timestamp: result.lastUpdated || new Date(),
+          source: 'api'
+        });
+      }
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: result.error?.message || null,
+        lastUpdate: result.lastUpdated,
+        lastApiUpdate: result.lastUpdated
+      }));
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }));
+    }
+  }, [agencyId, vehicleStore]);
 
   const refreshRoutes = useCallback(async (forceRefresh = false) => {
     if (!agencyId) return;
-    logger.debug('Refreshing routes data', { forceRefresh }, 'MODERN_REFRESH');
-    await routeDataResult.refetch?.();
-  }, [agencyId, routeDataResult.refetch]);
+    logger.debug('Refreshing routes data via store', { forceRefresh }, 'MODERN_REFRESH');
+    
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      const result = await vehicleStore.getRouteData({
+        agencyId,
+        forceRefresh,
+        cacheMaxAge: 60000 // 1 minute
+      });
+      
+      if (result.data) {
+        setDataState(prev => ({ ...prev, routes: result.data }));
+        
+        // Emit event for coordination
+        StoreEventManager.emit(StoreEvents.CACHE_INVALIDATED, {
+          cacheKeys: [`routes:${agencyId}`],
+          reason: 'manual_refresh'
+        });
+      }
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: result.error?.message || null,
+        lastUpdate: result.lastUpdated,
+        lastApiUpdate: result.lastUpdated
+      }));
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }));
+    }
+  }, [agencyId, vehicleStore]);
 
   const refreshStopTimes = useCallback(async (forceRefresh = false) => {
     if (!agencyId) return;
-    logger.debug('Refreshing stop times data', { forceRefresh }, 'MODERN_REFRESH');
-    await stopTimesDataResult.refetch?.();
-  }, [agencyId, stopTimesDataResult.refetch]);
+    logger.debug('Refreshing stop times data via store', { forceRefresh }, 'MODERN_REFRESH');
+    
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      const result = await vehicleStore.getStopTimesData({
+        agencyId,
+        forceRefresh,
+        cacheMaxAge: 120000 // 2 minutes
+      });
+      
+      if (result.data) {
+        setDataState(prev => ({ ...prev, stopTimes: result.data }));
+        
+        // Emit event for coordination
+        StoreEventManager.emit(StoreEvents.CACHE_INVALIDATED, {
+          cacheKeys: [`stopTimes:${agencyId}`],
+          reason: 'manual_refresh'
+        });
+      }
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: result.error?.message || null,
+        lastUpdate: result.lastUpdated,
+        lastApiUpdate: result.lastUpdated
+      }));
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }));
+    }
+  }, [agencyId, vehicleStore]);
 
   const refreshAll = useCallback(async (forceRefresh = false) => {
     if (!agencyId) {
@@ -172,31 +299,34 @@ export const useModernRefreshSystem = (): ModernRefreshSystemResult => {
     }
   }, [agencyId, refreshStations, refreshVehicles, refreshRoutes, refreshStopTimes]);
 
-  // Auto-refresh management
+  // Auto-refresh management using store methods
   const startAutoRefresh = useCallback(() => {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
+    if (state.isAutoRefreshEnabled) {
+      logger.debug('Auto-refresh already enabled', {}, 'MODERN_REFRESH');
+      return;
     }
 
-    const interval = setInterval(() => {
-      refreshVehicles(false); // Only refresh vehicles automatically (live data)
-    }, 30000); // 30 seconds
-
-    setAutoRefreshInterval(interval);
+    // Use store's auto-refresh system
+    vehicleStore.startAutoRefresh();
+    
     setState(prev => ({ ...prev, isAutoRefreshEnabled: true }));
     
-    logger.info('Auto-refresh started', { interval: 30000 }, 'MODERN_REFRESH');
-  }, [autoRefreshInterval, refreshVehicles]);
+    logger.info('Auto-refresh started via store', {}, 'MODERN_REFRESH');
+  }, [state.isAutoRefreshEnabled, vehicleStore]);
 
   const stopAutoRefresh = useCallback(() => {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      setAutoRefreshInterval(null);
+    if (!state.isAutoRefreshEnabled) {
+      logger.debug('Auto-refresh already disabled', {}, 'MODERN_REFRESH');
+      return;
     }
 
+    // Use store's auto-refresh system
+    vehicleStore.stopAutoRefresh();
+    
     setState(prev => ({ ...prev, isAutoRefreshEnabled: false }));
-    logger.info('Auto-refresh stopped', {}, 'MODERN_REFRESH');
-  }, [autoRefreshInterval]);
+    
+    logger.info('Auto-refresh stopped via store', {}, 'MODERN_REFRESH');
+  }, [state.isAutoRefreshEnabled, vehicleStore]);
 
   const toggleAutoRefresh = useCallback(() => {
     if (state.isAutoRefreshEnabled) {
@@ -206,14 +336,13 @@ export const useModernRefreshSystem = (): ModernRefreshSystemResult => {
     }
   }, [state.isAutoRefreshEnabled, startAutoRefresh, stopAutoRefresh]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - delegate to store
   useEffect(() => {
     return () => {
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-      }
+      // Store handles its own cleanup
+      logger.debug('Modern refresh system unmounting', {}, 'MODERN_REFRESH');
     };
-  }, [autoRefreshInterval]);
+  }, []);
 
   return {
     // State
@@ -229,10 +358,10 @@ export const useModernRefreshSystem = (): ModernRefreshSystemResult => {
     stopAutoRefresh,
     toggleAutoRefresh,
     
-    // Data access
-    stations: stationDataResult.data || [],
-    vehicles: vehicleDataResult.data || [],
-    routes: routeDataResult.data || [],
-    stopTimes: stopTimesDataResult.data || []
+    // Data access from stores
+    stations: dataState.stations,
+    vehicles: dataState.vehicles,
+    routes: dataState.routes,
+    stopTimes: dataState.stopTimes
   };
 };

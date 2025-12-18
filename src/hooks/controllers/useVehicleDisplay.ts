@@ -13,11 +13,11 @@ import { useConfigStore } from '../../stores/configStore';
 import { getEffectiveLocation } from '../../utils/locationUtils';
 import { logger } from '../../utils/logger';
 
-// Import data layer hooks
-import { useStationData } from '../data/useStationData';
-import { useVehicleData } from '../data/useVehicleData';
-import { useRouteData } from '../data/useRouteData';
-import { useStopTimesData } from '../data/useStopTimesData';
+// Import store-based data hooks (replacing data layer hooks)
+import { useStationStoreData } from '../shared/useStationStoreData';
+import { useVehicleStoreData } from '../shared/useVehicleStoreData';
+import { useRouteStoreData } from '../shared/useRouteStoreData';
+import { useStopTimesStoreData } from '../shared/useStopTimesStoreData';
 
 // Import processing layer hooks
 import { useVehicleFiltering } from '../processing/useVehicleFiltering';
@@ -437,14 +437,14 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
   const agencyId = config?.agencyId;
   const isConfigured = !!agencyId;
 
-  // Data layer hooks - compose all required data
-  const stationDataResult = useStationData({
+  // Store-based data hooks - compose all required data using store methods
+  const stationDataResult = useStationStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: 5 * 60 * 1000 // 5 minutes
   });
 
-  const vehicleDataResult = useVehicleData({
+  const vehicleDataResult = useVehicleStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: 30 * 1000, // 30 seconds for live data
@@ -452,13 +452,13 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
     refreshInterval: 30 * 1000
   });
 
-  const routeDataResult = useRouteData({
+  const routeDataResult = useRouteStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: 10 * 60 * 1000 // 10 minutes
   });
 
-  const stopTimesDataResult = useStopTimesData({
+  const stopTimesDataResult = useStopTimesStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: 2 * 60 * 1000 // 2 minutes

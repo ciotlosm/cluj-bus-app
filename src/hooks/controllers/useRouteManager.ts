@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useConfigStore } from '../../stores/configStore';
-import { useRouteData } from '../data/useRouteData';
+import { useVehicleStore } from '../../stores/vehicleStore';
 import { useStoreEvent, StoreEvents } from '../../stores/shared/storeEvents';
 import { getUniqueRouteTypes } from '../../utils/routeUtils';
 import { logger } from '../../utils/logger';
@@ -34,27 +34,103 @@ export interface UseRouteManagerReturn {
   handleToggleRoute: (routeName: string) => Promise<void>;
   handleSaveChanges: () => Promise<void>;
   handleTypeFilterChange: (event: React.MouseEvent<HTMLElement>, newTypes: string[]) => void;
+  refetchRoutes: () => Promise<void>;
 }
 
 export const useRouteManager = (): UseRouteManagerReturn => {
   const { config, updateConfig, getFavoriteRoutes, addFavoriteRoute, removeFavoriteRoute } = useConfigStore();
+  const vehicleStore = useVehicleStore();
   
   const [selectedRoutes, setSelectedRoutes] = useState<FavoriteRoute[]>(getFavoriteRoutes());
   const [searchTerm, setSearchTerm] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
-  // Use the useRouteData hook to fetch routes from the API
-  const { 
-    data: availableRoutes, 
-    isLoading, 
-    error: routeError,
-    refetch: refetchRoutes 
-  } = useRouteData({
-    agencyId: config?.agencyId,
-    forceRefresh: false,
-    cacheMaxAge: 10 * 60 * 1000 // 10 minutes cache
-  });
+  // Store-based route data state
+  const [availableRoutes, setAvailableRoutes] = useState<StoreRoute[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [routeError, setRouteError] = useState<Error | null>(null);
+
+  // Fetch route data using store method
+  const fetchRouteData = useCallback(async () => {
+    if (!config?.agencyId) {
+      logger.debug('No agency ID configured, skipping route fetch', {}, 'ROUTE_MANAGER');
+      return;
+    }
+
+    setIsLoading(true);
+    setRouteError(null);
+
+    try {
+      logger.debug('Fetching route data via store method', { 
+        agencyId: config.agencyId 
+      }, 'ROUTE_MANAGER');
+
+      const result = await vehicleStore.getRouteData({
+        agencyId: config.agencyId,
+        forceRefresh: false,
+        cacheMaxAge: 10 * 60 * 1000 // 10 minutes cache
+      });
+
+      if (result.error) {
+        // Convert ErrorState to Error for compatibility
+        const error = new Error(result.error.message);
+        setRouteError(error);
+        setAvailableRoutes([]);
+        logger.error('Route data fetch failed via store', { 
+          error: result.error.message 
+        }, 'ROUTE_MANAGER');
+      } else {
+        setAvailableRoutes(result.data || []);
+        setRouteError(null);
+        logger.info('Route data fetched successfully via store', { 
+          count: result.data?.length || 0 
+        }, 'ROUTE_MANAGER');
+      }
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error('Failed to fetch route data');
+      setRouteError(errorObj);
+      setAvailableRoutes([]);
+      logger.error('Route data fetch error via store', { 
+        error: errorObj.message 
+      }, 'ROUTE_MANAGER');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [config?.agencyId, vehicleStore]);
+
+  // Refetch function for manual refresh
+  const refetchRoutes = useCallback(async () => {
+    if (isLoading) {
+      logger.debug('Refetch ignored - already loading', {}, 'ROUTE_MANAGER');
+      return;
+    }
+    await fetchRouteData();
+  }, [isLoading, fetchRouteData]);
+
+  // Subscribe to store state changes for reactive updates
+  useEffect(() => {
+    const storeError = vehicleStore.error;
+    const storeIsLoading = vehicleStore.isLoading;
+
+    // Sync store error state
+    if (storeError && !routeError) {
+      const errorObj = new Error(storeError.message);
+      setRouteError(errorObj);
+    }
+
+    // Sync store loading state for global operations
+    if (storeIsLoading && !isLoading) {
+      setIsLoading(storeIsLoading);
+    }
+  }, [vehicleStore.error, vehicleStore.isLoading, routeError, isLoading]);
+
+  // Initial route data fetch when config changes
+  useEffect(() => {
+    if (config?.agencyId) {
+      fetchRouteData();
+    }
+  }, [config?.agencyId, fetchRouteData]);
 
   // Update selected routes when config changes
   useEffect(() => {
@@ -207,5 +283,6 @@ export const useRouteManager = (): UseRouteManagerReturn => {
     handleToggleRoute,
     handleSaveChanges,
     handleTypeFilterChange,
+    refetchRoutes,
   };
 };

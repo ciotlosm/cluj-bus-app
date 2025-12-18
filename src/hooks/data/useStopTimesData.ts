@@ -3,8 +3,8 @@ import type { StopTime } from '../../types/tranzyApi';
 import { enhancedTranzyApi } from '../../services/tranzyApiService';
 import { globalCache, createCacheKey } from '../shared/cacheManager';
 import { logger } from '../../utils/logger';
-import type { DataHookResult } from './useStationData';
-import { DataHookError, DataHookErrorType } from './useStationData';
+import type { DataHookResult } from '../../types/dataHooks';
+import { DataHookError, DataHookErrorType } from '../../types/dataHooks';
 
 /**
  * Configuration options for useStopTimesData hook

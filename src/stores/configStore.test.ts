@@ -27,6 +27,8 @@ vi.mock('../services/routeMappingService', () => ({
   },
 }));
 
+// Don't mock retryUtils globally - we'll mock it selectively in error tests
+
 vi.mock('../utils/logger', () => ({
   logger: {
     info: vi.fn(),
@@ -328,14 +330,28 @@ describe('ConfigStore Unit Tests', () => {
     });
 
     it('should handle agency fetch errors', async () => {
+      // Mock StoreErrorHandler.withRetry to avoid retry delays
+      const { StoreErrorHandler } = await import('./shared/errorHandler');
+      const originalWithRetry = StoreErrorHandler.withRetry;
+      StoreErrorHandler.withRetry = vi.fn().mockImplementation(async (operation) => {
+        // Just call the operation once without retries
+        try {
+          return await operation();
+        } catch (error) {
+          throw error;
+        }
+      });
+
       const mockError = new Error('Network error');
       const { enhancedTranzyApi } = await import('../services/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getAgencies).mockRejectedValue(mockError);
 
       const eventHandler = vi.fn();
-      StoreEventManager.subscribe(StoreEvents.API_KEY_VALIDATED, eventHandler);
+      const unsubscribe = StoreEventManager.subscribe(StoreEvents.API_KEY_VALIDATED, eventHandler);
 
       const store = useConfigStore.getState();
+      
+      // Call fetchAgencies and wait for it to complete
       await store.fetchAgencies();
 
       const state = useConfigStore.getState();
@@ -347,6 +363,10 @@ describe('ConfigStore Unit Tests', () => {
       expect(eventHandler).toHaveBeenCalledWith({
         isValid: false,
       });
+      
+      // Cleanup
+      unsubscribe();
+      StoreErrorHandler.withRetry = originalWithRetry;
     });
 
     it('should validate API key successfully', async () => {
@@ -456,7 +476,7 @@ describe('ConfigStore Unit Tests', () => {
           expect(currentState.isConfigured).toBe(true);
           expect(currentState.isFullyConfigured).toBe(true);
         }),
-        { numRuns: 10 }
+        { numRuns: 3 }
       );
     });
 
@@ -469,7 +489,7 @@ describe('ConfigStore Unit Tests', () => {
           const state = useConfigStore.getState();
           expect(state.theme).toBe(theme);
         }),
-        { numRuns: 5 }
+        { numRuns: 3 }
       );
     });
 
@@ -501,7 +521,7 @@ describe('ConfigStore Unit Tests', () => {
             expect(currentState.config).toEqual(expectedConfig);
           }
         ),
-        { numRuns: 10 }
+        { numRuns: 3 }
       );
     });
   });

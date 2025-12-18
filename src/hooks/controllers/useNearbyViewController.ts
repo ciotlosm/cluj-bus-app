@@ -31,11 +31,11 @@ import {
   getActionableInstructions
 } from '../../utils/nearbyViewErrorHandler';
 
-// Import data layer hooks
-import { useStationData } from '../data/useStationData';
-import { useVehicleData } from '../data/useVehicleData';
-import { useRouteData } from '../data/useRouteData';
-import { useStopTimesData } from '../data/useStopTimesData';
+// Import store-based data hooks
+import { useStationStoreData } from '../shared/useStationStoreData';
+import { useVehicleStoreData } from '../shared/useVehicleStoreData';
+import { useRouteStoreData } from '../shared/useRouteStoreData';
+import { useStopTimesStoreData } from '../shared/useStopTimesStoreData';
 
 // ============================================================================
 // INTERFACES
@@ -155,10 +155,10 @@ export const useNearbyViewController = (
     cacheMaxAge: enableCaching ? cacheMaxAge : 0
   }), [agencyId, enableCaching, cacheMaxAge]);
 
-  // Data layer hooks - fetch all required data
-  const stationDataResult = useStationData(stationDataOptions);
+  // Store-based data hooks - fetch all required data
+  const stationDataResult = useStationStoreData(stationDataOptions);
 
-  const vehicleDataResult = useVehicleData({
+  const vehicleDataResult = useVehicleStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: 30 * 1000, // 30 seconds for live data
@@ -166,13 +166,13 @@ export const useNearbyViewController = (
     refreshInterval: refreshInterval
   });
 
-  const routeDataResult = useRouteData({
+  const routeDataResult = useRouteStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: enableCaching ? cacheMaxAge : 0
   });
 
-  const stopTimesDataResult = useStopTimesData({
+  const stopTimesDataResult = useStopTimesStoreData({
     agencyId,
     forceRefresh: false,
     cacheMaxAge: enableCaching ? Math.min(cacheMaxAge, 2 * 60 * 1000) : 0 // Max 2 minutes for stop times
