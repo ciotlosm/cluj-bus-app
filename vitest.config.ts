@@ -7,25 +7,34 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 3000, // Reduced to 3s for faster failures
+    testTimeout: 5000, // Slightly increased for parallel execution
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true, // Use single fork to reduce memory usage
-        isolate: false,   // Reduce isolation overhead
+        singleFork: false, // Enable multiple forks for parallel execution
+        isolate: true,     // Enable isolation for stability
       },
     },
-    // Reduce memory usage and prevent parallel execution
-    maxConcurrency: 1,
-    minWorkers: 1,
-    maxWorkers: 1,
+    // Optimize for speed with memory leak fixed
+    maxConcurrency: 4,   // Allow 4 concurrent tests
+    minWorkers: 2,       // Start with 2 workers
+    maxWorkers: 4,       // Scale up to 4 workers based on CPU cores
     // Clear mocks between tests
     clearMocks: true,
     // Restore mocks after each test
     restoreMocks: true,
-    // Reduce memory pressure
+    // Monitor memory usage but allow parallel execution
     logHeapUsage: true,
-    // Faster test discovery - using Vite's cacheDir
-    // Note: cache will be written to cacheDir/vitest automatically
+    // Enable test caching for faster reruns
+    cache: {
+      dir: 'node_modules/.vitest'
+    },
+    // Optimize file watching
+    watchExclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.git/**',
+      '**/coverage/**'
+    ]
   },
 })

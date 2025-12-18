@@ -9,7 +9,7 @@
     "build:prod": "node scripts/update-version.js && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --max-old-space-size=4096 node_modules/.bin/vitest --run",
+    "test": "node --max-old-space-size=1024 node_modules/.bin/vitest --run",
     "test:fast": "node scripts/test-fast.js",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
