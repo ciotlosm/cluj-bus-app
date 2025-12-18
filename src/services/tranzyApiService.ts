@@ -355,14 +355,14 @@ export class TranzyApiService {
    * Get cache statistics
    */
   getCacheStats() {
-    return dataCacheManager.getStats();
+    return cacheManager.getStats();
   }
 
   /**
    * Clear all cached data
    */
   clearCache(): void {
-    dataCacheManager.clearAll();
+    cacheManager.clearAll();
     logger.info('All cache cleared', {}, 'API');
   }
 

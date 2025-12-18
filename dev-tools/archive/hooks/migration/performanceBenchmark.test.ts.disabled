@@ -1,0 +1,712 @@
+/**
+ * Performance benchmarking tests for hook migration
+ * 
+ * These tests measure and validate performance improvements of the new
+ * hook system compared to the old implementation.
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import * as fc from 'fast-check';
+
+// Import both implementations
+import { useVehicleProcessing as useVehicleProcessingOld } from '../useVehicleProcessing';
+import { 
+  useVehicleProcessing as useVehicleProcessingNew,
+  type VehicleProcessingOptions
+} from '../useVehicleProcessingOrchestration';
+
+// Import migration utilities
+import { migrationTracker, featureFlags } from './index';
+
+/**
+ * Performance measurement utilities
+ */
+class PerformanceBenchmark {
+  private measurements: Map<string, number[]> = new Map();
+  private memoryMeasurements: Map<string, number[]> = new Map();
+
+  /**
+   * Measure execution time of a function
+   */
+  async measureExecutionTime<T>(
+    name: string,
+    fn: () => T | Promise<T>,
+    iterations: number = 10
+  ): Promise<{
+    average: number;
+    min: number;
+    max: number;
+    median: number;
+    standardDeviation: number;
+    measurements: number[];
+  }> {
+    const times: number[] = [];
+
+    for (let i = 0; i < iterations; i++) {
+      const startTime = performance.now();
+      await fn();
+      const endTime = performance.now();
+      times.push(endTime - startTime);
+      
+      // Small delay between iterations to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    this.measurements.set(name, times);
+
+    const sorted = [...times].sort((a, b) => a - b);
+    const average = times.reduce((sum, time) => sum + time, 0) / times.length;
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const variance = times.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) / times.length;
+    const standardDeviation = Math.sqrt(variance);
+
+    return {
+      average,
+      min: Math.min(...times),
+      max: Math.max(...times),
+      median,
+      standardDeviation,
+      measurements: times
+    };
+  }
+
+  /**
+   * Measure memory usage (approximate)
+   */
+  measureMemoryUsage(name: string): void {
+    if (typeof (performance as any).memory !== 'undefined') {
+      const memInfo = (performance as any).memory;
+      const usedMemory = memInfo.usedJSHeapSize;
+      
+      if (!this.memoryMeasurements.has(name)) {
+        this.memoryMeasurements.set(name, []);
+      }
+      this.memoryMeasurements.get(name)!.push(usedMemory);
+    }
+  }
+
+  /**
+   * Compare performance between two implementations
+   */
+  comparePerformance(oldName: string, newName: string): {
+    timeDifference: number;
+    percentageImprovement: number;
+    isImprovement: boolean;
+    memoryDifference?: number;
+    memoryImprovement?: number;
+  } {
+    const oldTimes = this.measurements.get(oldName);
+    const newTimes = this.measurements.get(newName);
+
+    if (!oldTimes || !newTimes) {
+      throw new Error('Missing performance measurements');
+    }
+
+    const oldAverage = oldTimes.reduce((sum, time) => sum + time, 0) / oldTimes.length;
+    const newAverage = newTimes.reduce((sum, time) => sum + time, 0) / newTimes.length;
+
+    const timeDifference = newAverage - oldAverage;
+    const percentageImprovement = ((oldAverage - newAverage) / oldAverage) * 100;
+    const isImprovement = newAverage < oldAverage;
+
+    let memoryDifference: number | undefined;
+    let memoryImprovement: number | undefined;
+
+    const oldMemory = this.memoryMeasurements.get(oldName);
+    const newMemory = this.memoryMeasurements.get(newName);
+
+    if (oldMemory && newMemory && oldMemory.length > 0 && newMemory.length > 0) {
+      const oldMemAvg = oldMemory.reduce((sum, mem) => sum + mem, 0) / oldMemory.length;
+      const newMemAvg = newMemory.reduce((sum, mem) => sum + mem, 0) / newMemory.length;
+      
+      memoryDifference = newMemAvg - oldMemAvg;
+      memoryImprovement = ((oldMemAvg - newMemAvg) / oldMemAvg) * 100;
+    }
+
+    return {
+      timeDifference,
+      percentageImprovement,
+      isImprovement,
+      memoryDifference,
+      memoryImprovement
+    };
+  }
+
+  /**
+   * Clear all measurements
+   */
+  clear(): void {
+    this.measurements.clear();
+    this.memoryMeasurements.clear();
+  }
+
+  /**
+   * Get all measurements
+   */
+  getAllMeasurements(): {
+    time: Map<string, number[]>;
+    memory: Map<string, number[]>;
+  } {
+    return {
+      time: new Map(this.measurements),
+      memory: new Map(this.memoryMeasurements)
+    };
+  }
+}
+
+// Create global benchmark instance
+const benchmark = new PerformanceBenchmark();
+
+// Mock dependencies with larger datasets for performance testing
+const generateMockStations = (count: number) => 
+  Array.from({ length: count }, (_, i) => ({
+    id: `station${i + 1}`,
+    name: `Station ${i + 1}`,
+    coordinates: { 
+      latitude: 46.7712 + (Math.random() - 0.5) * 0.1, 
+      longitude: 23.6236 + (Math.random() - 0.5) * 0.1 
+    }
+  }));
+
+const generateMockVehicles = (count: number) =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `vehicle${i + 1}`,
+    routeId: `${(i % 10) + 1}`,
+    tripId: `trip${i + 1}`,
+    label: `${100 + i}`,
+    position: { 
+      latitude: 46.7712 + (Math.random() - 0.5) * 0.1, 
+      longitude: 23.6236 + (Math.random() - 0.5) * 0.1 
+    },
+    timestamp: new Date(Date.now() - Math.random() * 300000), // Random time within last 5 minutes
+    speed: Math.random() * 50,
+    isWheelchairAccessible: Math.random() > 0.5,
+    isBikeAccessible: Math.random() > 0.5
+  }));
+
+const generateMockRoutes = (count: number) =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `${i + 1}`,
+    routeName: `Route ${i + 1}`,
+    routeDesc: `Route ${i + 1} Description`,
+    type: ['bus', 'trolleybus', 'tram'][i % 3] as 'bus' | 'trolleybus' | 'tram'
+  }));
+
+const generateMockStopTimes = (vehicleCount: number, stationCount: number) => {
+  const stopTimes = [];
+  for (let v = 0; v < vehicleCount; v++) {
+    for (let s = 0; s < Math.min(stationCount, 5); s++) {
+      stopTimes.push({
+        tripId: `trip${v + 1}`,
+        stopId: `station${s + 1}`,
+        sequence: s + 1,
+        arrivalTime: `${10 + Math.floor(s * 0.25)}:${String(s * 15).padStart(2, '0')}:00`,
+        departureTime: `${10 + Math.floor(s * 0.25)}:${String(s * 15 + 1).padStart(2, '0')}:00`
+      });
+    }
+  }
+  return stopTimes;
+};
+
+// Setup performance test scenarios
+const performanceTestScenarios = [
+  {
+    name: 'Small Dataset',
+    stations: 5,
+    vehicles: 10,
+    routes: 5,
+    description: 'Typical small city scenario'
+  },
+  {
+    name: 'Medium Dataset',
+    stations: 20,
+    vehicles: 50,
+    routes: 15,
+    description: 'Medium city scenario'
+  },
+  {
+    name: 'Large Dataset',
+    stations: 100,
+    vehicles: 200,
+    routes: 50,
+    description: 'Large city scenario'
+  },
+  {
+    name: 'Extra Large Dataset',
+    stations: 500,
+    vehicles: 1000,
+    routes: 100,
+    description: 'Very large city scenario'
+  }
+];
+
+describe('Performance Benchmarking Tests', () => {
+  beforeEach(() => {
+    benchmark.clear();
+    migrationTracker.clear();
+    featureFlags.disableAllFeatures();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Execution Time Benchmarks', () => {
+    performanceTestScenarios.forEach(scenario => {
+      it(`should perform well with ${scenario.name.toLowerCase()}`, async () => {
+        // Generate test data
+        const mockStations = generateMockStations(scenario.stations);
+        const mockVehicles = generateMockVehicles(scenario.vehicles);
+        const mockRoutes = generateMockRoutes(scenario.routes);
+        const mockStopTimes = generateMockStopTimes(scenario.vehicles, scenario.stations);
+
+        // Mock the data hooks with generated data
+        vi.doMock('../data/useStationData', () => ({
+          useStationData: vi.fn(() => ({
+            data: mockStations,
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            lastUpdated: new Date()
+          }))
+        }));
+
+        vi.doMock('../data/useVehicleData', () => ({
+          useVehicleData: vi.fn(() => ({
+            data: mockVehicles,
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            lastUpdated: new Date()
+          }))
+        }));
+
+        vi.doMock('../data/useRouteData', () => ({
+          useRouteData: vi.fn(() => ({
+            data: mockRoutes,
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            lastUpdated: new Date()
+          }))
+        }));
+
+        vi.doMock('../data/useStopTimesData', () => ({
+          useStopTimesData: vi.fn(() => ({
+            data: mockStopTimes,
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            lastUpdated: new Date()
+          }))
+        }));
+
+        // Mock processing hooks with realistic performance characteristics
+        vi.doMock('../processing/useVehicleFiltering', () => ({
+          useVehicleFiltering: vi.fn((vehicles, options) => {
+            // Simulate processing time proportional to data size
+            const startTime = performance.now();
+            while (performance.now() - startTime < vehicles.length * 0.01) {
+              // Busy wait to simulate processing
+            }
+            
+            return {
+              filteredVehicles: vehicles.slice(0, Math.floor(vehicles.length * 0.8)),
+              filterStats: {
+                totalVehicles: vehicles.length,
+                filteredCount: Math.floor(vehicles.length * 0.8),
+                appliedFilters: []
+              }
+            };
+          })
+        }));
+
+        vi.doMock('../processing/useVehicleGrouping', () => ({
+          useVehicleGrouping: vi.fn((vehicles, stations, userLocation, options) => {
+            // Simulate processing time proportional to data size
+            const startTime = performance.now();
+            while (performance.now() - startTime < (vehicles.length + stations.length) * 0.005) {
+              // Busy wait to simulate processing
+            }
+
+            const maxStations = Math.min(options.maxStations || 2, stations.length);
+            return {
+              stationGroups: stations.slice(0, maxStations).map((station, index) => ({
+                station: { station, distance: 100 + index * 50 },
+                vehicles: vehicles.slice(index * 2, (index + 1) * 2),
+                allRoutes: []
+              })),
+              groupingStats: {
+                totalStations: stations.length,
+                groupedStations: maxStations,
+                totalVehicles: vehicles.length
+              }
+            };
+          })
+        }));
+
+        const options: VehicleProcessingOptions = {
+          maxStations: 5,
+          maxVehiclesPerStation: 10,
+          filterByFavorites: false
+        };
+
+        // Benchmark old implementation
+        const oldResults = await benchmark.measureExecutionTime(
+          `old-${scenario.name}`,
+          () => {
+            benchmark.measureMemoryUsage(`old-${scenario.name}`);
+            const { result } = renderHook(() => useVehicleProcessingOld(options));
+            return new Promise(resolve => {
+              const checkResult = () => {
+                if (result.current && !result.current.isLoading) {
+                  resolve(result.current);
+                } else {
+                  setTimeout(checkResult, 10);
+                }
+              };
+              checkResult();
+            });
+          },
+          5 // Fewer iterations for large datasets
+        );
+
+        // Benchmark new implementation
+        const newResults = await benchmark.measureExecutionTime(
+          `new-${scenario.name}`,
+          () => {
+            benchmark.measureMemoryUsage(`new-${scenario.name}`);
+            const { result } = renderHook(() => useVehicleProcessingNew(options));
+            return new Promise(resolve => {
+              const checkResult = () => {
+                if (result.current && !result.current.isLoading) {
+                  resolve(result.current);
+                } else {
+                  setTimeout(checkResult, 10);
+                }
+              };
+              checkResult();
+            });
+          },
+          5 // Fewer iterations for large datasets
+        );
+
+        // Compare performance
+        const comparison = benchmark.comparePerformance(
+          `old-${scenario.name}`,
+          `new-${scenario.name}`
+        );
+
+        // Log results
+        console.log(`\n${scenario.name} Performance Results:`);
+        console.log(`  Old Implementation: ${oldResults.average.toFixed(2)}ms (±${oldResults.standardDeviation.toFixed(2)}ms)`);
+        console.log(`  New Implementation: ${newResults.average.toFixed(2)}ms (±${newResults.standardDeviation.toFixed(2)}ms)`);
+        console.log(`  Performance Change: ${comparison.percentageImprovement.toFixed(1)}%`);
+        
+        if (comparison.memoryDifference !== undefined) {
+          console.log(`  Memory Change: ${(comparison.memoryDifference / 1024 / 1024).toFixed(2)}MB`);
+        }
+
+        // Performance assertions
+        // New implementation should not be more than 50% slower
+        expect(comparison.percentageImprovement).toBeGreaterThan(-50);
+        
+        // For larger datasets, we expect some improvement
+        if (scenario.vehicles > 50) {
+          expect(comparison.percentageImprovement).toBeGreaterThan(-25);
+        }
+
+        // Both implementations should complete in reasonable time
+        expect(oldResults.average).toBeLessThan(5000); // 5 seconds max
+        expect(newResults.average).toBeLessThan(5000); // 5 seconds max
+      }, 30000); // 30 second timeout for large datasets
+    });
+  });
+
+  describe('API Call Reduction Benchmarks', () => {
+    it('should reduce redundant API calls through caching', async () => {
+      const mockApiCallCount = { count: 0 };
+
+      // Mock data hooks to count API calls
+      vi.doMock('../data/useStationData', () => ({
+        useStationData: vi.fn(() => {
+          mockApiCallCount.count++;
+          return {
+            data: generateMockStations(10),
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            lastUpdated: new Date()
+          };
+        })
+      }));
+
+      const options: VehicleProcessingOptions = {
+        maxStations: 3,
+        maxVehiclesPerStation: 5
+      };
+
+      // Test old implementation - multiple calls
+      mockApiCallCount.count = 0;
+      for (let i = 0; i < 5; i++) {
+        renderHook(() => useVehicleProcessingOld(options));
+      }
+      const oldApiCalls = mockApiCallCount.count;
+
+      // Test new implementation - should have fewer calls due to caching
+      mockApiCallCount.count = 0;
+      for (let i = 0; i < 5; i++) {
+        renderHook(() => useVehicleProcessingNew(options));
+      }
+      const newApiCalls = mockApiCallCount.count;
+
+      console.log(`API Call Reduction: Old: ${oldApiCalls}, New: ${newApiCalls}`);
+
+      // New implementation should make fewer API calls
+      expect(newApiCalls).toBeLessThanOrEqual(oldApiCalls);
+      
+      // Ideally, should be significantly fewer calls
+      const reduction = ((oldApiCalls - newApiCalls) / oldApiCalls) * 100;
+      expect(reduction).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('Memory Usage Validation', () => {
+    it('should not significantly increase memory usage', async () => {
+      if (typeof (performance as any).memory === 'undefined') {
+        console.log('Memory measurement not available in this environment');
+        return;
+      }
+
+      const options: VehicleProcessingOptions = {
+        maxStations: 10,
+        maxVehiclesPerStation: 20
+      };
+
+      // Measure memory usage for old implementation
+      const initialMemory = (performance as any).memory.usedJSHeapSize;
+      
+      const oldHooks = Array.from({ length: 10 }, () => 
+        renderHook(() => useVehicleProcessingOld(options))
+      );
+      
+      const oldMemoryPeak = (performance as any).memory.usedJSHeapSize;
+      
+      // Cleanup old hooks
+      oldHooks.forEach(hook => hook.unmount());
+      
+      // Force garbage collection if available
+      if (typeof (global as any).gc === 'function') {
+        (global as any).gc();
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Measure memory usage for new implementation
+      const newHooks = Array.from({ length: 10 }, () => 
+        renderHook(() => useVehicleProcessingNew(options))
+      );
+      
+      const newMemoryPeak = (performance as any).memory.usedJSHeapSize;
+      
+      // Cleanup new hooks
+      newHooks.forEach(hook => hook.unmount());
+
+      const oldMemoryIncrease = oldMemoryPeak - initialMemory;
+      const newMemoryIncrease = newMemoryPeak - initialMemory;
+      
+      console.log(`Memory Usage - Old: ${(oldMemoryIncrease / 1024 / 1024).toFixed(2)}MB, New: ${(newMemoryIncrease / 1024 / 1024).toFixed(2)}MB`);
+
+      // New implementation should not use significantly more memory (allow 50% increase)
+      expect(newMemoryIncrease).toBeLessThan(oldMemoryIncrease * 1.5);
+    });
+  });
+
+  describe('Cleanup Effectiveness Validation', () => {
+    it('should properly cleanup resources on unmount', async () => {
+      const cleanupCallbacks: (() => void)[] = [];
+      
+      // Mock cleanup tracking
+      const originalSetTimeout = global.setTimeout;
+      const originalClearTimeout = global.clearTimeout;
+      const activeTimeouts = new Set<number>();
+      
+      global.setTimeout = vi.fn((callback, delay) => {
+        const id = originalSetTimeout(callback, delay);
+        activeTimeouts.add(id);
+        return id;
+      });
+      
+      global.clearTimeout = vi.fn((id) => {
+        activeTimeouts.delete(id);
+        return originalClearTimeout(id);
+      });
+
+      const options: VehicleProcessingOptions = {
+        maxStations: 2,
+        maxVehiclesPerStation: 5
+      };
+
+      // Test cleanup for old implementation
+      const oldHook = renderHook(() => useVehicleProcessingOld(options));
+      await waitFor(() => expect(oldHook.result.current).toBeDefined());
+      
+      const oldTimeoutsBeforeUnmount = activeTimeouts.size;
+      oldHook.unmount();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const oldTimeoutsAfterUnmount = activeTimeouts.size;
+
+      // Test cleanup for new implementation
+      const newHook = renderHook(() => useVehicleProcessingNew(options));
+      await waitFor(() => expect(newHook.result.current).toBeDefined());
+      
+      const newTimeoutsBeforeUnmount = activeTimeouts.size;
+      newHook.unmount();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const newTimeoutsAfterUnmount = activeTimeouts.size;
+
+      // Restore original functions
+      global.setTimeout = originalSetTimeout;
+      global.clearTimeout = originalClearTimeout;
+
+      console.log(`Cleanup Effectiveness - Old: ${oldTimeoutsBeforeUnmount - oldTimeoutsAfterUnmount} cleaned, New: ${newTimeoutsBeforeUnmount - newTimeoutsAfterUnmount} cleaned`);
+
+      // New implementation should clean up at least as well as old implementation
+      const oldCleanupRatio = oldTimeoutsBeforeUnmount > 0 ? (oldTimeoutsBeforeUnmount - oldTimeoutsAfterUnmount) / oldTimeoutsBeforeUnmount : 1;
+      const newCleanupRatio = newTimeoutsBeforeUnmount > 0 ? (newTimeoutsBeforeUnmount - newTimeoutsAfterUnmount) / newTimeoutsBeforeUnmount : 1;
+      
+      expect(newCleanupRatio).toBeGreaterThanOrEqual(oldCleanupRatio * 0.8); // Allow 20% tolerance
+    });
+  });
+
+  describe('Property-Based Performance Tests', () => {
+    it('should maintain consistent performance across various option combinations', () => {
+      fc.assert(
+        fc.property(
+          fc.record({
+            maxStations: fc.integer({ min: 1, max: 5 }),
+            maxVehiclesPerStation: fc.integer({ min: 1, max: 10 }),
+            filterByFavorites: fc.boolean()
+          }),
+          async (options: VehicleProcessingOptions) => {
+            // Generate proportional test data
+            const stationCount = Math.min(options.maxStations! * 2, 10);
+            const vehicleCount = Math.min(options.maxVehiclesPerStation! * options.maxStations!, 20);
+
+            // Mock data with appropriate size
+            vi.doMock('../data/useStationData', () => ({
+              useStationData: vi.fn(() => ({
+                data: generateMockStations(stationCount),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                lastUpdated: new Date()
+              }))
+            }));
+
+            vi.doMock('../data/useVehicleData', () => ({
+              useVehicleData: vi.fn(() => ({
+                data: generateMockVehicles(vehicleCount),
+                isLoading: false,
+                error: null,
+                refetch: vi.fn(),
+                lastUpdated: new Date()
+              }))
+            }));
+
+            // Measure performance for both implementations
+            const oldStartTime = performance.now();
+            const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+            await waitFor(() => expect(oldResult.current).toBeDefined());
+            const oldDuration = performance.now() - oldStartTime;
+
+            const newStartTime = performance.now();
+            const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+            await waitFor(() => expect(newResult.current).toBeDefined());
+            const newDuration = performance.now() - newStartTime;
+
+            // Both should complete in reasonable time
+            expect(oldDuration).toBeLessThan(1000); // 1 second max for small datasets
+            expect(newDuration).toBeLessThan(1000); // 1 second max for small datasets
+
+            // New implementation should not be significantly slower
+            expect(newDuration).toBeLessThan(oldDuration * 2); // Allow 100% overhead for small datasets
+
+            return true;
+          }
+        ),
+        { numRuns: 10, timeout: 5000 }
+      );
+    });
+  });
+
+  describe('Performance Regression Detection', () => {
+    it('should detect performance regressions', async () => {
+      const baselineOptions: VehicleProcessingOptions = {
+        maxStations: 3,
+        maxVehiclesPerStation: 8,
+        filterByFavorites: false
+      };
+
+      // Establish baseline performance
+      const baselineResults = await benchmark.measureExecutionTime(
+        'baseline-old',
+        () => {
+          const { result } = renderHook(() => useVehicleProcessingOld(baselineOptions));
+          return new Promise(resolve => {
+            const checkResult = () => {
+              if (result.current && !result.current.isLoading) {
+                resolve(result.current);
+              } else {
+                setTimeout(checkResult, 10);
+              }
+            };
+            checkResult();
+          });
+        },
+        10
+      );
+
+      // Test new implementation
+      const newResults = await benchmark.measureExecutionTime(
+        'baseline-new',
+        () => {
+          const { result } = renderHook(() => useVehicleProcessingNew(baselineOptions));
+          return new Promise(resolve => {
+            const checkResult = () => {
+              if (result.current && !result.current.isLoading) {
+                resolve(result.current);
+              } else {
+                setTimeout(checkResult, 10);
+              }
+            };
+            checkResult();
+          });
+        },
+        10
+      );
+
+      const comparison = benchmark.comparePerformance('baseline-old', 'baseline-new');
+
+      console.log(`\nPerformance Regression Test:`);
+      console.log(`  Baseline (Old): ${baselineResults.average.toFixed(2)}ms`);
+      console.log(`  New Implementation: ${newResults.average.toFixed(2)}ms`);
+      console.log(`  Performance Change: ${comparison.percentageImprovement.toFixed(1)}%`);
+
+      // Fail if there's a significant regression (more than 100% slower)
+      expect(comparison.percentageImprovement).toBeGreaterThan(-100);
+
+      // Warn if there's a moderate regression (more than 25% slower)
+      if (comparison.percentageImprovement < -25) {
+        console.warn(`Warning: Performance regression detected: ${Math.abs(comparison.percentageImprovement).toFixed(1)}% slower`);
+      }
+
+      // Celebrate if there's an improvement
+      if (comparison.percentageImprovement > 10) {
+        console.log(`✅ Performance improvement detected: ${comparison.percentageImprovement.toFixed(1)}% faster`);
+      }
+    });
+  });
+});

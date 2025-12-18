@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cluj Bus App - API Status Checker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Cluj Bus App - API Status Checker</h1>
+    
+    <div id="status"></div>
+    
+    <button onclick="checkApiStatus()">Check API Status</button>
+    <button onclick="checkLocalStorage()">Check Local Storage</button>
+    <button onclick="testApiCall()">Test API Call</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function checkApiStatus() {
+            document.getElementById('results').innerHTML = '';
+            
+            // Check network status
+            log(`Network Status: ${navigator.onLine ? 'Online' : 'Offline'}`, 
+                navigator.onLine ? 'success' : 'error');
+            
+            // Check if we're in development mode
+            const isDev = window.location.hostname === 'localhost';
+            log(`Environment: ${isDev ? 'Development' : 'Production'}`, 'info');
+            
+            // Check API base URL
+            const apiUrl = isDev ? '/api/tranzy/v1' : 'https://api.tranzy.ai/v1';
+            log(`API Base URL: ${apiUrl}`, 'info');
+        }
+
+        function checkLocalStorage() {
+            try {
+                // Check for config store
+                const configStore = localStorage.getItem('config-store');
+                if (configStore) {
+                    const parsed = JSON.parse(configStore);
+                    const config = parsed.state?.config;
+                    
+                    if (config) {
+                        log(`✅ Config found in localStorage`, 'success');
+                        log(`City: ${config.city || 'Not set'}`, 'info');
+                        log(`Agency ID: ${config.agencyId || 'Not set'}`, 'info');
+                        log(`API Key: ${config.apiKey ? `Set (${config.apiKey.length} chars)` : 'Not set'}`, 
+                            config.apiKey ? 'success' : 'error');
+                        log(`Refresh Rate: ${config.refreshRate || 'Not set'}`, 'info');
+                    } else {
+                        log(`❌ No config found in config-store`, 'error');
+                    }
+                } else {
+                    log(`❌ No config-store found in localStorage`, 'error');
+                }
+
+                // Check for agency store
+                const agencyStore = localStorage.getItem('agency-store');
+                if (agencyStore) {
+                    const parsed = JSON.parse(agencyStore);
+                    const agencies = parsed.state?.agencies || [];
+                    log(`Agencies cached: ${agencies.length}`, agencies.length > 0 ? 'success' : 'warning');
+                    
+                    if (agencies.length > 0) {
+                        log(`Available agencies: ${agencies.map(a => `${a.name} (ID: ${a.id})`).join(', ')}`, 'info');
+                    }
+                } else {
+                    log(`No agency-store found in localStorage`, 'warning');
+                }
+
+            } catch (error) {
+                log(`❌ Error checking localStorage: ${error.message}`, 'error');
+            }
+        }
+
+        async function testApiCall() {
+            try {
+                // Get API key from localStorage
+                const configStore = localStorage.getItem('config-store');
+                if (!configStore) {
+                    log(`❌ No config found - please complete app setup first`, 'error');
+                    return;
+                }
+
+                const parsed = JSON.parse(configStore);
+                const apiKey = parsed.state?.config?.apiKey;
+                
+                if (!apiKey) {
+                    log(`❌ No API key found - please configure API key in app`, 'error');
+                    return;
+                }
+
+                log(`🔑 Testing API with key: ${apiKey.substring(0, 8)}...`, 'info');
+
+                // Test API call
+                const isDev = window.location.hostname === 'localhost';
+                const apiUrl = isDev ? '/api/tranzy/v1' : 'https://api.tranzy.ai/v1';
+                
+                const response = await fetch(`${apiUrl}/opendata/agency`, {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'X-API-Key': apiKey,
+                        'X-Agency-Id': '2', // Cluj agency ID
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`📡 API Response Status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ API call successful!`, 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ API Error: ${errorText}`, 'error');
+                    
+                    if (response.status === 403) {
+                        log(`🔍 403 Forbidden suggests:
+                        • API key is invalid or expired
+                        • API key doesn't have permission for this endpoint
+                        • Check your Tranzy.ai account status
+                        • Verify the API key is copied correctly`, 'warning');
+                    }
+                }
+
+            } catch (error) {
+                log(`❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic checks on load
+        window.onload = function() {
+            checkApiStatus();
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

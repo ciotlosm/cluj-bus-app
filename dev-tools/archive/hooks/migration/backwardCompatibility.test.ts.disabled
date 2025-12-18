@@ -1,0 +1,558 @@
+/**
+ * Backward compatibility tests for hook migration
+ * 
+ * These tests verify that the new hook system maintains exact API compatibility
+ * with the existing implementation across all usage patterns.
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import * as fc from 'fast-check';
+
+// Import both implementations
+import { useVehicleProcessing as useVehicleProcessingOld } from '../useVehicleProcessing';
+import { 
+  useVehicleProcessing as useVehicleProcessingNew,
+  type VehicleProcessingOptions,
+  type VehicleProcessingResult
+} from '../useVehicleProcessingOrchestration';
+
+// Import migration utilities
+import { 
+  compatibilityVerifier,
+  featureFlags,
+  migrationTracker
+} from './index';
+
+// Mock dependencies
+vi.mock('../../stores/locationStore', () => ({
+  useLocationStore: vi.fn(() => ({
+    currentLocation: { latitude: 46.7712, longitude: 23.6236 }
+  }))
+}));
+
+vi.mock('../../stores/configStore', () => ({
+  useConfigStore: vi.fn(() => ({
+    config: {
+      agencyId: 'test-agency',
+      homeLocation: { latitude: 46.7712, longitude: 23.6236 },
+      workLocation: { latitude: 46.7800, longitude: 23.6300 },
+      favoriteBuses: [
+        { routeId: '1', routeName: 'Route 1' },
+        { routeId: '2', routeName: 'Route 2' }
+      ]
+    }
+  }))
+}));
+
+// Mock data layer hooks
+vi.mock('../data/useStationData', () => ({
+  useStationData: vi.fn(() => ({
+    data: [
+      {
+        id: 'station1',
+        name: 'Test Station 1',
+        coordinates: { latitude: 46.7712, longitude: 23.6236 }
+      },
+      {
+        id: 'station2',
+        name: 'Test Station 2',
+        coordinates: { latitude: 46.7800, longitude: 23.6300 }
+      }
+    ],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
+  }))
+}));
+
+vi.mock('../data/useVehicleData', () => ({
+  useVehicleData: vi.fn(() => ({
+    data: [
+      {
+        id: 'vehicle1',
+        routeId: '1',
+        tripId: 'trip1',
+        label: 'Bus 1',
+        position: { latitude: 46.7712, longitude: 23.6236 },
+        timestamp: new Date()
+      },
+      {
+        id: 'vehicle2',
+        routeId: '2',
+        tripId: 'trip2',
+        label: 'Bus 2',
+        position: { latitude: 46.7800, longitude: 23.6300 },
+        timestamp: new Date()
+      }
+    ],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
+  }))
+}));
+
+vi.mock('../data/useRouteData', () => ({
+  useRouteData: vi.fn(() => ({
+    data: [
+      {
+        id: '1',
+        routeName: 'Route 1',
+        routeDesc: 'Test Route 1'
+      },
+      {
+        id: '2',
+        routeName: 'Route 2',
+        routeDesc: 'Test Route 2'
+      }
+    ],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
+  }))
+}));
+
+vi.mock('../data/useStopTimesData', () => ({
+  useStopTimesData: vi.fn(() => ({
+    data: [
+      {
+        tripId: 'trip1',
+        stopId: 'station1',
+        sequence: 1,
+        arrivalTime: '10:00:00'
+      },
+      {
+        tripId: 'trip2',
+        stopId: 'station2',
+        sequence: 1,
+        arrivalTime: '10:05:00'
+      }
+    ],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
+  }))
+}));
+
+// Mock processing layer hooks
+vi.mock('../processing/useVehicleFiltering', () => ({
+  useVehicleFiltering: vi.fn((vehicles, options) => ({
+    filteredVehicles: vehicles,
+    filterStats: {
+      totalVehicles: vehicles.length,
+      filteredCount: vehicles.length,
+      appliedFilters: []
+    }
+  }))
+}));
+
+vi.mock('../processing/useVehicleGrouping', () => ({
+  useVehicleGrouping: vi.fn((vehicles, stations, userLocation, options) => ({
+    stationGroups: stations.slice(0, options.maxStations || 2).map(station => ({
+      station: { station, distance: 100 },
+      vehicles: vehicles.slice(0, options.maxVehiclesPerStation || 5),
+      allRoutes: vehicles.map(v => ({
+        routeId: v.routeId,
+        routeName: `Route ${v.routeId}`,
+        vehicleCount: 1
+      }))
+    })),
+    groupingStats: {
+      totalStations: stations.length,
+      groupedStations: Math.min(stations.length, options.maxStations || 2),
+      totalVehicles: vehicles.length
+    }
+  }))
+}));
+
+describe('Backward Compatibility Tests', () => {
+  beforeEach(() => {
+    // Reset feature flags to use old hooks by default
+    featureFlags.disableAllFeatures();
+    migrationTracker.clear();
+    compatibilityVerifier.clearResults();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('API Compatibility', () => {
+    it('should have identical function signatures', () => {
+      // Both hooks should accept the same options type
+      const options: VehicleProcessingOptions = {
+        filterByFavorites: true,
+        maxStations: 3,
+        maxVehiclesPerStation: 10
+      };
+
+      // Both should be callable with the same parameters
+      expect(() => {
+        renderHook(() => useVehicleProcessingOld(options));
+      }).not.toThrow();
+
+      expect(() => {
+        renderHook(() => useVehicleProcessingNew(options));
+      }).not.toThrow();
+    });
+
+    it('should return objects with identical structure', async () => {
+      const options: VehicleProcessingOptions = {
+        filterByFavorites: false,
+        maxStations: 2,
+        maxVehiclesPerStation: 5
+      };
+
+      const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+      const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+
+      await waitFor(() => {
+        expect(oldResult.current).toBeDefined();
+        expect(newResult.current).toBeDefined();
+      });
+
+      // Check that both results have the same keys
+      const oldKeys = Object.keys(oldResult.current).sort();
+      const newKeys = Object.keys(newResult.current).sort();
+      
+      expect(newKeys).toEqual(oldKeys);
+
+      // Check that required properties exist
+      const requiredProperties = [
+        'stationVehicleGroups',
+        'isLoading',
+        'isLoadingStations',
+        'isLoadingVehicles',
+        'isProcessingVehicles',
+        'effectiveLocationForDisplay',
+        'favoriteRoutes',
+        'allStations',
+        'vehicles'
+      ];
+
+      requiredProperties.forEach(prop => {
+        expect(oldResult.current).toHaveProperty(prop);
+        expect(newResult.current).toHaveProperty(prop);
+      });
+    });
+
+    it('should handle all option combinations identically', async () => {
+      const testCases: VehicleProcessingOptions[] = [
+        {},
+        { filterByFavorites: true },
+        { filterByFavorites: false },
+        { maxStations: 1 },
+        { maxStations: 5 },
+        { maxVehiclesPerStation: 1 },
+        { maxVehiclesPerStation: 20 },
+        { showAllVehiclesPerRoute: true },
+        { showAllVehiclesPerRoute: false },
+        { maxSearchRadius: 1000 },
+        { maxSearchRadius: 10000 },
+        { proximityThreshold: 50 },
+        { proximityThreshold: 500 },
+        {
+          filterByFavorites: true,
+          maxStations: 3,
+          maxVehiclesPerStation: 10,
+          showAllVehiclesPerRoute: true,
+          maxSearchRadius: 8000,
+          proximityThreshold: 200
+        }
+      ];
+
+      for (const options of testCases) {
+        const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+        const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+
+        await waitFor(() => {
+          expect(oldResult.current).toBeDefined();
+          expect(newResult.current).toBeDefined();
+        });
+
+        // Verify structure compatibility
+        expect(typeof oldResult.current.stationVehicleGroups).toBe('object');
+        expect(typeof newResult.current.stationVehicleGroups).toBe('object');
+        expect(Array.isArray(oldResult.current.stationVehicleGroups)).toBe(true);
+        expect(Array.isArray(newResult.current.stationVehicleGroups)).toBe(true);
+      }
+    });
+  });
+
+  describe('Data Format Compatibility', () => {
+    it('should return stationVehicleGroups with identical structure', async () => {
+      const options: VehicleProcessingOptions = {
+        filterByFavorites: false,
+        maxStations: 2,
+        maxVehiclesPerStation: 5
+      };
+
+      const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+      const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+
+      await waitFor(() => {
+        expect(oldResult.current.stationVehicleGroups).toBeDefined();
+        expect(newResult.current.stationVehicleGroups).toBeDefined();
+      });
+
+      const oldGroups = oldResult.current.stationVehicleGroups;
+      const newGroups = newResult.current.stationVehicleGroups;
+
+      if (oldGroups.length > 0 && newGroups.length > 0) {
+        const oldGroup = oldGroups[0];
+        const newGroup = newGroups[0];
+
+        // Check station structure
+        expect(oldGroup.station).toBeDefined();
+        expect(newGroup.station).toBeDefined();
+        expect(typeof oldGroup.station.station).toBe('object');
+        expect(typeof newGroup.station.station).toBe('object');
+        expect(typeof oldGroup.station.distance).toBe('number');
+        expect(typeof newGroup.station.distance).toBe('number');
+
+        // Check vehicles structure
+        expect(Array.isArray(oldGroup.vehicles)).toBe(true);
+        expect(Array.isArray(newGroup.vehicles)).toBe(true);
+
+        if (oldGroup.vehicles.length > 0 && newGroup.vehicles.length > 0) {
+          const oldVehicle = oldGroup.vehicles[0];
+          const newVehicle = newGroup.vehicles[0];
+
+          // Check required vehicle properties
+          const requiredVehicleProps = ['id', 'routeId', 'route', 'destination', 'minutesAway'];
+          requiredVehicleProps.forEach(prop => {
+            expect(oldVehicle).toHaveProperty(prop);
+            expect(newVehicle).toHaveProperty(prop);
+          });
+        }
+
+        // Check allRoutes structure
+        expect(Array.isArray(oldGroup.allRoutes)).toBe(true);
+        expect(Array.isArray(newGroup.allRoutes)).toBe(true);
+      }
+    });
+
+    it('should return loading states with correct types', async () => {
+      const { result: oldResult } = renderHook(() => useVehicleProcessingOld({}));
+      const { result: newResult } = renderHook(() => useVehicleProcessingNew({}));
+
+      await waitFor(() => {
+        expect(oldResult.current).toBeDefined();
+        expect(newResult.current).toBeDefined();
+      });
+
+      // Check loading state types
+      expect(typeof oldResult.current.isLoading).toBe('boolean');
+      expect(typeof newResult.current.isLoading).toBe('boolean');
+      expect(typeof oldResult.current.isLoadingStations).toBe('boolean');
+      expect(typeof newResult.current.isLoadingStations).toBe('boolean');
+      expect(typeof oldResult.current.isLoadingVehicles).toBe('boolean');
+      expect(typeof newResult.current.isLoadingVehicles).toBe('boolean');
+      expect(typeof oldResult.current.isProcessingVehicles).toBe('boolean');
+      expect(typeof newResult.current.isProcessingVehicles).toBe('boolean');
+    });
+
+    it('should return arrays with correct types', async () => {
+      const { result: oldResult } = renderHook(() => useVehicleProcessingOld({}));
+      const { result: newResult } = renderHook(() => useVehicleProcessingNew({}));
+
+      await waitFor(() => {
+        expect(oldResult.current).toBeDefined();
+        expect(newResult.current).toBeDefined();
+      });
+
+      // Check array types
+      expect(Array.isArray(oldResult.current.favoriteRoutes)).toBe(true);
+      expect(Array.isArray(newResult.current.favoriteRoutes)).toBe(true);
+      expect(Array.isArray(oldResult.current.allStations)).toBe(true);
+      expect(Array.isArray(newResult.current.allStations)).toBe(true);
+      expect(Array.isArray(oldResult.current.vehicles)).toBe(true);
+      expect(Array.isArray(newResult.current.vehicles)).toBe(true);
+    });
+  });
+
+  describe('Property-Based Compatibility Tests', () => {
+    it('should handle arbitrary valid options consistently', () => {
+      fc.assert(
+        fc.property(
+          fc.record({
+            filterByFavorites: fc.boolean(),
+            maxStations: fc.integer({ min: 0, max: 10 }),
+            maxVehiclesPerStation: fc.integer({ min: 0, max: 50 }),
+            showAllVehiclesPerRoute: fc.boolean(),
+            maxSearchRadius: fc.integer({ min: 100, max: 20000 }),
+            proximityThreshold: fc.integer({ min: 10, max: 1000 })
+          }),
+          (options: VehicleProcessingOptions) => {
+            const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+            const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+
+            // Both should return valid results
+            expect(oldResult.current).toBeDefined();
+            expect(newResult.current).toBeDefined();
+
+            // Both should have the same structure
+            const oldKeys = Object.keys(oldResult.current).sort();
+            const newKeys = Object.keys(newResult.current).sort();
+            expect(newKeys).toEqual(oldKeys);
+
+            // Both should return arrays for array properties
+            expect(Array.isArray(oldResult.current.stationVehicleGroups)).toBe(true);
+            expect(Array.isArray(newResult.current.stationVehicleGroups)).toBe(true);
+            expect(Array.isArray(oldResult.current.favoriteRoutes)).toBe(true);
+            expect(Array.isArray(newResult.current.favoriteRoutes)).toBe(true);
+            expect(Array.isArray(oldResult.current.allStations)).toBe(true);
+            expect(Array.isArray(newResult.current.allStations)).toBe(true);
+            expect(Array.isArray(oldResult.current.vehicles)).toBe(true);
+            expect(Array.isArray(newResult.current.vehicles)).toBe(true);
+
+            return true;
+          }
+        ),
+        { numRuns: 50 }
+      );
+    });
+
+    it('should respect maxStations limit consistently', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 1, max: 5 }),
+          (maxStations: number) => {
+            const options: VehicleProcessingOptions = { maxStations };
+
+            const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+            const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+
+            // Both should respect the maxStations limit
+            expect(oldResult.current.stationVehicleGroups.length).toBeLessThanOrEqual(maxStations);
+            expect(newResult.current.stationVehicleGroups.length).toBeLessThanOrEqual(maxStations);
+
+            return true;
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+
+    it('should handle edge case values consistently', () => {
+      const edgeCases: VehicleProcessingOptions[] = [
+        { maxStations: 0 },
+        { maxVehiclesPerStation: 0 },
+        { maxSearchRadius: 0 },
+        { proximityThreshold: 0 },
+        { maxStations: Number.MAX_SAFE_INTEGER },
+        { maxVehiclesPerStation: Number.MAX_SAFE_INTEGER },
+        { maxSearchRadius: Number.MAX_SAFE_INTEGER },
+        { proximityThreshold: Number.MAX_SAFE_INTEGER }
+      ];
+
+      edgeCases.forEach(options => {
+        expect(() => {
+          const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+          const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+
+          // Both should handle edge cases without throwing
+          expect(oldResult.current).toBeDefined();
+          expect(newResult.current).toBeDefined();
+        }).not.toThrow();
+      });
+    });
+  });
+
+  describe('Error Handling Compatibility', () => {
+    it('should handle errors consistently', async () => {
+      // Mock an error scenario
+      const errorOptions: VehicleProcessingOptions = {
+        maxStations: -1 // Invalid value
+      };
+
+      const { result: oldResult } = renderHook(() => useVehicleProcessingOld(errorOptions));
+      const { result: newResult } = renderHook(() => useVehicleProcessingNew(errorOptions));
+
+      // Both should handle errors gracefully
+      expect(oldResult.current).toBeDefined();
+      expect(newResult.current).toBeDefined();
+
+      // Both should have error properties of the same type
+      if (oldResult.current.error !== undefined) {
+        expect(typeof oldResult.current.error).toBe(typeof newResult.current.error);
+      }
+    });
+  });
+
+  describe('Performance Compatibility', () => {
+    it('should have similar performance characteristics', async () => {
+      const options: VehicleProcessingOptions = {
+        filterByFavorites: false,
+        maxStations: 5,
+        maxVehiclesPerStation: 20
+      };
+
+      // Measure old hook performance
+      const oldStartTime = performance.now();
+      const { result: oldResult } = renderHook(() => useVehicleProcessingOld(options));
+      await waitFor(() => expect(oldResult.current).toBeDefined());
+      const oldEndTime = performance.now();
+      const oldDuration = oldEndTime - oldStartTime;
+
+      // Measure new hook performance
+      const newStartTime = performance.now();
+      const { result: newResult } = renderHook(() => useVehicleProcessingNew(options));
+      await waitFor(() => expect(newResult.current).toBeDefined());
+      const newEndTime = performance.now();
+      const newDuration = newEndTime - newStartTime;
+
+      // New hook should not be significantly slower (allow 50% overhead for migration logic)
+      expect(newDuration).toBeLessThan(oldDuration * 1.5);
+
+      // Log performance comparison
+      console.log(`Performance comparison - Old: ${oldDuration.toFixed(2)}ms, New: ${newDuration.toFixed(2)}ms`);
+    });
+  });
+
+  describe('Integration with Migration System', () => {
+    it('should work correctly with feature flags disabled', async () => {
+      // Ensure feature flags are disabled
+      featureFlags.disableAllFeatures();
+
+      const options: VehicleProcessingOptions = {
+        filterByFavorites: true,
+        maxStations: 2
+      };
+
+      const { result } = renderHook(() => useVehicleProcessingNew(options));
+
+      await waitFor(() => {
+        expect(result.current).toBeDefined();
+      });
+
+      // Should work normally even with migration system present
+      expect(result.current.stationVehicleGroups).toBeDefined();
+      expect(Array.isArray(result.current.stationVehicleGroups)).toBe(true);
+    });
+
+    it('should work correctly with feature flags enabled', async () => {
+      // Enable feature flags
+      featureFlags.enableAllFeatures();
+
+      const options: VehicleProcessingOptions = {
+        filterByFavorites: true,
+        maxStations: 2
+      };
+
+      const { result } = renderHook(() => useVehicleProcessingNew(options));
+
+      await waitFor(() => {
+        expect(result.current).toBeDefined();
+      });
+
+      // Should work normally with migration system enabled
+      expect(result.current.stationVehicleGroups).toBeDefined();
+      expect(Array.isArray(result.current.stationVehicleGroups)).toBe(true);
+    });
+  });
+});

@@ -36,10 +36,28 @@ npm run preview      # Preview production build
 
 ### Testing
 ```bash
-npm test             # Run tests once
-npm run test:watch   # Run tests in watch mode
-npm run test:ui      # Run tests with UI
+npm test             # Run all tests once (vitest --run)
+npm run test:watch   # Run tests in watch mode (vitest)
+npm run test:ui      # Run tests with visual UI (vitest --ui)
 ```
+
+### Test Commands Reference
+- **`npm test`** - Single test run, exits after completion (production/CI)
+- **`npm run test:watch`** - Watch mode, re-runs tests on file changes (development)
+- **`npm run test:ui`** - Visual test runner with browser interface
+- **`npm test -- <pattern>`** - Run specific test files (e.g., `npm test -- stationSelector`)
+- **`npm test -- --reporter=verbose`** - Run tests with detailed output
+- **`npm test -- --coverage`** - Run tests with coverage report
+- **`npm test -- --clearCache`** - Clear test cache before running
+- **`npm test -- --update`** - Update test snapshots
+
+### Important Test Command Notes
+- ❌ **NEVER** use `npm test -- --run` - the `--run` flag is already in the script definition
+- ❌ **NO** `--verbose` option exists - use `--reporter=verbose`
+- ❌ **NO** `npm run test:coverage` script - use `npm test -- --coverage`
+- ❌ **NO** `--grep` option - use `--testNamePattern` for pattern matching
+- ✅ Use `--` to pass arguments to vitest through npm
+- ✅ Just use `npm test` for single run (--run is already included)
 
 ### Code Quality
 ```bash

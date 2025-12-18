@@ -297,6 +297,63 @@ const migrationStatus = useVehicleProcessingMigrationStatus('ComponentName');
 - **[Hook Examples](hook-examples.md)**: Practical usage examples
 - **[Migration Guide](hook-migration-guide.md)**: Best practices for future migrations
 
+### ⚠️ **CRITICAL: Data Hooks Architecture Review (December 2024)**
+
+**Executive Summary**: The `useVehicleProcessingOrchestration` hook requires immediate rethinking due to over-engineering and architectural issues.
+
+#### **Current Status Analysis**
+
+**❌ useVehicleProcessingOrchestration Hook - NEEDS REMOVAL**
+- **1,113 lines** of complex orchestration logic
+- **Duplicates functionality** already handled by data hooks
+- **Mixed concerns**: Inline direction analysis, error handling, business logic
+- **Dual orchestration paths**: Both nearby view AND legacy processing
+- **Performance overhead**: Complex memoization and dependency tracking
+
+**✅ Data Layer Hooks - EXCELLENT**
+- `useStationData`, `useVehicleData`, `useRouteData`, `useStopTimesData`
+- Clean error handling with exponential backoff retry
+- Proper caching with configurable TTL
+- Auto-refresh capabilities for live data
+- Comprehensive validation and sanitization
+
+**✅ Processing Layer Hooks - SOLID**
+- `useVehicleFiltering`, `useVehicleGrouping`, `useDirectionAnalysis`
+- Pure functions with clear inputs/outputs
+- Comprehensive validation and statistics
+- Good performance with memoization
+
+**✅ useNearbyViewController - WELL ARCHITECTED**
+- Clean integration with data hooks
+- Proper error handling with context
+- Configurable options and stability tracking
+
+#### **Immediate Action Required**
+
+**Replace orchestration hook with simple composition:**
+
+```typescript
+// REMOVE: useVehicleProcessingOrchestration (1,113 lines)
+// REPLACE WITH: Simple composition (50 lines)
+export const useVehicleDisplay = (options) => {
+  const stations = useStationData({ agencyId: options.agencyId });
+  const vehicles = useVehicleData({ agencyId: options.agencyId, autoRefresh: true });
+  
+  const filtered = useVehicleFiltering(vehicles.data || [], options);
+  const grouped = useVehicleGrouping(filtered.filteredVehicles, stations.data || [], options.userLocation);
+  
+  return {
+    stationVehicleGroups: grouped.stationGroups,
+    isLoading: stations.isLoading || vehicles.isLoading,
+    error: stations.error || vehicles.error
+  };
+};
+```
+
+**Benefits**: Remove 1,000+ lines of complex code, eliminate duplicate processing, improve maintainability.
+
+**Migration Strategy**: Replace component by component, add deprecation warnings, preserve functionality.
+
 ## 🏪 State Management
 
 ### Zustand Stores
@@ -638,33 +695,79 @@ class EnhancedTranzyAPI {
 
 ### Running Tests
 ```bash
-npm test              # Run all tests
-npm run test:watch    # Watch mode
-npm run test:ui       # Visual test runner
-npm run test:coverage # Coverage report
+npm test              # Run all tests once (vitest --run)
+npm run test:watch    # Watch mode (vitest)
+npm run test:ui       # Visual test runner (vitest --ui)
 ```
+
+**Test Command Details:**
+- **`npm test`** - Single run, exits after completion (for CI/production)
+- **`npm run test:watch`** - Watch mode, re-runs on file changes (for development)
+- **`npm run test:ui`** - Browser-based visual test runner
+- **`npm test -- <pattern>`** - Run specific tests (e.g., `npm test -- stationSelector`)
+- **`npm test -- --verbose`** - Detailed test output
 
 ### Test Configuration
 ```typescript
 // vitest.config.ts
 export default defineConfig({
   test: {
+    globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    coverage: {
-      reporter: ['text', 'html'],
-      threshold: {
-        global: {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80,
-        },
-      },
-    },
+    testTimeout: 10000,
   },
 });
 ```
+
+### Complete Test Command Reference
+
+**Available Scripts (from package.json):**
+```json
+{
+  "test": "vitest --run",
+  "test:watch": "vitest", 
+  "test:ui": "vitest --ui"
+}
+```
+
+**Command Usage:**
+- **`npm test`** - Run all tests once and exit (CI/production)
+- **`npm run test:watch`** - Run tests in watch mode (development)
+- **`npm run test:ui`** - Launch visual test runner in browser
+- **`npm test -- <pattern>`** - Run specific test files
+- **`npm test -- --reporter=verbose`** - Show detailed test output
+- **`npm test -- --clearCache`** - Clear test cache before running
+- **`npm test -- --update`** - Update test snapshots
+
+**Examples:**
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- stationSelector.test.ts
+
+# Run tests matching pattern
+npm test -- --testNamePattern="should handle errors"
+
+# Run tests with coverage info
+npm test -- --coverage
+
+# Run tests with detailed output
+npm test -- --reporter=verbose
+
+# Clear cache and run tests
+npm test -- --clearCache
+```
+
+**⚠️ Important Notes:**
+- **NEVER** use `npm test -- --run` - the `--run` flag is already in the script definition
+- **NO** `npm run test:coverage` script exists - use `npm test -- --coverage`
+- **NO** `npm run test` script exists - use `npm test` (without "run")
+- **NO** `--verbose` option - use `--reporter=verbose` instead
+- Use `--` to pass arguments to vitest through npm
+- Use `--testNamePattern` instead of `--grep` for pattern matching
 
 ## 🔄 Development Workflow
 
@@ -673,7 +776,7 @@ export default defineConfig({
 # Start development server
 npm run dev
 
-# Run tests in parallel
+# Run tests in watch mode
 npm run test:watch
 
 # Check code quality

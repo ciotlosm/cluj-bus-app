@@ -241,7 +241,6 @@ The app uses locations in this priority order for route suggestions:
 
 ### API Configuration (Separate Tab)
 - **Tranzy API Key** - for live bus tracking data
-- **Google Maps API Key** - for enhanced location features
 - **City info** - visible in version menu for troubleshooting (set during initial setup)
 
 ## ⚙️ Settings & Configuration

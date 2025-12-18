@@ -49,13 +49,13 @@ After setup, you should see:
 ## 🧪 Run Tests
 
 ```bash
-# Run all tests
+# Run all tests once
 npm test
 
-# Run tests in watch mode
+# Run tests in watch mode (development)
 npm run test:watch
 
-# Run tests with UI
+# Run tests with visual UI
 npm run test:ui
 ```
 
@@ -84,7 +84,7 @@ The app is mobile-first, so test on your phone:
 npm run dev          # Start development server
 npm run build        # Production build
 npm run preview      # Preview production build
-npm test             # Run tests once
+npm test             # Run all tests once
 npm run test:watch   # Run tests in watch mode
 npm run lint         # Check code quality
 ```

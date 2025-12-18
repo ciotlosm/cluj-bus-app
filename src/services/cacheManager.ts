@@ -57,12 +57,6 @@ export const CACHE_CONFIGS = {
     maxAge: 2 * 60 * 1000, // 2 minutes
     staleWhileRevalidate: true,
   },
-  // Transit estimates
-  transitEstimates: {
-    ttl: 5 * 60 * 1000, // 5 minutes
-    maxAge: 15 * 60 * 1000, // 15 minutes
-    staleWhileRevalidate: true,
-  },
 } as const;
 
 // Cache entry interface
@@ -843,9 +837,6 @@ export const CacheKeys = {
   
   // Route-specific data
   routeVehicles: (agencyId: number, routeId: string) => `routeVehicles:${agencyId}:${routeId}`,
-  
-  // Transit estimates (short-lived)
-  transitEstimate: (origin: string, destination: string) => `transit:${origin}-${destination}`,
   
   // Static data keys (long TTL)
   agencies: () => 'agencies:all',

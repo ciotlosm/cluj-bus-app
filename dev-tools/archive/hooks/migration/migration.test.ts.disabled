@@ -1,0 +1,164 @@
+/**
+ * Basic migration utilities test
+ * 
+ * Simple test to verify migration utilities are working correctly.
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { featureFlags, migrationTracker } from './index';
+
+describe('Migration Utilities', () => {
+  beforeEach(() => {
+    featureFlags.resetToDefaults();
+    migrationTracker.clear();
+  });
+
+  describe('Feature Flags', () => {
+    it('should start with default configuration', () => {
+      const flags = featureFlags.getFlags();
+      
+      expect(flags.useNewOrchestrationHook).toBe(false);
+      expect(flags.useNewDataHooks).toBe(false);
+      expect(flags.useNewProcessingHooks).toBe(false);
+      expect(flags.enableGradualRollout).toBe(true);
+      expect(flags.enabledComponents.size).toBe(0);
+    });
+
+    it('should enable components correctly', () => {
+      featureFlags.enableComponent('TestComponent');
+      
+      expect(featureFlags.isComponentEnabled('TestComponent')).toBe(true);
+      expect(featureFlags.isComponentEnabled('OtherComponent')).toBe(false);
+    });
+
+    it('should disable components correctly', () => {
+      featureFlags.enableComponent('TestComponent');
+      expect(featureFlags.isComponentEnabled('TestComponent')).toBe(true);
+      
+      featureFlags.disableComponent('TestComponent');
+      expect(featureFlags.isComponentEnabled('TestComponent')).toBe(false);
+    });
+
+    it('should enable all features', () => {
+      featureFlags.enableAllFeatures();
+      
+      const flags = featureFlags.getFlags();
+      expect(flags.useNewOrchestrationHook).toBe(true);
+      expect(flags.useNewDataHooks).toBe(true);
+      expect(flags.useNewProcessingHooks).toBe(true);
+      expect(flags.enableGradualRollout).toBe(false);
+    });
+
+    it('should disable all features', () => {
+      featureFlags.enableAllFeatures();
+      featureFlags.disableAllFeatures();
+      
+      const flags = featureFlags.getFlags();
+      expect(flags.useNewOrchestrationHook).toBe(false);
+      expect(flags.useNewDataHooks).toBe(false);
+      expect(flags.useNewProcessingHooks).toBe(false);
+      expect(flags.enableGradualRollout).toBe(false);
+    });
+
+    it('should provide migration status', () => {
+      const initialStatus = featureFlags.getMigrationStatus();
+      expect(initialStatus.isFullyMigrated).toBe(false);
+      expect(initialStatus.isPartiallyMigrated).toBe(false);
+      
+      featureFlags.enableComponent('TestComponent');
+      const partialStatus = featureFlags.getMigrationStatus();
+      expect(partialStatus.isPartiallyMigrated).toBe(true);
+      expect(partialStatus.enabledComponentsCount).toBe(1);
+      
+      featureFlags.enableAllFeatures();
+      const fullStatus = featureFlags.getMigrationStatus();
+      expect(fullStatus.isFullyMigrated).toBe(true);
+    });
+  });
+
+  describe('Migration Tracker', () => {
+    it('should track migration start', () => {
+      migrationTracker.startMigration('TestComponent', 'testHook', 'testing');
+      
+      const summary = migrationTracker.getMigrationSummary();
+      expect(summary.totalMigrations).toBe(1);
+      expect(summary.activeMigrations).toBe(1);
+    });
+
+    it('should record errors', () => {
+      migrationTracker.startMigration('TestComponent', 'testHook', 'testing');
+      migrationTracker.recordError('TestComponent', 'testHook', new Error('Test error'));
+      
+      const summary = migrationTracker.getMigrationSummary();
+      expect(summary.totalErrors).toBe(1);
+    });
+
+    it('should record performance metrics', () => {
+      migrationTracker.recordPerformance('TestComponent', 'testHook', 100, true);
+      migrationTracker.recordPerformance('TestComponent', 'testHook', 150, true);
+      
+      const summary = migrationTracker.getMigrationSummary();
+      const key = 'TestComponent:testHook';
+      expect(summary.averagePerformance[key]).toBeDefined();
+      expect(summary.averagePerformance[key].avgDuration).toBe(125);
+      expect(summary.averagePerformance[key].successRate).toBe(1);
+    });
+
+    it('should complete migration', () => {
+      migrationTracker.startMigration('TestComponent', 'testHook', 'testing');
+      migrationTracker.completeMigration('TestComponent', 'testHook');
+      
+      // Migration should still be tracked but marked as complete
+      const summary = migrationTracker.getMigrationSummary();
+      expect(summary.totalMigrations).toBe(1);
+    });
+
+    it('should clear all data', () => {
+      migrationTracker.startMigration('TestComponent', 'testHook', 'testing');
+      migrationTracker.recordError('TestComponent', 'testHook', new Error('Test error'));
+      
+      let summary = migrationTracker.getMigrationSummary();
+      expect(summary.totalMigrations).toBe(1);
+      expect(summary.totalErrors).toBe(1);
+      
+      migrationTracker.clear();
+      
+      summary = migrationTracker.getMigrationSummary();
+      expect(summary.totalMigrations).toBe(0);
+      expect(summary.totalErrors).toBe(0);
+    });
+  });
+
+  describe('Integration', () => {
+    it('should work together for migration workflow', () => {
+      // Start with default state
+      expect(featureFlags.isComponentEnabled('TestComponent')).toBe(false);
+      
+      // Enable component for migration
+      featureFlags.enableComponent('TestComponent');
+      expect(featureFlags.isComponentEnabled('TestComponent')).toBe(true);
+      
+      // Track migration progress
+      migrationTracker.startMigration('TestComponent', 'useVehicleProcessing', 'testing');
+      
+      // Record some performance data
+      migrationTracker.recordPerformance('TestComponent', 'useVehicleProcessing', 100, true);
+      migrationTracker.recordPerformance('TestComponent', 'useVehicleProcessing', 120, true);
+      
+      // Check status
+      const migrationStatus = featureFlags.getMigrationStatus();
+      const trackerSummary = migrationTracker.getMigrationSummary();
+      
+      expect(migrationStatus.isPartiallyMigrated).toBe(true);
+      expect(migrationStatus.enabledComponentsCount).toBe(1);
+      expect(trackerSummary.totalMigrations).toBe(1);
+      expect(trackerSummary.averagePerformance['TestComponent:useVehicleProcessing'].avgDuration).toBe(110);
+      
+      // Complete migration
+      migrationTracker.completeMigration('TestComponent', 'useVehicleProcessing');
+      
+      // Verify final state
+      expect(featureFlags.isComponentEnabled('TestComponent')).toBe(true);
+    });
+  });
+});

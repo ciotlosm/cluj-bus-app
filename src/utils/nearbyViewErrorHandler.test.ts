@@ -146,10 +146,10 @@ describe('Nearby View Error Handler', () => {
         }
       );
 
-      expect(context.context?.isOnline).toBe(false);
-      expect(context.context?.isApiOnline).toBe(false);
-      expect(context.context?.isUsingCachedData).toBe(true);
-      expect(context.context?.cacheAge).toBeGreaterThan(25000); // Around 30 seconds
+      expect(context.isOnline).toBe(false);
+      expect(context.isApiOnline).toBe(false);
+      expect(context.isUsingCachedData).toBe(true);
+      expect(context.cacheAge).toBeGreaterThan(25000); // Around 30 seconds
     });
   });
 

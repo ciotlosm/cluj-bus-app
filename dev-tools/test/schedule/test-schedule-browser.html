@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test CTP Cluj Schedule Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { margin: 5px 0; padding: 5px; border-left: 3px solid #ccc; }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        .info { border-color: #2196F3; background: #e3f2fd; }
+        .warning { border-color: #ff9800; background: #fff3e0; }
+        button { padding: 10px 20px; margin: 10px 0; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>🚌 CTP Cluj Schedule Service Test</h1>
+    <button onclick="testScheduleService()">Test Schedule Service</button>
+    <button onclick="testFavoriteService()">Test Favorite Bus Service</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+
+    <script type="module">
+        let logContainer = document.getElementById('logs');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            logContainer.innerHTML = '';
+        }
+        
+        // Make functions global
+        window.log = log;
+        window.clearLogs = clearLogs;
+        
+        // Test the CTP Cluj schedule service directly
+        window.testScheduleService = async function() {
+            log('🔍 Testing CTP Cluj Schedule Service...', 'info');
+            
+            try {
+                // Test proxy endpoint directly
+                log('📡 Testing proxy endpoint...', 'info');
+                const response = await fetch('/api/ctp-cluj/index.php/ro/orare-linii/linii-urbane/linia-42');
+                
+                if (response.ok) {
+                    const html = await response.text();
+                    log(`✅ Proxy working! Response length: ${html.length} chars`, 'success');
+                    
+                    // Check for key content
+                    const hasOrarLinia = html.includes('orar_linia');
+                    const hasPdfLink = html.includes('.pdf');
+                    const hasTranzyIframe = html.includes('tranzy.ai');
+                    
+                    log(`📊 Content check: orar_linia=${hasOrarLinia}, PDF=${hasPdfLink}, Tranzy=${hasTranzyIframe}`, 'info');
+                    
+                    // Extract Tranzy Route ID
+                    const tranzyMatch = html.match(/https:\\/\\/apps\\.tranzy\\.ai\\/map\\/ctp-cj-ro\\?routeId=(\\d+)/);
+                    if (tranzyMatch) {
+                        log(`🎯 Found Tranzy Route ID: ${tranzyMatch[1]} (should be 40 for route label 42)`, 'success');
+                    }
+                    
+                    // Extract PDF URL
+                    const pdfMatch = html.match(/href="([^"]*orar_[^"]*\\.pdf)"/);
+                    if (pdfMatch) {
+                        log(`📋 Found PDF URL: ${pdfMatch[1]}`, 'success');
+                    }
+                    
+                } else {
+                    log(`❌ Proxy failed: ${response.status} ${response.statusText}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Test the favorite bus service
+        window.testFavoriteService = async function() {
+            log('🚌 Testing Favorite Bus Service...', 'info');
+            
+            try {
+                // Simulate the favorite bus service call
+                const testLocation = { latitude: 46.7712, longitude: 23.6236 }; // Cluj center
+                const homeLocation = { latitude: 46.7712, longitude: 23.6236 };
+                
+                log('📍 Using test coordinates (Cluj center)', 'info');
+                log('🔄 This would normally call the favorite bus service...', 'info');
+                log('⚠️ Full test requires importing the actual service modules', 'warning');
+                
+                // For now, just test that we can make API calls
+                const testApiCall = await fetch('/api/tranzy/routes?agency_id=2');
+                if (testApiCall.ok) {
+                    const routes = await testApiCall.json();
+                    log(`✅ Tranzy API working! Found ${routes.length} routes`, 'success');
+                    
+                    // Find route 42
+                    const route42 = routes.find(r => r.route_short_name === '42');
+                    if (route42) {
+                        log(`🎯 Found Route 42: ID=${route42.route_id}, Name="${route42.route_long_name}"`, 'success');
+                    } else {
+                        log('⚠️ Route 42 not found in API response', 'warning');
+                    }
+                } else {
+                    log(`❌ Tranzy API failed: ${testApiCall.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Auto-run basic test on load
+        log('🚀 Test page loaded. Click buttons to run tests.', 'info');
+    </script>
+</body>
+</html>

@@ -149,7 +149,7 @@ export const BusCard: React.FC<BusCardProps> = ({
                         color: theme.palette.text.secondary,
                         opacity: 0.7 
                       }} 
-                      titleAccess="Using offline estimates - Configure Google Maps API key for accurate ETAs"
+                      titleAccess="Using offline estimates - Live data temporarily unavailable"
                     />
                   )}
                   {arrivalStatus.isStale && (

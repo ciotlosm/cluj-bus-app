@@ -187,17 +187,6 @@ Look for these common filtering issues:
 
 ### Logging Issues
 
-#### Repeated Google Maps API Key Warnings
-**Problem**: Console shows repeated "Google Maps API key not configured" warnings every time transit calculations are performed
-
-**Root Cause**: The Google Transit Service was checking for API key on every calculation and logging a warning each time, instead of checking once and remembering the result
-
-**Solution**: Implemented smart API key checking with state caching
-- Added `apiKeyChecked` and `hasApiKey` flags to remember API key status
-- Only logs the warning once when first checking API key availability
-- Subsequent calls use cached result without logging
-- API key check resets when Google Maps API key configuration changes
-- Changed warning level from WARN to INFO for less intrusive logging
 
 #### Multiple Log Level Change Messages
 **Problem**: Console shows repeated "Log level changed to: WARN" messages when managing favorite buses or other configuration changes

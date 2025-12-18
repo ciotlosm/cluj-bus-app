@@ -8,7 +8,6 @@ import {
 import { Key as KeyIcon } from '@mui/icons-material';
 import { InfoCard } from '../../ui/Card';
 import { ApiKeySection } from '../Configuration/sections/ApiKeySection';
-import { GoogleMapsApiKeySection } from '../Configuration/sections/GoogleMapsApiKeySection';
 import { useConfigurationManager } from '../../../hooks/shared/useConfigurationManager';
 
 export const ApiConfigurationPanel: React.FC = () => {
@@ -52,12 +51,7 @@ export const ApiConfigurationPanel: React.FC = () => {
           onToggleShowApiKey={() => setShowApiKey(!showApiKey)}
         />
 
-        {/* Google Maps API Key Section */}
-        <GoogleMapsApiKeySection
-          googleMapsApiKey={formData.googleMapsApiKey || ''}
-          onGoogleMapsApiKeyChange={(key) => setFormData(prev => ({ ...prev, googleMapsApiKey: key }))}
-          error={errors.googleMapsApiKey}
-        />
+
 
         {/* Save Button */}
         <Box sx={{ pt: 2 }}>

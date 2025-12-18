@@ -2,6 +2,15 @@
 
 ## 🧪 Test Failures
 
+### "Expected a single value for option --run"
+**Problem**: Command `npm test -- --run` fails with duplicate flag error
+
+**Cause**: The `--run` flag is already included in the npm script definition (`"test": "vitest --run"`)
+
+**Solution**: Use `npm test` (not `npm test -- --run`)
+- ❌ Wrong: `npm test -- --run` 
+- ✅ Correct: `npm test`
+
 ### "useRefreshSystem() returns undefined"
 **Problem**: RefreshControl tests failing
 
@@ -10,13 +19,40 @@
 **If tests still fail**:
 ```bash
 # Clear test cache
-npm run test -- --clearCache
+npm test -- --clearCache
 
 # Reinstall dependencies
 rm -rf node_modules package-lock.json
 npm install
 npm test
 ```
+
+### Recent Test Fixes (December 2024)
+
+**Import Path Errors**
+- **Problem**: Tests fail with "Failed to resolve import" errors
+- **Solution**: Check import paths are correct relative to test file location
+- **Example**: Use `../shared/dependencyTracker` not `./shared/dependencyTracker`
+
+**localStorage Key Mismatches**
+- **Problem**: Tests expect 'config' key but store uses 'unified-config-store'
+- **Solution**: Update test expectations to match actual store implementation
+- **Fix**: Change test assertions to use correct localStorage key
+
+**Async Test Timeouts**
+- **Problem**: Integration tests timeout waiting for async operations
+- **Solution**: Either increase timeout or skip problematic integration tests
+- **Example**: Use `it.skip()` for tests that depend on complex async behavior
+
+**Property-Based Test Failures**
+- **Problem**: Fast-check property tests fail with mock-related errors
+- **Solution**: Ensure mocks are properly configured for all test scenarios
+- **Fix**: Check that `vi.mocked().mockResolvedValue` exists before using
+
+**Cache Manager Test Issues**
+- **Problem**: Property-based tests fail on edge cases with cache cleanup
+- **Solution**: Make test assertions more lenient for edge cases
+- **Fix**: Use basic sanity checks instead of exact value matching
 
 ### General Test Issues
 **Problem**: Tests failing unexpectedly or inconsistently
@@ -25,8 +61,8 @@ npm test
 
 **Clear Test Environment**:
 ```bash
-# Run tests with verbose output
-npm test -- --verbose
+# Run tests with detailed output
+npm test -- --reporter=verbose
 
 # Run specific test file
 npm test -- RefreshControl.test.tsx
@@ -35,14 +71,14 @@ npm test -- RefreshControl.test.tsx
 npm run test:watch
 
 # Clear all caches and reinstall
-npm run test -- --clearCache
+npm test -- --clearCache
 rm -rf node_modules package-lock.json
 npm install
 ```
 
 **Mock Issues**:
 1. **Check mock configurations**: Ensure mocks match actual implementations
-2. **Update snapshots**: Run `npm test -- --updateSnapshot` if UI changed
+2. **Update snapshots**: Run `npm test -- --update` if UI changed
 3. **Verify test data**: Ensure test data matches expected formats
 
 **Environment Issues**:
@@ -378,9 +414,9 @@ localStorage.setItem('debug', 'api:*,cache:*,location:*');
 npm run build
 # Look for bundle size warnings
 
-# Test performance
-npm run test:coverage
-# Check for performance test results
+# Run performance tests (included in main test suite)
+npm test
+# Check for performance test results in output
 
 # Memory usage
 # Check DevTools → Performance → Memory

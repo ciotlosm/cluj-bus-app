@@ -139,7 +139,7 @@ describe('Integration Tests - Complete User Flows', () => {
 
       // Verify localStorage was called
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'config',
+        'unified-config-store',
         expect.stringContaining(mockConfig.city)
       );
     });
@@ -420,7 +420,7 @@ describe('Integration Tests - Complete User Flows', () => {
 
       // Verify localStorage calls for stores
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'config',
+        'unified-config-store',
         expect.stringContaining(mockConfig.city)
       );
       // Config store also persists favorites via Zustand

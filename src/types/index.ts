@@ -49,7 +49,6 @@ export interface UserConfig {
   homeLocation: Coordinates;
   workLocation: Coordinates;
   apiKey: string;
-  googleMapsApiKey?: string; // Optional Google Maps API key for enhanced ETA calculations
   refreshRate: number; // milliseconds
   staleDataThreshold: number; // minutes - when to consider vehicle data as stale
   defaultLocation?: Coordinates; // Default fallback location for direction detection

@@ -413,9 +413,9 @@ navigator.serviceWorker.getRegistrations().then(registrations => {
 npm run build
 # Check bundle size and optimization
 
-# Test performance
-npm run test:coverage
-# Check for performance test results
+# Run performance tests (included in main test suite)
+npm test
+# Check for performance test results in output
 
 # Lighthouse CLI (if installed)
 lighthouse http://localhost:5175 --output html

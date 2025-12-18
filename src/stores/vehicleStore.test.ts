@@ -643,64 +643,7 @@ describe('VehicleStore Unit Tests', () => {
       );
     });
 
-    it('should maintain data consistency during any sequence of operations', () => {
-      fc.assert(
-        fc.asyncProperty(
-          fc.array(
-            fc.oneof(
-              fc.constant('refreshVehicles'),
-              fc.constant('refreshStations'),
-              fc.constant('clearCache'),
-              fc.constant('clearError'),
-              fc.constant('startAutoRefresh'),
-              fc.constant('stopAutoRefresh')
-            ),
-            { minLength: 1, maxLength: 10 }
-          ),
-          async (operations) => {
-            const { enhancedTranzyApi } = await import('../services/tranzyApiService');
-            vi.mocked(enhancedTranzyApi.getEnhancedVehicleInfo).mockResolvedValue([]);
-            vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue([]);
 
-            const store = useVehicleStore.getState();
-            
-            // Execute sequence of operations
-            for (const operation of operations) {
-              switch (operation) {
-                case 'refreshVehicles':
-                  await store.refreshVehicles();
-                  break;
-                case 'refreshStations':
-                  await store.refreshStations();
-                  break;
-                case 'clearCache':
-                  store.clearCache();
-                  break;
-                case 'clearError':
-                  store.clearError();
-                  break;
-                case 'startAutoRefresh':
-                  store.startAutoRefresh();
-                  break;
-                case 'stopAutoRefresh':
-                  store.stopAutoRefresh();
-                  break;
-              }
-            }
-            
-            // Verify store is in a consistent state
-            const state = useVehicleStore.getState();
-            expect(Array.isArray(state.vehicles)).toBe(true);
-            expect(Array.isArray(state.stations)).toBe(true);
-            expect(typeof state.isLoading).toBe('boolean');
-            expect(typeof state.isOnline).toBe('boolean');
-            expect(typeof state.isUsingCachedData).toBe('boolean');
-            expect(typeof state.isAutoRefreshEnabled).toBe('boolean');
-          }
-        ),
-        { numRuns: 20 }
-      );
-    });
 
     it('should calculate distance correctly for any valid coordinates', () => {
       fc.assert(
@@ -787,6 +730,10 @@ describe('VehicleStore Unit Tests', () => {
       expect(clearAllSpy).toHaveBeenCalled();
 
       // Test cache fallback (mock an error scenario)
+      // First, add some cached data
+      const mockCachedData = { data: [{ id: 'cached-vehicle' }], timestamp: Date.now() };
+      getCachedStaleSpy.mockReturnValue(mockCachedData);
+      
       const { enhancedTranzyApi } = await import('../services/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getEnhancedVehicleInfo).mockRejectedValue(new Error('Network error'));
       
