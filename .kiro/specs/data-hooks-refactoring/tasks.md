@@ -86,19 +86,19 @@
   - Ensure no remaining references in codebase
   - _Requirements: 1.1, 10.1, 10.2_
 
-- [ ] 14. Remove useRouteData hook
+- [x] 14. Remove useRouteData hook
   - Delete src/hooks/data/useRouteData.ts (300+ lines)
   - Update all imports to use store methods instead
   - Ensure no remaining references in codebase
   - _Requirements: 1.1, 10.1, 10.2_
 
-- [ ] 15. Remove useStopTimesData hook
+- [x] 15. Remove useStopTimesData hook
   - Delete src/hooks/data/useStopTimesData.ts (400+ lines)
   - Update all imports to use store methods instead
   - Ensure no remaining references in codebase
   - _Requirements: 1.1, 10.1, 10.2_
 
-- [ ] 16. Remove data hooks directory and exports
+- [x] 16. Remove data hooks directory and exports
   - Delete entire src/hooks/data/ directory
   - Remove data hook exports from src/hooks/index.ts
   - Clean up any remaining imports or references

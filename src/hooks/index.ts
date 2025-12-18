@@ -9,8 +9,8 @@
  */
 
 // === DATA LAYER ===
-// Raw data fetching hooks
-export * from './data';
+// Data layer has been migrated to store-based architecture
+// Use store subscription hooks from shared layer instead
 
 // === PROCESSING LAYER ===
 // Data transformation and analysis hooks

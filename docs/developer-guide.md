@@ -90,7 +90,6 @@ npm run lint         # ESLint
 
 ### Data Hooks (Legacy - Being Migrated to Store-Based)
 - **useStationData**: Station information (use useStationStoreData instead)
-- **useRouteData**: Route definitions (use useRouteStoreData instead)
 
 ### Store-Based Data Hooks (Recommended)
 - **useVehicleStoreData**: Live vehicle positions via store

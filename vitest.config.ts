@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Use Vite's cacheDir instead of deprecated cache.dir
+  cacheDir: 'node_modules/.vitest',
   test: {
     globals: true,
     environment: 'jsdom',
@@ -25,10 +27,6 @@ export default defineConfig({
     restoreMocks: true,
     // Monitor memory usage but allow parallel execution
     logHeapUsage: true,
-    // Enable test caching for faster reruns
-    cache: {
-      dir: 'node_modules/.vitest'
-    },
     // Optimize file watching
     watchExclude: [
       '**/node_modules/**',
