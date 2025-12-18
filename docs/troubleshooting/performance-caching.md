@@ -34,6 +34,10 @@ navigator.serviceWorker.getRegistrations().then(registrations => {
 **Problem**: Browser becomes unresponsive or crashes
 **Solution**: Close other tabs, restart browser, or reduce cache size
 
+### JavaScript Heap Out of Memory (FIXED)
+**Problem**: "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory"
+**Solution**: This critical memory leak in useVehicleDisplay hook has been fixed (Dec 18, 2024). Update to latest version.
+
 ### Infinite Loops
 **Problem**: Browser crashes with excessive logging
 **Solution**: Check React useEffect dependencies and callback stability
