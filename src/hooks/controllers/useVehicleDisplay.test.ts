@@ -1,5 +1,5 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { vi } from 'vitest';
 import { useVehicleDisplay } from './useVehicleDisplay';
 import type { UseVehicleDisplayOptions } from './useVehicleDisplay';
 
@@ -21,9 +21,9 @@ vi.mock('../../stores/configStore', () => ({
   })
 }));
 
-// Mock the data hooks
-vi.mock('../data/useStationData', () => ({
-  useStationData: () => ({
+// Mock the store-based data hooks (replacing data hooks)
+vi.mock('../shared/useStationStoreData', () => ({
+  useStationStoreData: () => ({
     data: [
       {
         id: 'station-1',
@@ -32,12 +32,14 @@ vi.mock('../data/useStationData', () => ({
       }
     ],
     isLoading: false,
-    error: null
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
   })
 }));
 
-vi.mock('../data/useVehicleData', () => ({
-  useVehicleData: () => ({
+vi.mock('../shared/useVehicleStoreData', () => ({
+  useVehicleStoreData: () => ({
     data: [
       {
         id: 'vehicle-1',
@@ -49,12 +51,14 @@ vi.mock('../data/useVehicleData', () => ({
       }
     ],
     isLoading: false,
-    error: null
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
   })
 }));
 
-vi.mock('../data/useRouteData', () => ({
-  useRouteData: () => ({
+vi.mock('../shared/useRouteStoreData', () => ({
+  useRouteStoreData: () => ({
     data: [
       {
         id: 'route-1',
@@ -63,15 +67,19 @@ vi.mock('../data/useRouteData', () => ({
       }
     ],
     isLoading: false,
-    error: null
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
   })
 }));
 
-vi.mock('../data/useStopTimesData', () => ({
-  useStopTimesData: () => ({
+vi.mock('../shared/useStopTimesStoreData', () => ({
+  useStopTimesStoreData: () => ({
     data: [],
     isLoading: false,
-    error: null
+    error: null,
+    refetch: vi.fn(),
+    lastUpdated: new Date()
   })
 }));
 

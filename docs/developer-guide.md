@@ -88,10 +88,15 @@ npm run lint         # ESLint
 - **vehicleStore**: Live vehicle data
 - **locationStore**: GPS and fallback locations
 
-### Data Hooks
-- **useStationData**: Station information
-- **useVehicleData**: Live vehicle positions
-- **useRouteData**: Route definitions
+### Data Hooks (Legacy - Being Migrated to Store-Based)
+- **useStationData**: Station information (use useStationStoreData instead)
+- **useRouteData**: Route definitions (use useRouteStoreData instead)
+
+### Store-Based Data Hooks (Recommended)
+- **useVehicleStoreData**: Live vehicle positions via store
+- **useStationStoreData**: Station information via store
+- **useRouteStoreData**: Route definitions via store
+- **useStopTimesStoreData**: Stop times via store
 
 ## Common Patterns
 

@@ -1,54 +1,56 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVehicleStore } from '../../stores/vehicleStore';
-import type { LiveVehicle } from '../../types/tranzyApi';
+import type { StopTime } from '../../types/tranzyApi';
 import type { DataHookResult } from '../../types/dataHooks';
 import { logger } from '../../utils/logger';
 
 /**
- * Configuration options for useVehicleStoreData hook
+ * Configuration options for useStopTimesStoreData hook
  */
-export interface UseVehicleStoreDataOptions {
+export interface UseStopTimesStoreDataOptions {
   agencyId?: string;
-  routeId?: string;
+  tripId?: string;
+  stopId?: string;
   forceRefresh?: boolean;
   cacheMaxAge?: number; // milliseconds
-  autoRefresh?: boolean; // Enable automatic refresh for live data
+  autoRefresh?: boolean; // Enable automatic refresh for real-time updates
   refreshInterval?: number; // milliseconds
 }
 
 /**
- * Store-based hook for reactive vehicle data access
- * Replaces useVehicleData with store-based architecture
+ * Store-based hook for reactive stop times data access
+ * Replaces useStopTimesData with store-based architecture
  * 
  * Features:
  * - Reactive subscriptions to store state
- * - Same interface as original useVehicleData hook
+ * - Same interface as original useStopTimesData hook
  * - Automatic store method calls for data fetching
  * - Loading states and error handling
  * - Auto-refresh support through store
+ * - Trip and stop filtering
  * 
  * @param options Configuration options
- * @returns Vehicle data with loading states and error information
+ * @returns Stop times data with loading states and error information
  */
-export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): DataHookResult<LiveVehicle[]> => {
+export const useStopTimesStoreData = (options: UseStopTimesStoreDataOptions = {}): DataHookResult<StopTime[]> => {
   const {
     agencyId,
-    routeId,
+    tripId,
+    stopId,
     forceRefresh = false,
-    cacheMaxAge = 30 * 1000, // 30 seconds default for live data
-    autoRefresh = true,
-    refreshInterval = 30 * 1000 // 30 seconds default refresh interval
+    cacheMaxAge = 2 * 60 * 1000, // 2 minutes default for schedule data
+    autoRefresh = false, // Disabled by default for schedule data
+    refreshInterval = 5 * 60 * 1000 // 5 minutes default refresh interval
   } = options;
 
   // Local state for hook interface compatibility
-  const [data, setData] = useState<LiveVehicle[] | null>(null);
+  const [data, setData] = useState<StopTime[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Store subscriptions
   const vehicleStore = useVehicleStore();
-  const storeVehicles = useVehicleStore((state) => state.vehicles);
   const storeError = useVehicleStore((state) => state.error);
   const storeIsLoading = useVehicleStore((state) => state.isLoading);
 
@@ -57,24 +59,26 @@ export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): D
   const isMountedRef = useRef(true);
 
   /**
-   * Fetch vehicle data using store method
+   * Fetch stop times data using store method
    */
-  const fetchVehicleData = useCallback(async (): Promise<void> => {
+  const fetchStopTimesData = useCallback(async (): Promise<void> => {
     if (!isMountedRef.current) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      logger.debug('Fetching vehicle data via store method', {
+      logger.debug('Fetching stop times data via store method', {
         agencyId,
-        routeId,
+        tripId,
+        stopId,
         forceRefresh
-      }, 'useVehicleStoreData');
+      }, 'useStopTimesStoreData');
 
-      const result = await vehicleStore.getVehicleData({
+      const result = await vehicleStore.getStopTimesData({
         agencyId,
-        routeId,
+        tripId,
+        stopId,
         forceRefresh,
         cacheMaxAge,
         autoRefresh,
@@ -95,44 +99,44 @@ export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): D
       
       setLastUpdated(result.lastUpdated);
 
-      logger.debug('Vehicle data fetched successfully via store', {
+      logger.debug('Stop times data fetched successfully via store', {
         count: result.data?.length || 0,
         hasError: !!result.error
-      }, 'useVehicleStoreData');
+      }, 'useStopTimesStoreData');
 
     } catch (fetchError) {
       if (!isMountedRef.current) return;
 
       const error = fetchError instanceof Error 
         ? fetchError 
-        : new Error('Failed to fetch vehicle data from store');
+        : new Error('Failed to fetch stop times data from store');
       
       setError(error);
       setData(null);
-      logger.error('Vehicle data fetch failed via store', { 
+      logger.error('Stop times data fetch failed via store', { 
         error: error.message 
-      }, 'useVehicleStoreData');
+      }, 'useStopTimesStoreData');
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
       }
     }
-  }, [vehicleStore, agencyId, routeId, forceRefresh, cacheMaxAge, autoRefresh, refreshInterval]);
+  }, [vehicleStore, agencyId, tripId, stopId, forceRefresh, cacheMaxAge, autoRefresh, refreshInterval]);
 
   /**
    * Refetch function for manual refresh
    */
   const refetch = useCallback(async (): Promise<void> => {
     if (isLoading) {
-      logger.debug('Refetch ignored - already loading', {}, 'useVehicleStoreData');
+      logger.debug('Refetch ignored - already loading', {}, 'useStopTimesStoreData');
       return;
     }
 
-    await fetchVehicleData();
-  }, [isLoading, fetchVehicleData]);
+    await fetchStopTimesData();
+  }, [isLoading, fetchStopTimesData]);
 
   /**
-   * Setup automatic refresh for live data
+   * Setup automatic refresh for real-time updates
    */
   const setupAutoRefresh = useCallback(() => {
     if (!autoRefresh || refreshInterval <= 0) {
@@ -148,44 +152,27 @@ export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): D
     refreshIntervalRef.current = setInterval(async () => {
       if (!isLoading && isMountedRef.current) {
         try {
-          logger.debug('Auto-refreshing vehicle data via store', { 
+          logger.debug('Auto-refreshing stop times data via store', { 
             interval: refreshInterval 
-          }, 'useVehicleStoreData');
+          }, 'useStopTimesStoreData');
           
-          await fetchVehicleData();
+          await fetchStopTimesData();
         } catch (fetchError) {
           // Don't update error state on auto-refresh failures to avoid UI flicker
           logger.warn('Auto-refresh failed via store', { 
             error: fetchError instanceof Error ? fetchError.message : String(fetchError) 
-          }, 'useVehicleStoreData');
+          }, 'useStopTimesStoreData');
         }
       }
     }, refreshInterval);
 
-    logger.debug('Auto-refresh setup via store', { interval: refreshInterval }, 'useVehicleStoreData');
-  }, [autoRefresh, refreshInterval, isLoading, fetchVehicleData]);
+    logger.debug('Auto-refresh setup via store', { interval: refreshInterval }, 'useStopTimesStoreData');
+  }, [autoRefresh, refreshInterval, isLoading, fetchStopTimesData]);
 
   /**
    * Subscribe to store state changes for reactive updates
    */
   useEffect(() => {
-    // If store has vehicles and we don't have local data, use store data
-    if (storeVehicles && storeVehicles.length > 0 && !data) {
-      // Filter store vehicles by routeId if specified
-      const filteredVehicles = routeId 
-        ? storeVehicles.filter((vehicle: any) => vehicle.routeId === routeId)
-        : storeVehicles;
-      
-      setData(filteredVehicles);
-      setLastUpdated(vehicleStore.lastUpdate);
-      
-      logger.debug('Using store vehicles for reactive update', {
-        totalCount: storeVehicles.length,
-        filteredCount: filteredVehicles.length,
-        routeId
-      }, 'useVehicleStoreData');
-    }
-
     // Sync store error state
     if (storeError && !error) {
       // Convert ErrorState to Error for hook interface compatibility
@@ -197,7 +184,7 @@ export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): D
     if (storeIsLoading !== isLoading) {
       setIsLoading(storeIsLoading);
     }
-  }, [storeVehicles, storeError, storeIsLoading, vehicleStore.lastUpdate, data, error, isLoading, routeId]);
+  }, [storeError, storeIsLoading, error, isLoading]);
 
   /**
    * Initial data fetch effect
@@ -206,24 +193,9 @@ export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): D
     isMountedRef.current = true;
 
     const loadInitialData = async () => {
-      // Check if store already has data
-      if (storeVehicles && storeVehicles.length > 0) {
-        const filteredVehicles = routeId 
-          ? storeVehicles.filter((vehicle: any) => vehicle.routeId === routeId)
-          : storeVehicles;
-        
-        setData(filteredVehicles);
-        setLastUpdated(vehicleStore.lastUpdate);
-        setIsLoading(false);
-        
-        logger.debug('Using existing store data', {
-          count: filteredVehicles.length
-        }, 'useVehicleStoreData');
-        return;
-      }
-
-      // Fetch fresh data if store is empty
-      await fetchVehicleData();
+      // Always fetch stop times data as it's not stored in the main store state
+      // Stop times are typically cached by the API service layer
+      await fetchStopTimesData();
     };
 
     loadInitialData();
@@ -231,7 +203,7 @@ export const useVehicleStoreData = (options: UseVehicleStoreDataOptions = {}): D
     return () => {
       isMountedRef.current = false;
     };
-  }, [fetchVehicleData, storeVehicles, vehicleStore.lastUpdate, routeId]);
+  }, [fetchStopTimesData]);
 
   /**
    * Auto-refresh setup effect

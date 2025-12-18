@@ -10,7 +10,7 @@
   - Ensure all methods support same options as current data hooks
   - _Requirements: 1.1, 3.1, 3.2_
 
-- [-] 2. Add store subscription helpers for reactive data access
+- [x] 2. Add store subscription helpers for reactive data access
   - Create `useVehicleStoreData()` hook for reactive vehicle data access
   - Create `useStationStoreData()` hook for reactive station data access
   - Create `useRouteStoreData()` hook for reactive route data access
@@ -29,7 +29,7 @@
 
 ## Phase 2: Migrate Controller Hooks to Store-Based Architecture
 
-- [ ] 5. Refactor useVehicleDisplay to use store methods instead of data hooks
+- [x] 5. Refactor useVehicleDisplay to use store methods instead of data hooks
   - Replace useStationData with vehicleStore.getStationData()
   - Replace useVehicleData with vehicleStore.getVehicleData()
   - Replace useRouteData with vehicleStore.getRouteData()
@@ -47,7 +47,7 @@
   - Test caching and refresh functionality
   - _Requirements: 8.1, 8.2_
 
-- [ ] 8. Refactor useRouteManager to use store methods instead of data hooks
+- [x] 8. Refactor useRouteManager to use store methods instead of data hooks
   - Replace useRouteData with vehicleStore.getRouteData()
   - Use configStore for favorites management (already partially done)
   - Ensure reactive updates through store subscriptions
@@ -60,13 +60,13 @@
   - Test error scenarios and loading states
   - _Requirements: 8.2, 8.3_
 
-- [ ] 10. Update useModernRefreshSystem to use store methods
+- [x] 10. Update useModernRefreshSystem to use store methods
   - Replace data hook calls with store refresh methods
   - Use store event system for coordination
   - Maintain all refresh functionality and timing
   - _Requirements: 1.2, 2.4_
 
-- [ ] 11. Update useModernCacheManager to use store cache systems
+- [x] 11. Update useModernCacheManager to use store cache systems
   - Replace data hook cache operations with store cache methods
   - Use unified store cache statistics and management
   - Maintain all cache management functionality
@@ -74,13 +74,13 @@
 
 ## Phase 3: Remove Data Hooks Entirely
 
-- [ ] 12. Remove useVehicleData hook
+- [x] 12. Remove useVehicleData hook
   - Delete src/hooks/data/useVehicleData.ts (400+ lines)
   - Update all imports to use store methods instead
   - Ensure no remaining references in codebase
   - _Requirements: 1.1, 10.1, 10.2_
 
-- [ ] 13. Remove useStationData hook
+- [x] 13. Remove useStationData hook
   - Delete src/hooks/data/useStationData.ts (300+ lines)
   - Update all imports to use store methods instead
   - Ensure no remaining references in codebase
