@@ -478,64 +478,33 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
   
   const isLoading = isLoadingStations || isLoadingVehicles || isLoadingRoutes || isLoadingStopTimes;
 
-  // Aggregate errors with comprehensive context and structured reporting
+  // Simplified error aggregation (memory-optimized)
   const aggregatedError = useMemo(() => {
     const errors = [
-      stationDataResult.error && { source: 'stations', error: stationDataResult.error },
-      vehicleDataResult.error && { source: 'vehicles', error: vehicleDataResult.error },
-      routeDataResult.error && { source: 'routes', error: routeDataResult.error },
-      stopTimesDataResult.error && { source: 'stopTimes', error: stopTimesDataResult.error }
+      stationDataResult.error,
+      vehicleDataResult.error,
+      routeDataResult.error,
+      stopTimesDataResult.error
     ].filter(Boolean);
 
     if (errors.length === 0) return undefined;
 
-    // Determine the most severe error type
-    const primaryError = errors[0].error!;
+    // Return the first error with minimal context
+    const primaryError = errors[0]!;
     const errorType = determineErrorType(primaryError);
     
-    // Build comprehensive error context
-    const contextBuilder = new ErrorContextBuilder()
-      .addDataHookStatus('stations', isLoadingStations, stationDataResult.error, allStations.length)
-      .addDataHookStatus('vehicles', isLoadingVehicles, vehicleDataResult.error, vehicles.length)
-      .addDataHookStatus('routes', routeDataResult.isLoading, routeDataResult.error, routes.length)
-      .addDataHookStatus('stopTimes', stopTimesDataResult.isLoading, stopTimesDataResult.error, stopTimes.length)
-      .addConfiguration({
-        agencyId,
-        filterByFavorites,
-        maxStations,
-        maxVehiclesPerStation,
-        isConfigured
-      })
-      .addUserContext(effectiveLocationForDisplay, favoriteRoutes.length);
-
-    const context = contextBuilder.build();
-    
-    // Add error-specific context
-    context.dataErrors = errors.map(({ source, error }) => ({
-      source,
-      message: error!.message,
-      type: determineErrorType(error!),
-      timestamp: new Date().toISOString()
-    }));
-    
-    context.partialDataAvailable = {
-      stations: allStations.length > 0,
-      vehicles: vehicles.length > 0,
-      routes: routes.length > 0,
-      stopTimes: stopTimes.length > 0
+    // Minimal context to avoid memory bloat
+    const context = {
+      errorCount: errors.length,
+      hasData: allStations.length > 0 || vehicles.length > 0,
+      isConfigured
     };
-    
-    context.canContinueWithPartialData = allStations.length > 0 || vehicles.length > 0;
-    context.totalErrors = errors.length;
-    context.errorSources = errors.map(({ source }) => source);
 
-    const severity = determineErrorSeverity(errorType, context);
-    const retryable = errorType !== CompositionErrorType.AUTHENTICATION_ERROR && 
-                     errorType !== CompositionErrorType.CONFIGURATION_ERROR;
+    const severity = errorType === CompositionErrorType.AUTHENTICATION_ERROR ? 'critical' : 'medium';
+    const retryable = errorType !== CompositionErrorType.AUTHENTICATION_ERROR;
 
-    const errorMessages = errors.map(({ source, error }) => `${source}: ${error!.message}`);
     const compositionError = new CompositionError(
-      `Data layer errors (${errors.length}): ${errorMessages.join('; ')}`,
+      `Data errors (${errors.length}): ${primaryError.message}`,
       errorType,
       'useVehicleDisplay',
       context,
@@ -544,8 +513,12 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
       retryable
     );
 
-    // Log structured error for debugging
-    logger.error('Vehicle display composition error', compositionError.toErrorReport(), 'useVehicleDisplay');
+    // Simple error logging
+    logger.error('Vehicle display error', { 
+      message: compositionError.message,
+      type: errorType,
+      errorCount: errors.length 
+    }, 'useVehicleDisplay');
 
     return compositionError;
   }, [
@@ -553,55 +526,13 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
     vehicleDataResult.error,
     routeDataResult.error,
     stopTimesDataResult.error,
-    isLoadingStations,
-    isLoadingVehicles,
     allStations.length,
     vehicles.length,
-    routes.length,
-    stopTimes.length,
-    agencyId,
-    filterByFavorites,
-    maxStations,
-    maxVehiclesPerStation,
-    isConfigured,
-    effectiveLocationForDisplay,
-    favoriteRoutes.length
+    isConfigured
   ]);
 
-  // Error state management for processing errors and recovery
-  const [processingError, setProcessingError] = React.useState<CompositionError | null>(null);
-  const [retryCount, setRetryCount] = React.useState(0);
-  const [lastSuccessfulData, setLastSuccessfulData] = React.useState<StationVehicleGroup[]>([]);
-
-  // Error recovery mechanism
-  const handleErrorRecovery = React.useCallback((error: CompositionError) => {
-    if (error.shouldRetry(3, retryCount)) {
-      logger.info('Attempting error recovery', {
-        errorId: error.errorId,
-        retryCount,
-        errorType: error.type
-      }, 'useVehicleDisplay');
-      
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        setProcessingError(null);
-      }, Math.min(1000 * Math.pow(2, retryCount), 10000)); // Exponential backoff, max 10s
-    } else {
-      logger.warn('Max retries exceeded, using fallback data', {
-        errorId: error.errorId,
-        retryCount,
-        hasLastSuccessfulData: lastSuccessfulData.length > 0
-      }, 'useVehicleDisplay');
-    }
-  }, [retryCount, lastSuccessfulData.length]);
-
-  // Reset retry count on successful data
-  React.useEffect(() => {
-    if (!aggregatedError && !processingError && retryCount > 0) {
-      setRetryCount(0);
-      logger.info('Error recovery successful', { retriesUsed: retryCount }, 'useVehicleDisplay');
-    }
-  }, [aggregatedError, processingError, retryCount]);
+  // Simplified error state (memory-optimized)
+  const [processingError, setProcessingError] = React.useState<Error | null>(null);
 
   // Processing layer hooks - compose vehicle filtering and grouping
   const vehicleFilteringResult = useVehicleFiltering(vehicles, {
@@ -627,6 +558,15 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
     return isLoading && (allStations.length > 0 || vehicles.length > 0);
   }, [isLoading, allStations.length, vehicles.length]);
 
+  // Create route mapping for efficient lookups (memoized separately)
+  const routeIdMap = useMemo(() => {
+    const map = new Map<string, Route>();
+    routes.forEach(route => {
+      map.set(route.id, route);
+    });
+    return map;
+  }, [routes]);
+
   // Transform grouped results to match orchestration hook API format
   const stationVehicleGroups = useMemo(() => {
     // Early return if not configured or missing critical data
@@ -644,6 +584,12 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
       return [];
     }
 
+    // Get current station groups (avoid circular dependency)
+    const currentStationGroups = vehicleGroupingResult.stationGroups;
+    if (!currentStationGroups || currentStationGroups.length === 0) {
+      return [];
+    }
+
     try {
       logger.debug('Starting vehicle display composition', {
         stationsCount: allStations.length,
@@ -655,14 +601,8 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
         effectiveLocation: effectiveLocationForDisplay
       }, 'useVehicleDisplay');
 
-      // Create route mapping for efficient lookups
-      const routeIdMap = new Map<string, Route>();
-      routes.forEach(route => {
-        routeIdMap.set(route.id, route);
-      });
-
       // Transform grouped results to match original API format
-      const transformedGroups: StationVehicleGroup[] = vehicleGroupingResult.stationGroups.map(group => {
+      const transformedGroups: StationVehicleGroup[] = currentStationGroups.map(group => {
         // Enhance vehicles with direction analysis and route information
         const enhancedVehicles: EnhancedVehicleInfoWithDirection[] = group.vehicles.map(vehicle => {
           // Get route information
@@ -843,103 +783,44 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
 
     } catch (error) {
       const originalError = error instanceof Error ? error : new Error(String(error));
-      const errorType = CompositionErrorType.PROCESSING_ERROR;
-      
-      // Build comprehensive error context
-      const contextBuilder = new ErrorContextBuilder()
-        .addProcessingInfo('vehicleComposition', vehicles.length, 0, 0)
-        .addConfiguration({
-          agencyId,
-          filterByFavorites,
-          maxStations,
-          maxVehiclesPerStation,
-          showAllVehiclesPerRoute
-        })
-        .addUserContext(effectiveLocationForDisplay, favoriteRoutes.length);
+      // Simple error logging
+      logger.error('Vehicle processing failed', { 
+        message: originalError.message,
+        vehicleCount: vehicles.length,
+        stationCount: allStations.length
+      }, 'useVehicleDisplay');
 
-      const context = contextBuilder.build();
-      context.processingStep = 'composition';
-      context.dataAvailable = {
-        stations: allStations.length,
-        vehicles: vehicles.length,
-        routes: routes.length,
-        stopTimes: stopTimes.length
-      };
-      context.options = options;
-      context.originalError = originalError.message;
-      context.stackTrace = originalError.stack;
-
-      const severity = determineErrorSeverity(errorType, context);
-      
-      const processingError = new CompositionError(
-        `Vehicle processing failed: ${originalError.message}`,
-        errorType,
-        'useVehicleDisplay',
-        context,
-        originalError,
-        severity,
-        true // Processing errors are generally retryable
-      );
-
-      // Log structured error
-      logger.error('Vehicle display composition failed', processingError.toErrorReport(), 'useVehicleDisplay');
-
-      // Store error for potential retry logic (could be used by parent components)
-      // For now, return empty array to maintain functionality
+      // Store error and return empty array
+      setProcessingError(originalError);
       return [];
     }
   }, [
     isConfigured,
     effectiveLocationForDisplay,
     filterByFavorites,
-    favoriteRoutes,
-    allStations,
-    vehicles,
-    routes,
-    stopTimes,
+    favoriteRoutes.length, // Use length instead of full array
+    allStations.length, // Use length instead of full array
+    vehicles.length, // Use length instead of full array
+    routeIdMap,
+    stopTimes.length, // Use length instead of full array
     maxStations,
     maxVehiclesPerStation,
     showAllVehiclesPerRoute,
-    vehicleGroupingResult.stationGroups
+    vehicleGroupingResult // Use the whole result object, not nested property
   ]);
 
-  // Store successful data for error recovery
+  // Clear processing error when data is successful
   React.useEffect(() => {
-    if (stationVehicleGroups.length > 0 && !aggregatedError && !processingError) {
-      setLastSuccessfulData(stationVehicleGroups);
+    if (stationVehicleGroups.length > 0 && processingError) {
+      setProcessingError(null);
     }
-  }, [stationVehicleGroups, aggregatedError, processingError]);
+  }, [stationVehicleGroups.length, processingError]);
 
-  // Handle processing errors with recovery
-  React.useEffect(() => {
-    if (processingError) {
-      handleErrorRecovery(processingError);
-    }
-  }, [processingError, handleErrorRecovery]);
-
-  // Determine final error state and data to return
+  // Determine final error state
   const finalError = processingError || aggregatedError;
-  const finalStationVehicleGroups = React.useMemo(() => {
-    // If we have current data, use it
-    if (stationVehicleGroups.length > 0) {
-      return stationVehicleGroups;
-    }
-    
-    // If we have an error but also have last successful data, use that as fallback
-    if (finalError && lastSuccessfulData.length > 0) {
-      logger.info('Using fallback data due to error', {
-        errorType: finalError.type,
-        fallbackDataCount: lastSuccessfulData.length
-      }, 'useVehicleDisplay');
-      return lastSuccessfulData;
-    }
-    
-    // Otherwise return empty array
-    return [];
-  }, [stationVehicleGroups, finalError, lastSuccessfulData]);
 
   return {
-    stationVehicleGroups: finalStationVehicleGroups,
+    stationVehicleGroups,
     isLoading,
     isLoadingStations,
     isLoadingVehicles,
