@@ -209,7 +209,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Failed to refresh stations', { error: errorState.message });
+          logger.error('Failed to refresh stations', errorState.message);
         }
       },
 
@@ -239,7 +239,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Failed to refresh schedule data', { error: errorState.message });
+          logger.error('Failed to refresh schedule data', errorState.message);
         }
       },
 
@@ -281,7 +281,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Failed to refresh live data', { error: errorState.message });
+          logger.error('Failed to refresh live data', errorState.message);
         }
       },
 
@@ -368,7 +368,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Store getStationData failed', { error: errorState.message });
+          logger.error('Store getStationData failed', errorState.message);
           
           return {
             data: null,
@@ -425,7 +425,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Store getVehicleData failed', { error: errorState.message });
+          logger.error('Store getVehicleData failed', errorState.message);
           
           return {
             data: null,
@@ -477,7 +477,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Store getRouteData failed', { error: errorState.message });
+          logger.error('Store getRouteData failed', errorState.message);
           
           return {
             data: null,
@@ -541,7 +541,7 @@ export const useVehicleStore = create<VehicleStore>()(
 
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error, context);
-          logger.error('Store getStopTimesData failed', { error: errorState.message });
+          logger.error('Store getStopTimesData failed', errorState.message);
           
           return {
             data: null,
@@ -572,7 +572,7 @@ export const useVehicleStore = create<VehicleStore>()(
             intervalMs: config.refreshRate,
             immediate: false,
             onError: (error) => {
-              logger.error('Auto-refresh error for live data', { error: error.message });
+              logger.error('Auto-refresh error for live data', error.message);
             },
           });
 
@@ -591,7 +591,7 @@ export const useVehicleStore = create<VehicleStore>()(
               intervalMs: 24 * 60 * 60 * 1000, // 24 hours
               immediate: true,
               onError: (error) => {
-                logger.error('Auto-refresh error for schedule data', { error: error.message });
+                logger.error('Auto-refresh error for schedule data', error.message);
               },
             });
           }, msUntil3AM);
