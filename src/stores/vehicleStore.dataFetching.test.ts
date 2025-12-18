@@ -31,20 +31,53 @@ vi.mock('./configStore', () => ({
   }
 }));
 
+// Mock StoreErrorHandler to avoid retry delays in tests
+vi.mock('./shared/errorHandler', () => ({
+  StoreErrorHandler: {
+    withRetry: vi.fn().mockImplementation(async (operation) => {
+      // Execute operation once without retries for fast tests
+      return await operation();
+    }),
+    createError: vi.fn().mockImplementation((error) => ({
+      type: 'network',
+      message: error instanceof Error ? error.message : String(error),
+      timestamp: new Date(),
+      retryable: true,
+    })),
+    createContext: vi.fn().mockImplementation((storeName, operation, metadata) => ({
+      storeName,
+      operation,
+      timestamp: new Date(),
+      metadata,
+    })),
+  },
+}));
+
 describe('VehicleStore Data Fetching Methods', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset store state
+    // Reset store state completely
     useVehicleStore.setState({
       vehicles: [],
       stations: [],
+      routes: [],
+      stopTimes: [],
       isLoading: false,
       error: null,
+      lastUpdated: null,
+      refreshInterval: null
     });
+    // Clear localStorage to prevent persistence issues
+    localStorage.clear();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
   });
 
   describe('getStationData', () => {
@@ -84,7 +117,7 @@ describe('VehicleStore Data Fetching Methods', () => {
       expect(result.isLoading).toBe(false);
       expect(result.error).toBeTruthy();
       expect(result.lastUpdated).toBe(null);
-    }, 10000); // Increase timeout
+    }, 2000); // Reduced timeout for faster failure
 
     it('should support custom options', async () => {
       const mockStations = [];
