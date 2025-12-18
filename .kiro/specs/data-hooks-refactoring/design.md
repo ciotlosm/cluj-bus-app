@@ -1,56 +1,58 @@
-# Data Hooks Architecture Refactoring - Design Document
+# Data Hooks to Store Migration - Design Document
 
 ## Overview
 
-This design document outlines the refactoring of the data hooks architecture to eliminate the over-engineered `useVehicleProcessingOrchestration` hook and replace it with simpler, more maintainable composition patterns. The refactoring will preserve all existing functionality while reducing complexity by over 1,000 lines of code and improving performance through elimination of duplicate operations.
+This design document outlines the complete migration from data hooks to store-based architecture to eliminate architectural duplication and inconsistency. Currently, both data hooks (useVehicleData, useStationData, etc.) and Zustand stores handle data fetching, caching, and state management, creating maintenance overhead and potential inconsistencies. This migration will remove all data hooks and consolidate data operations into the unified store architecture, reducing complexity by 1,500+ lines of duplicate code.
 
 ## Architecture
 
-### Current Architecture (Problematic)
+### Current Architecture (Problematic - Duplication)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  useVehicleProcessingOrchestration (1,113 lines)           │
-│  - Fetches data (duplicates data hooks)                    │
-│  - Processes data (duplicates processing hooks)            │
-│  - Inline direction analysis (should be in processing)     │
-│  - Complex memoization and dependency tracking             │
-│  - Dual orchestration paths (nearby view + legacy)         │
+│  Controller Hooks                                           │
+│  useVehicleDisplay, useRouteManager                         │
+│  - Using data hooks instead of stores                      │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│  Data Hooks (well-architected but bypassed)                │
+│  Data Hooks (DUPLICATE LOGIC - TO BE REMOVED)              │
 │  useStationData, useVehicleData, useRouteData, etc.        │
+│  - API calls, caching, retry logic (1,500+ lines)          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│  Store Layer (ALSO HAS SAME LOGIC)                         │
+│  vehicleStore, configStore, locationStore                  │
+│  - API calls, caching, retry logic (DUPLICATE!)            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Target Architecture (Simplified)
+### Target Architecture (Store-Based - Single Source of Truth)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Component Layer                                            │
-│  - Direct composition of data + processing hooks            │
-│  - Or use useNearbyViewController for complex needs         │
+│  - Subscribe to store state                                 │
+│  - Call store methods for actions                           │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│  Controller Layer (optional, for complex orchestration)    │
-│  useNearbyViewController - Standard pattern                 │
+│  Controller Layer (store-based)                            │
+│  useNearbyViewController, useVehicleDisplay                 │
+│  - Use store subscriptions and methods only                 │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│  Processing Layer                                           │
+│  Processing Layer (unchanged)                               │
 │  useVehicleFiltering, useVehicleGrouping, etc.             │
+│  - Pure functions, work with store data                     │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│  Data Layer                                                 │
-│  useStationData, useVehicleData, useRouteData, etc.        │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│  Store Layer (enhanced integration)                        │
+│  Store Layer (SINGLE SOURCE OF TRUTH)                      │
 │  vehicleStore, configStore, locationStore                  │
+│  - All API calls, caching, retry logic, state management   │
 └─────────────────────────────────────────────────────────────┘
 ```
 

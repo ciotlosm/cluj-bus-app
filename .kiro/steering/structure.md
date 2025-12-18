@@ -129,3 +129,59 @@ import { logger } from '../utils/logger';
 - **Code Splitting**: Lazy load non-critical features
 - **Tree Shaking**: Use named imports
 - **Vendor Chunks**: Separate vendor code in build
+
+## Kiro Spec Task Format Requirements
+
+### Task File Structure for Kiro IDE Integration
+
+**CRITICAL: Tasks must follow this exact format for "Start task" buttons to appear in Kiro IDE**
+
+#### ✅ Correct Format:
+```markdown
+# Implementation Tasks
+
+## Phase 1: Description
+
+- [ ] 1. Task description
+  - Subtask details
+  - More details
+  - _Requirements: 1.1, 2.2_
+
+- [ ] 2. Another task description
+  - Subtask details
+  - _Requirements: 3.1_
+
+- [ ]* 3. Optional task description (marked with *)
+  - **Property X: Property name**
+  - **Validates: Requirements X.X**
+
+## Phase 2: Description
+
+- [ ] 4. Next phase task
+  - Details
+  - _Requirements: 4.1_
+```
+
+#### ❌ Incorrect Format (No Start Task Buttons):
+```markdown
+### 1. Section Header
+- [ ] 1.1 Nested task (won't work)
+- [ ] 1.2 Another nested task (won't work)
+
+### 2. Another Section
+- [ ] 2.1 More nested tasks (won't work)
+```
+
+#### Key Requirements:
+1. **Flat numbered list**: Use `- [ ] N.` format (1, 2, 3, etc.)
+2. **No nested numbering**: Avoid `1.1, 1.2` style numbering
+3. **Optional tasks**: Mark with `*` like `- [ ]* N.`
+4. **Phase headers**: Use `## Phase N:` for organization
+5. **Requirements tracking**: Include `_Requirements: X.X, Y.Y_`
+6. **Property tests**: Use `**Property X:** and **Validates:**` format
+
+#### Examples from Working Specs:
+- `.kiro/specs/store-architecture-consolidation/tasks.md`
+- `.kiro/specs/nearby-view-stabilization/tasks.md`
+
+**Always check existing working specs for reference when creating new task files!**

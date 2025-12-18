@@ -1,167 +1,188 @@
-# Data Hooks Architecture Refactoring - Implementation Tasks
+# Data Hooks to Store Migration - Implementation Tasks
 
-## Phase 1: Foundation and Core Implementation
+## Phase 1: Enhance Stores to Replace Data Hooks
 
-### 1. Create Simple Composition Hook
-- [x] 1.1 Implement useVehicleDisplay hook with composition pattern
-  - Create new hook file `src/hooks/controllers/useVehicleDisplay.ts`
-  - Implement composition of existing data hooks (useStationData, useVehicleData, useRouteData)
-  - Add processing hook integration (useVehicleFiltering, useVehicleGrouping)
-  - Ensure exact API compatibility with useVehicleProcessingOrchestration
-  - _Requirements: 1.1, 2.1, 2.2, 2.3_
+- [ ] 1. Add specific data fetching methods to vehicle store
+  - Add `getStationData(options)` method to replace useStationData
+  - Add `getVehicleData(options)` method to replace useVehicleData  
+  - Add `getRouteData(options)` method to replace useRouteData
+  - Add `getStopTimesData(options)` method to replace useStopTimesData
+  - Ensure all methods support same options as current data hooks
+  - _Requirements: 1.1, 3.1, 3.2_
 
-- [ ] 1.2 Write property test for functional equivalence (optional)
-  - **Property 1: Functional Equivalence**
-  - **Validates: Requirements 4.1, 4.2, 4.3**
+- [ ] 2. Add store subscription helpers for reactive data access
+  - Create `useVehicleStoreData()` hook for reactive vehicle data access
+  - Create `useStationStoreData()` hook for reactive station data access
+  - Create `useRouteStoreData()` hook for reactive route data access
+  - Ensure hooks provide same interface as current data hooks
+  - _Requirements: 2.1, 2.2_
 
-- [x] 1.3 Add comprehensive error handling to composition hook
-  - Implement CompositionError class for structured error reporting
-  - Add error aggregation from multiple data hooks
-  - Ensure error context preservation from original implementation
-  - _Requirements: 4.2, 6.4_
+- [ ]* 3. Write property test for store data consistency
+  - **Property 1: Store Data Consistency**
+  - **Validates: Requirements 3.4, 3.5**
 
-- [ ] 1.4 Write unit tests for composition hook (optional)
-  - Test composition logic with mocked data hooks
-  - Verify loading state aggregation
-  - Test error handling scenarios
-  - Validate output format compatibility
+- [ ]* 4. Write unit tests for enhanced store methods
+  - Test new store methods with various options
+  - Verify caching and error handling
+  - Test reactive subscription hooks
+  - _Requirements: 8.1, 8.3_
+
+## Phase 2: Migrate Controller Hooks to Store-Based Architecture
+
+- [ ] 5. Refactor useVehicleDisplay to use store methods instead of data hooks
+  - Replace useStationData with vehicleStore.getStationData()
+  - Replace useVehicleData with vehicleStore.getVehicleData()
+  - Replace useRouteData with vehicleStore.getRouteData()
+  - Use store subscriptions for reactive updates
+  - Maintain exact same interface and functionality
+  - _Requirements: 1.1, 2.1, 2.2_
+
+- [ ]* 6. Write property test for store-based equivalence
+  - **Property 2: Store Migration Equivalence**
+  - **Validates: Requirements 4.1, 4.2**
+
+- [ ]* 7. Write integration tests for migrated useVehicleDisplay
+  - Test hook behavior with store-based data
+  - Verify loading states and error handling
+  - Test caching and refresh functionality
   - _Requirements: 8.1, 8.2_
 
-## Phase 2: Component Migration
+- [ ] 8. Refactor useRouteManager to use store methods instead of data hooks
+  - Replace useRouteData with vehicleStore.getRouteData()
+  - Use configStore for favorites management (already partially done)
+  - Ensure reactive updates through store subscriptions
+  - Maintain all existing route management functionality
+  - _Requirements: 1.1, 2.1, 2.3_
 
-### 2. Refactor FavoriteRoutesView Component
-- [x] 2.1 Update FavoriteRoutesView to use new composition pattern
-  - Replace useVehicleProcessing with useVehicleDisplay
-  - Handle favorites-specific filtering logic
-  - Maintain all existing favorite route functionality
-  - Test loading states and error handling
-  - _Requirements: 4.1, 4.3_
-
-- [ ] 2.2 Write integration tests for refactored FavoriteRoutesView (optional)
-  - Test favorites filtering behavior
-  - Verify route management functionality
-  - Test edge cases with empty favorites
-  - _Requirements: 8.2, 8.3_
-
-### 3. Verify StationDisplay Migration (Already Complete)
-- [x] 3.1 Confirm StationDisplay uses useNearbyViewController
-  - StationDisplay already migrated to useNearbyViewController
-  - Verify no references to useVehicleProcessingOrchestration remain
-  - Confirm all functionality works correctly
-  - _Requirements: 4.1, 4.2, 4.4_
-
-- [ ] 3.2 Write integration tests for StationDisplay (optional)
-  - Test component behavior with nearby view controller
-  - Verify all user interactions work correctly
+- [ ]* 9. Write integration tests for migrated useRouteManager
+  - Test route filtering and selection
+  - Verify favorites integration with config store
   - Test error scenarios and loading states
   - _Requirements: 8.2, 8.3_
 
-### 4. Check for Additional Component Usage
-- [x] 4.1 Audit remaining components for orchestration hook usage
-  - Search for any other components using useVehicleProcessing
-  - Verify adapters and integration layers are updated
-  - Update any remaining references to use appropriate patterns
-  - _Requirements: 4.1, 5.2_
+- [ ] 10. Update useModernRefreshSystem to use store methods
+  - Replace data hook calls with store refresh methods
+  - Use store event system for coordination
+  - Maintain all refresh functionality and timing
+  - _Requirements: 1.2, 2.4_
 
-## Phase 3: Cleanup and Optimization
+- [ ] 11. Update useModernCacheManager to use store cache systems
+  - Replace data hook cache operations with store cache methods
+  - Use unified store cache statistics and management
+  - Maintain all cache management functionality
+  - _Requirements: 1.3, 3.3_
 
-### 5. Remove Legacy Orchestration Hook
-- [x] 5.1 Remove useVehicleProcessingOrchestration implementation
-  - Delete the 1,113-line orchestration hook file
-  - Remove all related utility functions and types
-  - Clean up imports and dependencies
-  - Update exports in index files
-  - _Requirements: 1.1, 1.3, 10.1_
+## Phase 3: Remove Data Hooks Entirely
 
-- [x] 5.2 Clean up unused dependencies and imports
-  - Remove unused selective memoization utilities
-  - Clean up complex dependency tracking code
-  - Remove duplicate error handling implementations
-  - Update hook index exports
-  - _Requirements: 6.2, 10.1_
+- [ ] 12. Remove useVehicleData hook
+  - Delete src/hooks/data/useVehicleData.ts (400+ lines)
+  - Update all imports to use store methods instead
+  - Ensure no remaining references in codebase
+  - _Requirements: 1.1, 10.1, 10.2_
 
-- [ ] 5.3 Verify all tests still pass after cleanup (optional)
+- [ ] 13. Remove useStationData hook
+  - Delete src/hooks/data/useStationData.ts (300+ lines)
+  - Update all imports to use store methods instead
+  - Ensure no remaining references in codebase
+  - _Requirements: 1.1, 10.1, 10.2_
+
+- [ ] 14. Remove useRouteData hook
+  - Delete src/hooks/data/useRouteData.ts (300+ lines)
+  - Update all imports to use store methods instead
+  - Ensure no remaining references in codebase
+  - _Requirements: 1.1, 10.1, 10.2_
+
+- [ ] 15. Remove useStopTimesData hook
+  - Delete src/hooks/data/useStopTimesData.ts (400+ lines)
+  - Update all imports to use store methods instead
+  - Ensure no remaining references in codebase
+  - _Requirements: 1.1, 10.1, 10.2_
+
+- [ ] 16. Remove data hooks directory and exports
+  - Delete entire src/hooks/data/ directory
+  - Remove data hook exports from src/hooks/index.ts
+  - Clean up any remaining imports or references
+  - _Requirements: 10.1, 10.2_
+
+- [ ]* 17. Verify all tests still pass after data hook removal
   - Run complete test suite
   - Ensure no broken imports or references
-  - Verify performance improvements are maintained
-  - _Requirements: 8.1, 8.4_
+  - Update test mocks to use stores instead of data hooks
+  - _Requirements: 8.1, 8.4, 10.5_
 
-### 6. Performance Optimization and Validation
-- [ ] 6.1 Optimize composition hook performance
+## Phase 4: Performance Optimization and Validation
+
+- [ ] 18. Optimize store-based performance
   - Add intelligent memoization where needed
-  - Implement request deduplication
-  - Optimize cache utilization
+  - Implement request deduplication in stores
+  - Optimize cache utilization across stores
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 6.2 Write property test for composition idempotence (optional)
+- [ ]* 19. Write property test for composition idempotence
   - **Property 7: Composition Idempotence**
   - **Validates: Requirements 6.1, 6.2**
 
-- [ ] 6.3 Benchmark performance improvements
+- [ ] 20. Benchmark performance improvements
   - Measure API call reduction
   - Track rendering performance improvements
   - Document memory usage optimizations
   - Compare before/after metrics
   - _Requirements: 10.2, 10.3_
 
-## Phase 4: Documentation and Validation
+## Phase 5: Documentation and Final Validation
 
-### 7. Documentation Updates
-- [x] 7.1 Update developer guide with new patterns
-  - Document composition patterns with examples
+- [x] 21. Update developer guide with store-based patterns
+  - Document store-based patterns with examples
   - Update hook architecture section
   - Add migration guide with before/after examples
-  - Remove references to old orchestration hook
+  - Remove references to data hooks
   - _Requirements: 9.1, 9.2, 9.3_
 
-- [x] 7.2 Update component documentation
-  - Update all component examples to use new patterns
-  - Add best practices for hook composition
-  - Document when to use composition vs controller patterns
+- [x] 22. Update component documentation
+  - Update all component examples to use store patterns
+  - Add best practices for store-based architecture
+  - Document when to use stores vs controller patterns
   - _Requirements: 9.4, 9.5_
 
-### 8. Final Testing and Validation
-- [ ] 8.1 Run comprehensive test suite validation
+- [ ] 23. Run comprehensive test suite validation
   - Execute all unit tests and ensure 100% pass rate
   - Run integration tests for all migrated components
   - Verify property-based tests pass consistently
   - _Requirements: 8.1, 8.4, 10.4_
 
-- [ ] 8.2 Write property test for error propagation (optional)
+- [ ]* 24. Write property test for error propagation
   - **Property 4: Error Propagation Preservation**
   - **Validates: Requirements 4.2, 4.4**
 
-- [ ] 8.3 Write property test for loading state consistency (optional)
+- [ ]* 25. Write property test for loading state consistency
   - **Property 5: Loading State Consistency**
   - **Validates: Requirements 4.2, 4.5**
 
-- [ ] 8.4 End-to-end testing validation
+- [ ] 26. End-to-end testing validation
   - Test complete user workflows with new architecture
   - Verify no regressions in user-facing functionality
   - Test error recovery and fallback behaviors
   - _Requirements: 8.4, 10.5_
 
-### 9. Final Validation and Metrics
-- [ ] 9.1 Measure and document performance improvements
+- [ ] 27. Measure and document performance improvements
   - Compare API call counts before and after
   - Measure component render time improvements
   - Document memory usage reductions
   - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 9.2 Validate code reduction metrics
-  - Confirm removal of 1,000+ lines of orchestration code
+- [ ] 28. Validate code reduction metrics
+  - Confirm removal of 1,500+ lines of data hook code
   - Document complexity reduction metrics
   - Measure maintainability improvements
   - _Requirements: 10.1, 10.4_
 
-- [ ] 9.3 Create migration completion report
-  - Document all changes made during refactoring
+- [ ] 29. Create migration completion report
+  - Document all changes made during migration
   - Provide performance improvement metrics
   - Create lessons learned documentation
   - _Requirements: 10.4, 10.5_
 
-### 10. Final Checkpoint
-- [ ] 10.1 Ensure all tests pass, ask the user if questions arise
+- [ ] 30. Ensure all tests pass, ask the user if questions arise
   - Run complete test suite one final time
   - Verify all property-based tests pass
   - Confirm no regressions in functionality
@@ -179,27 +200,28 @@
 
 ## Current Status
 
-**✅ MAJOR REFACTORING COMPLETED:**
-- ✅ **useVehicleDisplay composition hook created** - Simple, clean composition pattern implemented
-- ✅ **FavoriteRoutesView migrated** - Successfully updated to use new composition hook
-- ✅ **1,113-line orchestration hook removed** - Eliminated complex useVehicleProcessingOrchestration
-- ✅ **API compatibility maintained** - All existing functionality preserved through wrapper hooks
-- ✅ **Tests passing** - 400/401 tests pass, core functionality working perfectly
+**🔄 STORE MIGRATION STATUS:**
 
-**Foundation Already Complete:**
-- ✅ StationDisplay component already migrated to useNearbyViewController
-- ✅ Data hooks (useStationData, useVehicleData, useRouteData, useStopTimesData) implemented and working
-- ✅ Processing hooks (useVehicleFiltering, useVehicleGrouping) implemented and working
-- ✅ Store integration already implemented in data hooks
+**✅ Previous Refactoring Completed:**
+- ✅ **useVehicleProcessingOrchestration removed** - 1,113-line orchestration hook eliminated
+- ✅ **useVehicleDisplay composition hook created** - Currently uses data hooks (needs migration)
+- ✅ **StationDisplay migrated** - Already uses useNearbyViewController (store-based)
+- ✅ **Store architecture implemented** - vehicleStore, configStore, locationStore ready
 
-**✅ Documentation Completed:**
-- ✅ Developer guide updated with new composition patterns
-- ✅ Hook examples updated with practical useVehicleDisplay examples
-- ✅ Hook architecture guide updated to reflect completed refactoring
-- ✅ Hook migration guide marked as complete with before/after examples
-- ✅ Best practices documented for when to use each layer
+**❌ Current Architectural Problem:**
+- ❌ **Data hooks still exist** - 1,500+ lines of duplicate API logic in src/hooks/data/
+- ❌ **Mixed architecture** - Some controllers use stores, others use data hooks
+- ❌ **Duplication** - Both data hooks AND stores handle API calls, caching, retry logic
+- ❌ **Inconsistency** - useVehicleDisplay uses data hooks, useNearbyViewController uses stores
 
-**Remaining (Optional Tasks):**
-- 🔄 Additional testing and validation tasks (marked as optional)
-- 🔄 Performance optimization and measurement
-- 🔄 Property-based testing for comprehensive validation
+**🎯 Migration Goals:**
+- 🎯 **Remove all data hooks** - Eliminate src/hooks/data/ directory entirely
+- 🎯 **Store-only architecture** - All data operations through stores exclusively
+- 🎯 **Update controllers** - useVehicleDisplay, useRouteManager to use stores
+- 🎯 **Single source of truth** - No duplicate API calling logic
+
+**📋 Next Steps:**
+1. Enhance stores to handle all data hook scenarios
+2. Migrate controller hooks to use stores instead of data hooks
+3. Remove all data hooks entirely (1,500+ lines of duplicate code)
+4. Update tests to mock stores instead of data hooks
