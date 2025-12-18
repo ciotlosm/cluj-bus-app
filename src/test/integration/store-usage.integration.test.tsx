@@ -11,12 +11,12 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React from 'react';
 
 // Import stores
-import { useConfigStore, useVehicleStore, useLocationStore } from '../stores';
+import { useConfigStore, useVehicleStore, useLocationStore } from '../../stores';
 
 // Import key components that use stores
-import { ThemeToggle } from './ui/ThemeToggle';
-import { OfflineIndicator } from './layout/Indicators/OfflineIndicator';
-import { StatusIndicators } from './layout/Indicators/StatusIndicators';
+import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { OfflineIndicator } from '../../components/layout/Indicators/OfflineIndicator';
+import { StatusIndicators } from '../../components/layout/Indicators/StatusIndicators';
 
 // Mock external dependencies
 vi.mock('../services/tranzyApiService', () => ({

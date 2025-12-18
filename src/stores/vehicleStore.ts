@@ -13,6 +13,7 @@ import type {
   Station,
   EnhancedVehicleInfo 
 } from '../types';
+import type { LiveVehicle, Route, StopTime } from '../types/tranzyApi';
 import { StoreEventManager, StoreEvents } from './shared/storeEvents';
 import { autoRefreshManager } from './shared/autoRefresh';
 import { StoreErrorHandler } from './shared/errorHandler';
@@ -319,6 +320,235 @@ export const useVehicleStore = create<VehicleStore>()(
             error: errorState,
             isLoading: false,
           });
+        }
+      },
+
+      // Actions - Data Fetching Methods (replaces data hooks)
+      getStationData: async (options: {
+        agencyId?: string;
+        forceRefresh?: boolean;
+        cacheMaxAge?: number;
+      } = {}) => {
+        const context = StoreErrorHandler.createContext('VehicleStore', 'getStationData', options);
+        
+        try {
+          // Get configuration
+          const configStore = await import('./configStore').then(m => m.useConfigStore.getState());
+          const config = configStore.config;
+          
+          const agencyId = options.agencyId || config?.agencyId;
+          if (!agencyId || !config?.apiKey) {
+            throw new Error('Agency ID or API key not configured');
+          }
+
+          // Set API key for enhanced API
+          enhancedTranzyApi.setApiKey(config.apiKey);
+          
+          const fetchStationData = async () => {
+            return await enhancedTranzyApi.getStops(parseInt(agencyId), options.forceRefresh);
+          };
+
+          const stations = await StoreErrorHandler.withRetry(fetchStationData, context);
+          
+          // Update store state
+          set({ stations });
+          
+          logger.info('Station data fetched via store method', {
+            agencyId,
+            count: stations.length,
+            forceRefresh: options.forceRefresh
+          });
+
+          return {
+            data: stations,
+            isLoading: false,
+            error: null,
+            lastUpdated: new Date()
+          };
+
+        } catch (error) {
+          const errorState = StoreErrorHandler.createError(error, context);
+          logger.error('Store getStationData failed', { error: errorState.message });
+          
+          return {
+            data: null,
+            isLoading: false,
+            error: errorState,
+            lastUpdated: null
+          };
+        }
+      },
+
+      getVehicleData: async (options: {
+        agencyId?: string;
+        routeId?: string;
+        forceRefresh?: boolean;
+        cacheMaxAge?: number;
+        autoRefresh?: boolean;
+        refreshInterval?: number;
+      } = {}) => {
+        const context = StoreErrorHandler.createContext('VehicleStore', 'getVehicleData', options);
+        
+        try {
+          // Get configuration
+          const configStore = await import('./configStore').then(m => m.useConfigStore.getState());
+          const config = configStore.config;
+          
+          const agencyId = options.agencyId || config?.agencyId;
+          if (!agencyId || !config?.apiKey) {
+            throw new Error('Agency ID or API key not configured');
+          }
+
+          // Set API key for enhanced API
+          enhancedTranzyApi.setApiKey(config.apiKey);
+          
+          const fetchVehicleData = async () => {
+            const routeId = options.routeId ? parseInt(options.routeId) : undefined;
+            return await enhancedTranzyApi.getVehicles(parseInt(agencyId), routeId);
+          };
+
+          const vehicles = await StoreErrorHandler.withRetry(fetchVehicleData, context);
+          
+          logger.info('Vehicle data fetched via store method', {
+            agencyId,
+            routeId: options.routeId,
+            count: vehicles.length,
+            forceRefresh: options.forceRefresh
+          });
+
+          return {
+            data: vehicles,
+            isLoading: false,
+            error: null,
+            lastUpdated: new Date()
+          };
+
+        } catch (error) {
+          const errorState = StoreErrorHandler.createError(error, context);
+          logger.error('Store getVehicleData failed', { error: errorState.message });
+          
+          return {
+            data: null,
+            isLoading: false,
+            error: errorState,
+            lastUpdated: null
+          };
+        }
+      },
+
+      getRouteData: async (options: {
+        agencyId?: string;
+        forceRefresh?: boolean;
+        cacheMaxAge?: number;
+      } = {}) => {
+        const context = StoreErrorHandler.createContext('VehicleStore', 'getRouteData', options);
+        
+        try {
+          // Get configuration
+          const configStore = await import('./configStore').then(m => m.useConfigStore.getState());
+          const config = configStore.config;
+          
+          const agencyId = options.agencyId || config?.agencyId;
+          if (!agencyId || !config?.apiKey) {
+            throw new Error('Agency ID or API key not configured');
+          }
+
+          // Set API key for enhanced API
+          enhancedTranzyApi.setApiKey(config.apiKey);
+          
+          const fetchRouteData = async () => {
+            return await enhancedTranzyApi.getRoutes(parseInt(agencyId), options.forceRefresh);
+          };
+
+          const routes = await StoreErrorHandler.withRetry(fetchRouteData, context);
+          
+          logger.info('Route data fetched via store method', {
+            agencyId,
+            count: routes.length,
+            forceRefresh: options.forceRefresh
+          });
+
+          return {
+            data: routes,
+            isLoading: false,
+            error: null,
+            lastUpdated: new Date()
+          };
+
+        } catch (error) {
+          const errorState = StoreErrorHandler.createError(error, context);
+          logger.error('Store getRouteData failed', { error: errorState.message });
+          
+          return {
+            data: null,
+            isLoading: false,
+            error: errorState,
+            lastUpdated: null
+          };
+        }
+      },
+
+      getStopTimesData: async (options: {
+        agencyId?: string;
+        tripId?: string;
+        stopId?: string;
+        forceRefresh?: boolean;
+        cacheMaxAge?: number;
+        autoRefresh?: boolean;
+        refreshInterval?: number;
+      } = {}) => {
+        const context = StoreErrorHandler.createContext('VehicleStore', 'getStopTimesData', options);
+        
+        try {
+          // Get configuration
+          const configStore = await import('./configStore').then(m => m.useConfigStore.getState());
+          const config = configStore.config;
+          
+          const agencyId = options.agencyId || config?.agencyId;
+          if (!agencyId || !config?.apiKey) {
+            throw new Error('Agency ID or API key not configured');
+          }
+
+          // Set API key for enhanced API
+          enhancedTranzyApi.setApiKey(config.apiKey);
+          
+          const fetchStopTimesData = async () => {
+            const stopId = options.stopId ? parseInt(options.stopId) : undefined;
+            return await enhancedTranzyApi.getStopTimes(
+              parseInt(agencyId), 
+              stopId, 
+              options.tripId, 
+              options.forceRefresh
+            );
+          };
+
+          const stopTimes = await StoreErrorHandler.withRetry(fetchStopTimesData, context);
+          
+          logger.info('Stop times data fetched via store method', {
+            agencyId,
+            stopId: options.stopId,
+            tripId: options.tripId,
+            count: stopTimes.length,
+            forceRefresh: options.forceRefresh
+          });
+
+          return {
+            data: stopTimes,
+            isLoading: false,
+            error: null,
+            lastUpdated: new Date()
+          };
+
+        } catch (error) {
+          const errorState = StoreErrorHandler.createError(error, context);
+          logger.error('Store getStopTimesData failed', { error: errorState.message });
+          
+          return {
+            data: null,
+            isLoading: false,
+            error: errorState,
+            lastUpdated: null
+          };
         }
       },
 

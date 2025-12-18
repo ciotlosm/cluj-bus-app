@@ -2,7 +2,7 @@
 
 ## Phase 1: Enhance Stores to Replace Data Hooks
 
-- [ ] 1. Add specific data fetching methods to vehicle store
+- [-] 1. Add specific data fetching methods to vehicle store
   - Add `getStationData(options)` method to replace useStationData
   - Add `getVehicleData(options)` method to replace useVehicleData  
   - Add `getRouteData(options)` method to replace useRouteData

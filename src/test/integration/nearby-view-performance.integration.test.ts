@@ -8,18 +8,18 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { NearbyViewController } from './nearbyViewController';
+import { NearbyViewController } from '../../controllers/nearbyViewController';
 import { 
   PERFORMANCE_THRESHOLDS,
   validateNearbyViewPerformance,
   clearDistanceCache,
   getDistanceCacheStats
-} from '../utils/nearbyViewPerformance';
-import type { Coordinates, Station, LiveVehicle } from '../types';
-import type { Route, StopTime, Trip } from '../types/tranzyApi';
+} from '../../utils/nearbyViewPerformance';
+import type { Coordinates, Station, LiveVehicle } from '../../types';
+import type { Route, StopTime, Trip } from '../../types/tranzyApi';
 
 // Mock logger to avoid console noise during tests
-vi.mock('../utils/logger', () => ({
+vi.mock('../../utils/logger', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

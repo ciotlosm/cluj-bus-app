@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useConfigStore, useVehicleStore, useLocationStore } from './index';
+import { useConfigStore, useVehicleStore, useLocationStore } from '../../stores';
 
 // Mock localStorage for testing
 const localStorageMock = (() => {

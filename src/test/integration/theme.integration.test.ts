@@ -12,9 +12,9 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
-import { useConfigStore } from './configStore';
-import { StoreEventManager, StoreEvents } from './shared/storeEvents';
-import type { ThemeMode } from '../types';
+import { useConfigStore } from '../../stores/configStore';
+import { StoreEventManager, StoreEvents } from '../../stores/shared/storeEvents';
+import type { ThemeMode } from '../../types';
 
 // Mock localStorage for testing
 const localStorageMock = (() => {

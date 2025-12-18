@@ -167,6 +167,58 @@ export interface VehicleStore {
   refreshLiveData: () => Promise<void>;
   forceRefreshAll: () => Promise<void>;
   
+  // Actions - Data Fetching Methods (replaces data hooks)
+  getStationData: (options?: {
+    agencyId?: string;
+    forceRefresh?: boolean;
+    cacheMaxAge?: number;
+  }) => Promise<{
+    data: Station[] | null;
+    isLoading: boolean;
+    error: ErrorState | null;
+    lastUpdated: Date | null;
+  }>;
+  
+  getVehicleData: (options?: {
+    agencyId?: string;
+    routeId?: string;
+    forceRefresh?: boolean;
+    cacheMaxAge?: number;
+    autoRefresh?: boolean;
+    refreshInterval?: number;
+  }) => Promise<{
+    data: any[] | null; // Will be properly typed as LiveVehicle[]
+    isLoading: boolean;
+    error: ErrorState | null;
+    lastUpdated: Date | null;
+  }>;
+  
+  getRouteData: (options?: {
+    agencyId?: string;
+    forceRefresh?: boolean;
+    cacheMaxAge?: number;
+  }) => Promise<{
+    data: any[] | null; // Will be properly typed as Route[]
+    isLoading: boolean;
+    error: ErrorState | null;
+    lastUpdated: Date | null;
+  }>;
+  
+  getStopTimesData: (options?: {
+    agencyId?: string;
+    tripId?: string;
+    stopId?: string;
+    forceRefresh?: boolean;
+    cacheMaxAge?: number;
+    autoRefresh?: boolean;
+    refreshInterval?: number;
+  }) => Promise<{
+    data: any[] | null; // Will be properly typed as StopTime[]
+    isLoading: boolean;
+    error: ErrorState | null;
+    lastUpdated: Date | null;
+  }>;
+  
   // Actions - Auto Refresh
   isAutoRefreshEnabled: boolean;
   startAutoRefresh: () => void;

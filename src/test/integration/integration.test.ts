@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
-import { useConfigStore, useVehicleStore } from './stores';
-import type { UserConfig, EnhancedVehicleInfo } from './types';
+import { useConfigStore, useVehicleStore } from '../../stores';
+import type { UserConfig, EnhancedVehicleInfo } from '../../types';
 
 // Mock localStorage
 const localStorageMock = (() => {

@@ -6,12 +6,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createNearbyViewController, type NearbyViewOptions } from './nearbyViewController';
-import type { Coordinates, Station, LiveVehicle } from '../types';
-import type { Route } from '../types/tranzyApi';
+import { createNearbyViewController, type NearbyViewOptions } from '../../controllers/nearbyViewController';
+import type { Coordinates, Station, LiveVehicle } from '../../types';
+import type { Route } from '../../types/tranzyApi';
 
 // Mock logger to avoid console output during tests
-vi.mock('../utils/logger', () => ({
+vi.mock('../../utils/logger', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

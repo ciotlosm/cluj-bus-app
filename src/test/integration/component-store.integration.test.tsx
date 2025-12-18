@@ -13,10 +13,10 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import React from 'react';
 
 // Import stores
-import { useConfigStore, useVehicleStore, useLocationStore } from '../stores';
+import { useConfigStore, useVehicleStore, useLocationStore } from '../../stores';
 
 // Import components to test
-import { ThemeToggle } from './ui/ThemeToggle';
+import { ThemeToggle } from '../../components/ui/ThemeToggle';
 
 // Mock external dependencies
 vi.mock('../services/tranzyApiService', () => ({

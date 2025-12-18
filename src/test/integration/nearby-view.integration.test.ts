@@ -8,12 +8,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NearbyViewController, createNearbyViewController } from './controllers/nearbyViewController';
-import { stationSelector } from './services/stationSelector';
+import { NearbyViewController, createNearbyViewController } from '../../controllers/nearbyViewController';
+import { stationSelector } from '../../services/stationSelector';
 import { 
   filterStationsWithValidRoutes,
   getRouteAssociationStatistics 
-} from './services/routeAssociationFilter';
+} from '../../services/routeAssociationFilter';
 import {
   NEARBY_STATION_DISTANCE_THRESHOLD,
   MAX_NEARBY_SEARCH_RADIUS,
@@ -22,9 +22,9 @@ import {
   calculateStationProximity,
   shouldDisplaySecondStation,
   isSignificantLocationChange
-} from './utils/nearbyViewConstants';
-import type { Coordinates, Station, LiveVehicle } from './types';
-import type { Route, StopTime, Trip } from './types/tranzyApi';
+} from '../../utils/nearbyViewConstants';
+import type { Coordinates, Station, LiveVehicle } from '../../types';
+import type { Route, StopTime, Trip } from '../../types/tranzyApi';
 
 // Mock logger to avoid console output during tests
 vi.mock('./utils/logger', () => ({
