@@ -13,7 +13,7 @@ import type { RouteActivityInfo } from './RouteActivityAnalyzer';
 import type { FilteringResult } from './IntelligentVehicleFilter';
 import type { RouteFilteringConfig } from '../types/routeFiltering';
 import { DEFAULT_ROUTE_FILTERING_CONFIG } from '../types/routeFiltering';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/shared/logger';
 
 // ============================================================================
 // INTERFACES AND TYPES

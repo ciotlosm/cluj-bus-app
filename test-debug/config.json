@@ -1,0 +1,62 @@
+{
+  "limits": {
+    "maxFileSize": 200,
+    "maxFilesPerFolder": 10,
+    "duplicateSimilarityThreshold": 0.8
+  },
+  "filePatterns": {
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+    "exclude": ["**/*.test.*", "**/*.spec.*", "**/node_modules/**", "**/dist/**", "**/.git/**"]
+  },
+  "categories": {
+    "services": {
+      "api": ["*ApiService.ts", "*Api.ts", "serviceWorkerService.ts"],
+      "business-logic": ["*Manager.ts", "*Controller.ts"],
+      "data-processing": ["*Processor.ts", "*Validator.ts"],
+      "utilities": ["*Helper.ts", "*Util.ts"]
+    },
+    "utils": {
+      "validation": ["*Validation*.ts", "*Validator*.ts"],
+      "formatting": ["*Format*.ts", "*Formatter*.ts"],
+      "shared": ["logger.ts", "*Constants.ts"]
+    }
+  },
+  "folderStructure": {
+    "services": ["api", "business-logic", "data-processing", "utilities"],
+    "utils": ["validation", "formatting", "shared"]
+  },
+  "importPathMappings": {
+    "services": {
+      "api": "../api",
+      "business-logic": "../business-logic", 
+      "data-processing": "../data-processing",
+      "utilities": "../utilities"
+    },
+    "utils": {
+      "validation": "../validation",
+      "formatting": "../formatting",
+      "shared": "../shared"
+    }
+  },
+  "backup": {
+    "enabled": false,
+    "location": "./refactoring-backup",
+    "timestamp": true
+  },
+  "validation": {
+    "runBuild": true,
+    "runTests": false,
+    "stopOnError": false,
+    "timeouts": {
+      "build": 10000,
+      "tests": 15000,
+      "typescript": 8000
+    }
+  },
+  "execution": {
+    "maxFilesToProcess": 50,
+    "batchSize": 10,
+    "maxExecutionTime": 30000,
+    "enableProgressReporting": false
+  }
+}

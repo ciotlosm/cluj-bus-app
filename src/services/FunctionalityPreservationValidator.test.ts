@@ -12,7 +12,7 @@ import type {
 } from './FunctionalityPreservationValidator';
 
 // Mock dependencies
-vi.mock('../utils/performance', () => ({
+vi.mock('../utils/performance/performance', () => ({
   performanceMonitor: {
     recordTiming: vi.fn(),
     getSummary: vi.fn(() => ({
@@ -22,7 +22,7 @@ vi.mock('../utils/performance', () => ({
   }
 }));
 
-vi.mock('../utils/logger', () => ({
+vi.mock('../utils/shared/logger', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),

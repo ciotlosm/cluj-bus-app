@@ -9,9 +9,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ConfigStore, UserConfig, ErrorState, ThemeMode, FavoriteRoute } from '../types';
 import { StoreEventManager, StoreEvents } from './shared/storeEvents';
 import { StoreErrorHandler } from './shared/errorHandler';
-import { enhancedTranzyApi, tranzyApiService } from '../services/tranzyApiService';
-import { routeMappingService } from '../services/routeMappingService';
-import { logger, LogLevel } from '../utils/logger';
+import { enhancedTranzyApi, tranzyApiService } from '../services/api/tranzyApiService';
+import { routeMappingService } from '../services/business-logic/routeMappingService';
+import { logger, LogLevel } from '../utils/shared/logger';
 
 // Simple encryption/decryption for sensitive data
 const encryptData = (data: string): string => {

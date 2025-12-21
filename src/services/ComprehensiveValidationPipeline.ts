@@ -4,17 +4,17 @@
  * Validates Requirements: 5.3, 7.5, 8.3, 8.4
  */
 
-import { performanceMonitor } from '../utils/performance';
-import { logger } from '../utils/logger';
+import { performanceMonitor } from '../utils/performance/performance';
+import { logger } from '../utils/shared/logger';
 import { CodeIntegrityPreservationSystem } from './CodeIntegrityPreservationSystem';
 import { FunctionalityPreservationValidator } from './FunctionalityPreservationValidator';
 import {
-  ValidationReport,
-  TestResult,
-  BuildResult,
-  FunctionalityResult,
-  RefactoringPlan,
-  RefactoringResult
+  type ValidationReport,
+  type TestResult,
+  type BuildResult,
+  type FunctionalityResult,
+  type RefactoringPlan,
+  type RefactoringResult
 } from '../types/architectureSimplification';
 
 /**

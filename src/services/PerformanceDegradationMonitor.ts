@@ -4,8 +4,8 @@
  * Validates Requirements: 7.5, 8.4
  */
 
-import { performanceMonitor } from '../utils/performance';
-import { logger } from '../utils/logger';
+import { performanceMonitor } from '../utils/performance/performance';
+import { logger } from '../utils/shared/logger';
 import { execSync } from 'child_process';
 import { promises as fs } from 'fs';
 import { join } from 'path';

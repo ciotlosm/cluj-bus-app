@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 /**
  * Dependency tracking for selective re-execution

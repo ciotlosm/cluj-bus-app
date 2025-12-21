@@ -3,7 +3,7 @@
  * Provides consistent error classification, formatting, and retry logic
  */
 
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 import { withRetry } from '../../utils/retryUtils';
 
 export interface ErrorState {

@@ -8,7 +8,7 @@ import { RouteType } from '../../types';
 import { ErrorHandler } from './errors/ErrorHandler';
 import type { StandardError } from './errors/types';
 
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 /**
  * Data type mapping for type-safe generic hook usage

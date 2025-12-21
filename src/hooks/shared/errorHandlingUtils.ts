@@ -2,7 +2,7 @@ import { useCentralizedErrorHandler, type ErrorHandlingConfig, type ErrorRecover
 import { ErrorHandler } from './errors/ErrorHandler';
 import { StoreErrorHandler } from '../../stores/shared/errorHandler';
 import type { ErrorType } from './errors/types';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 /**
  * Common error handling patterns and utilities

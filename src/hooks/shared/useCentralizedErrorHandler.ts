@@ -4,7 +4,7 @@ import { StoreErrorHandler } from '../../stores/shared/errorHandler';
 import { ErrorType } from './errors/types';
 import type { StandardError } from './errors/types';
 import type { ErrorState } from '../../stores/shared/errorHandler';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 /**
  * Error recovery action interface

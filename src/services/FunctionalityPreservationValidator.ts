@@ -7,15 +7,15 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
-import { performanceMonitor } from '../utils/performance';
-import { logger } from '../utils/logger';
+import { performanceMonitor } from '../utils/performance/performance';
+import { logger } from '../utils/shared/logger';
 import {
-  FunctionalityResult,
-  FunctionalityChange,
-  PerformanceImpact,
-  ValidationReport,
-  TestResult,
-  BuildResult
+  type FunctionalityResult,
+  type FunctionalityChange,
+  type PerformanceImpact,
+  type ValidationReport,
+  type TestResult,
+  type BuildResult
 } from '../types/architectureSimplification';
 
 /**

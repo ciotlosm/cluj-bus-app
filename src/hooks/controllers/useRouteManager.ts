@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useConfigStore } from '../../stores/configStore';
 import { useStoreEvent, StoreEvents } from '../../stores/shared/storeEvents';
 import { getUniqueRouteTypes } from '../../utils/routeUtils';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 import { useRouteData } from '../shared/useStoreData';
 // Error handling managed by store data hooks
@@ -148,7 +148,7 @@ export const useRouteManager = (): UseRouteManagerReturn => {
       if (routeToAdd && config?.city) {
         try {
           // Import route mapping service dynamically to avoid circular dependencies
-          const { routeMappingService } = await import('../../services/routeMappingService');
+          const { routeMappingService } = await import('../../services/business-logic/routeMappingService');
           const routeMapping = await routeMappingService.getRouteMappingFromName(routeName, config.city);
           
           if (!routeMapping?.routeId) {

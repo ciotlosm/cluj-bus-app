@@ -208,14 +208,18 @@ export const ComposableCard: React.FC<ComposableCardProps> = ({
 
   // Handle error state
   if (hasError) {
+    const errorStyles = {
+      borderColor: theme.palette.error.main,
+      bgcolor: alpha(theme.palette.error.main, 0.04),
+    };
+    
     return (
       <MuiCard
-        sx={{
-          ...cardStyles,
-          borderColor: theme.palette.error.main,
-          bgcolor: alpha(theme.palette.error.main, 0.04),
-          ...sx,
-        }}
+        sx={[
+          cardStyles,
+          errorStyles,
+          ...(Array.isArray(sx) ? sx : [sx]),
+        ]}
         {...props}
       >
         <CardContent>

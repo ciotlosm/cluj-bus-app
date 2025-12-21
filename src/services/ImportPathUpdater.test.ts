@@ -33,7 +33,7 @@ describe('ImportPathUpdater', () => {
       vi.mocked(glob).mockResolvedValue(['src/components/TestComponent.ts'] as any);
 
       // Mock file content with imports
-      const fileContent = `import { apiService } from '../services/tranzyApiService';
+      const fileContent = `import { apiService } from '../services/api/tranzyApiService';
 import { validate } from '../utils/validation';
 
 export class TestComponent {}`;
@@ -149,7 +149,7 @@ export class TestComponent {}`;
 
       const result = (updater as any).calculateNewImportPath(importingFile, newFilePath);
 
-      expect(result).toBe('./tranzyApiService');
+      expect(result).toBe('../api/tranzyApiService');
     });
   });
 });

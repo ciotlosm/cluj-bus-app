@@ -7,11 +7,11 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { intelligentVehicleFilter } from '../services/IntelligentVehicleFilter';
+import { intelligentVehicleFilter } from '../services/data-processing/IntelligentVehicleFilter';
 import { routeActivityAnalyzer } from '../services/RouteActivityAnalyzer';
-import { vehicleTransformationService } from '../services/VehicleTransformationService';
+import { vehicleTransformationService } from '../services/data-processing/VehicleTransformationService';
 import type { CoreVehicle } from '../types/coreVehicle';
-import type { FilteringContext } from '../services/IntelligentVehicleFilter';
+import type { FilteringContext } from '../services/data-processing/IntelligentVehicleFilter';
 import type { TransformationStation } from '../types/presentationLayer';
 
 describe('Caching and Performance Optimization', () => {

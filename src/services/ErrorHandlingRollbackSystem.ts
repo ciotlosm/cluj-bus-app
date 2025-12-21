@@ -7,8 +7,8 @@
 import * as fs from 'fs';
 import { join, dirname } from 'path';
 import * as childProcess from 'child_process';
-import { logger } from '../utils/logger';
-import { performanceMonitor } from '../utils/performance';
+import { logger } from '../utils/shared/logger';
+import { performanceMonitor } from '../utils/performance/performance';
 import type {
   RefactoringPlan,
   RefactoringOperation,

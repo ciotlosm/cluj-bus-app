@@ -4,7 +4,7 @@
  * Requirements: 3.1, 3.2, 3.4, 3.5
  */
 
-import { logger } from '../utils/logger';
+import { logger } from '../utils/shared/logger';
 import { gracefulDegradationService } from './GracefulDegradationService';
 import type {
   RouteFilteringConfig,

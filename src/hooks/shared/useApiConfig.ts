@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useConfigStore } from '../../stores/configStore';
-import { enhancedTranzyApi } from '../../services/tranzyApiService';
-import { logger } from '../../utils/logger';
+import { enhancedTranzyApi } from '../../services/api/tranzyApiService';
+import { logger } from '../../utils/shared/logger';
 
 /**
  * Centralized API configuration hook

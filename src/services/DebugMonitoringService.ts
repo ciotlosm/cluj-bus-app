@@ -11,7 +11,7 @@ import type { CoreVehicle } from '../types/coreVehicle';
 import type { RouteActivityInfo } from './RouteActivityAnalyzer';
 import type { FilteringResult, FilteringDecision } from './IntelligentVehicleFilter';
 import type { RouteFilteringConfig } from '../types/routeFiltering';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/shared/logger';
 
 // ============================================================================
 // INTERFACES AND TYPES

@@ -11,7 +11,7 @@ vi.mock('../../stores/vehicleStore', () => ({
 }));
 
 // Mock logger
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../utils/shared/logger', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),

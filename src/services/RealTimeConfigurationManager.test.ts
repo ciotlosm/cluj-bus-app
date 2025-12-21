@@ -23,7 +23,7 @@ import { RouteClassification } from './RouteActivityAnalyzer';
 vi.mock('./RouteFilteringConfigurationManager');
 vi.mock('./RouteActivityAnalyzer');
 vi.mock('./IntelligentVehicleFilter');
-vi.mock('../utils/logger');
+vi.mock('../utils/shared/logger');
 
 // Mock implementations
 const mockConfigManager = {

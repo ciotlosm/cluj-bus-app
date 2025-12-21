@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Coordinates } from '../../types';
 import { calculateDistance } from '../../utils/distanceUtils';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 import { validateCoordinates } from '../shared/validation/coordinateValidators';
 import { ErrorHandler } from '../shared/errors/ErrorHandler';
 import { ErrorType } from '../shared/errors/types';

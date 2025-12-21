@@ -58,7 +58,7 @@ export const useInteractivePatterns = () => {
         return {
           ...baseStyles,
           '&:focus-visible': {
-            ...(baseStyles['&:focus-visible'] || {}),
+            ...(typeof baseStyles['&:focus-visible'] === 'object' && baseStyles['&:focus-visible'] !== null ? baseStyles['&:focus-visible'] : {}),
             outline: `2px solid ${color}`,
             outlineOffset: '2px',
           },
@@ -67,7 +67,7 @@ export const useInteractivePatterns = () => {
         return {
           ...baseStyles,
           '&:focus-visible': {
-            ...(baseStyles['&:focus-visible'] || {}),
+            ...(typeof baseStyles['&:focus-visible'] === 'object' && baseStyles['&:focus-visible'] !== null ? baseStyles['&:focus-visible'] : {}),
             bgcolor: alpha(color, 0.12),
           },
         };
@@ -75,7 +75,7 @@ export const useInteractivePatterns = () => {
         return {
           ...baseStyles,
           '&:focus-visible': {
-            ...(baseStyles['&:focus-visible'] || {}),
+            ...(typeof baseStyles['&:focus-visible'] === 'object' && baseStyles['&:focus-visible'] !== null ? baseStyles['&:focus-visible'] : {}),
             outline: `2px solid ${color}`,
             outlineOffset: '2px',
             bgcolor: alpha(color, 0.12),

@@ -19,7 +19,7 @@ import { OfflineIndicator } from '../../components/layout/Indicators/OfflineIndi
 import { StatusIndicators } from '../../components/layout/Indicators/StatusIndicators';
 
 // Mock external dependencies
-vi.mock('../services/tranzyApiService', () => ({
+vi.mock('../services/api/tranzyApiService', () => ({
   tranzyApiService: {
     validateApiKey: vi.fn().mockResolvedValue(true),
     fetchAgencies: vi.fn().mockResolvedValue([])

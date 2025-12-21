@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { materialTheme } from '../../../../theme/materialTheme';
-import { Card, LoadingState, ErrorState, DataCard, VehicleCard, InfoCard } from './Card';
+import { Card, CardLoadingStateComponent as LoadingState, CardErrorStateComponent as ErrorState, DataCard, VehicleCard, InfoCard } from './Card';
 import { DirectionsBus } from '@mui/icons-material';
 
 // Test wrapper with theme provider

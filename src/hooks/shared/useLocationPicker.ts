@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocationStore } from '../../stores/locationStore';
-import { mapClickToCoordinates, popularLocationToCoordinates } from '../../utils/locationUtils';
-import { logger } from '../../utils/logger';
+import { mapClickToCoordinates, popularLocationToCoordinates } from '../../utils/formatting/locationUtils';
+import { logger } from '../../utils/shared/logger';
 import type { Coordinates } from '../../types';
 
 export interface UseLocationPickerProps {

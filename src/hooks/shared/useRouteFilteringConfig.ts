@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { routeFilteringConfigurationManager } from '../../services/RouteFilteringConfigurationManager';
 import type { RouteFilteringConfig, ValidationResult } from '../../types/routeFiltering';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 /**
  * Hook return type

@@ -8,19 +8,19 @@ import { promises as fs } from 'fs';
 import { join, dirname, relative, resolve } from 'path';
 import { execSync } from 'child_process';
 import {
-  ValidationSystem,
-  TestResult,
-  BuildResult,
-  FunctionalityResult,
-  ValidationReport,
-  TestFailure,
-  BuildError,
-  BuildWarning,
-  FunctionalityChange,
-  PerformanceImpact,
-  RefactoringPlan,
-  BackupData,
-  RollbackOperation
+  type ValidationSystem,
+  type TestResult,
+  type BuildResult,
+  type FunctionalityResult,
+  type ValidationReport,
+  type TestFailure,
+  type BuildError,
+  type BuildWarning,
+  type FunctionalityChange,
+  type PerformanceImpact,
+  type RefactoringPlan,
+  type BackupData,
+  type RollbackOperation
 } from '../types/architectureSimplification';
 
 /**

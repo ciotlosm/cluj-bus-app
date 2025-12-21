@@ -304,7 +304,7 @@ export const ComposableList = <T extends any = any>({
         sx={listStyles}
         {...props}
       >
-        {render(context)}
+        {render(context.data)}
       </MuiList>
     );
   }

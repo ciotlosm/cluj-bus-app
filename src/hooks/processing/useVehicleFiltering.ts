@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { FavoriteRoute } from '../../types';
 import type { CoreVehicle } from '../../types/coreVehicle';
 
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 import { validateVehicleArray, validateRouteArray } from '../shared/validation/arrayValidators';
 
 import { createSafeVehicleArray } from '../shared/validation/safeDefaults';

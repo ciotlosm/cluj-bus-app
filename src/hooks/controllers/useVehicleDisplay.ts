@@ -3,24 +3,24 @@ import type { Station, Coordinates, FavoriteRoute } from '../../types';
 import type { CoreVehicle } from '../../types/coreVehicle';
 import { useLocationStore } from '../../stores/locationStore';
 import { useConfigStore } from '../../stores/configStore';
-import { getEffectiveLocation } from '../../utils/locationUtils';
-import { logger } from '../../utils/logger';
+import { getEffectiveLocation } from '../../utils/formatting/locationUtils';
+import { logger } from '../../utils/shared/logger';
 
 import { useVehicleData, useStationData, useRouteData, useStopTimesData } from '../shared/useStoreData';
 import { ErrorHandler } from '../shared/errors/ErrorHandler';
 import type { StandardError } from '../shared/errors/types';
 
-import { stationSelector } from '../../services/stationSelector';
+import { stationSelector } from '../../services/business-logic/stationSelector';
 import type { 
   StationSelectionCriteria, 
   StationSelectionResult, 
   StationWithRoutes 
-} from '../../services/stationSelector';
-import { NEARBY_STATION_DISTANCE_THRESHOLD } from '../../utils/nearbyViewConstants';
-import { enhancedTranzyApi } from '../../services/tranzyApiService';
+} from '../../services/business-logic/stationSelector';
+import { NEARBY_STATION_DISTANCE_THRESHOLD } from '../../utils/shared/nearbyViewConstants';
+import { enhancedTranzyApi } from '../../services/api/tranzyApiService';
 import { analyzeVehicleDirection } from '../shared/processing/vehicleDirectionAnalysis';
 
-import { vehicleTransformationService } from '../../services/VehicleTransformationService';
+import { vehicleTransformationService } from '../../services/data-processing/VehicleTransformationService';
 import type { 
   TransformedVehicleData, 
   VehicleDisplayData,

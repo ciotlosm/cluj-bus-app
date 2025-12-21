@@ -23,7 +23,7 @@ vi.mock('../../services/RouteFilteringConfigurationManager', () => {
 });
 
 // Mock logger
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../utils/shared/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),

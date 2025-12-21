@@ -18,8 +18,8 @@ import { StoreEventManager, StoreEvents } from './shared/storeEvents';
 import { autoRefreshManager } from './shared/autoRefresh';
 import { StoreErrorHandler } from './shared/errorHandler';
 import { unifiedCache } from '../hooks/shared/cache/instance';
-import { enhancedTranzyApi } from '../services/tranzyApiService';
-import { logger } from '../utils/logger';
+import { enhancedTranzyApi } from '../services/api/tranzyApiService';
+import { logger } from '../utils/shared/logger';
 import { locationWarningTracker } from '../utils/locationWarningTracker';
 
 /**
