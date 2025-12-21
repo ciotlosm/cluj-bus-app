@@ -15,14 +15,19 @@ export function hasActiveTrips(
   station: TranzyStopResponse,
   stopTimes: TranzyStopTimeResponse[]
 ): boolean {
+  // Handle edge cases
+  if (!station || !station.stop_id || !Array.isArray(stopTimes) || stopTimes.length === 0) {
+    return false;
+  }
+
   // Find stop times for this station
   const stationStopTimes = stopTimes.filter(
-    stopTime => stopTime.stop_id === station.stop_id
+    stopTime => stopTime && stopTime.stop_id === station.stop_id
   );
   
   // Station has active trips if it has stop times with valid trip_id
   return stationStopTimes.some(stopTime => 
-    stopTime.trip_id && stopTime.trip_id.trim().length > 0
+    stopTime && stopTime.trip_id && stopTime.trip_id.trim().length > 0
   );
 }
 

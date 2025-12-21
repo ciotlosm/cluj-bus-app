@@ -28,6 +28,16 @@ const getStationTypeLabel = (stationType: 'primary' | 'secondary'): string => {
   return stationType === 'primary' ? 'Closest' : 'Nearby';
 };
 
+// Safe distance calculation with error handling
+const safeCalculateDistance = (from: { lat: number; lon: number }, to: { lat: number; lon: number }): number => {
+  try {
+    return calculateDistance(from, to);
+  } catch (error) {
+    console.warn('Distance calculation failed:', error);
+    return 0; // Return 0 distance on error
+  }
+};
+
 export function useSmartStationFilter(): SmartStationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
@@ -36,17 +46,34 @@ export function useSmartStationFilter(): SmartStationFilterResult {
   const [isFiltering, setIsFiltering] = useState(true);
   
   const filteredStations = useMemo((): FilteredStation[] => {
-    // Return all stations if filtering disabled or no location
-    if (!isFiltering || !currentPosition) {
-      return stops.map(station => ({
+    // Early return if no stations available
+    if (stops.length === 0) {
+      return [];
+    }
+
+    // When filtering is disabled, return all stations sorted by distance (if location available)
+    if (!isFiltering) {
+      const allStations = stops.map(station => ({
         station,
-        distance: currentPosition ? calculateDistance(
+        distance: currentPosition ? safeCalculateDistance(
           { lat: currentPosition.coords.latitude, lon: currentPosition.coords.longitude },
           { lat: station.stop_lat, lon: station.stop_lon }
         ) : 0,
         hasActiveTrips: hasActiveTrips(station, stopTimes),
         stationType: 'primary' as const
       }));
+
+      // Sort by distance if location is available
+      if (currentPosition) {
+        return allStations.sort((a, b) => a.distance - b.distance);
+      }
+      
+      return allStations;
+    }
+    
+    // Smart filtering is enabled - need location
+    if (!currentPosition) {
+      return []; // No location available for smart filtering
     }
     
     // Sort stations by distance
@@ -73,7 +100,7 @@ export function useSmartStationFilter(): SmartStationFilterResult {
     // Create result with primary station (first station with valid trips)
     const result: FilteredStation[] = [{
       station: primaryStation,
-      distance: calculateDistance(userLocation, { lat: primaryStation.stop_lat, lon: primaryStation.stop_lon }),
+      distance: safeCalculateDistance(userLocation, { lat: primaryStation.stop_lat, lon: primaryStation.stop_lon }),
       hasActiveTrips: true,
       stationType: 'primary' // Designated as primary station
     }];
@@ -83,7 +110,7 @@ export function useSmartStationFilter(): SmartStationFilterResult {
     const potentialSecondaryStations = sortedStations.filter(station => 
       station.stop_id !== primaryStation.stop_id &&
       hasActiveTrips(station, stopTimes) &&
-      calculateDistance(
+      safeCalculateDistance(
         { lat: primaryStation.stop_lat, lon: primaryStation.stop_lon },
         { lat: station.stop_lat, lon: station.stop_lon }
       ) <= SECONDARY_STATION_THRESHOLD
@@ -95,7 +122,7 @@ export function useSmartStationFilter(): SmartStationFilterResult {
     if (secondaryStation) {
       result.push({
         station: secondaryStation,
-        distance: calculateDistance(userLocation, { lat: secondaryStation.stop_lat, lon: secondaryStation.stop_lon }),
+        distance: safeCalculateDistance(userLocation, { lat: secondaryStation.stop_lat, lon: secondaryStation.stop_lon }),
         hasActiveTrips: true,
         stationType: 'secondary'
       });

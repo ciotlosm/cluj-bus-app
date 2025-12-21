@@ -11,8 +11,7 @@ import {
   Stack
 } from '@mui/material';
 import { 
-  DirectionsBus as BusIcon,
-  FilterList as FilterIcon
+  DirectionsBus as BusIcon
 } from '@mui/icons-material';
 
 interface StationViewHeaderProps {
@@ -52,16 +51,6 @@ export const StationViewHeader: FC<StationViewHeaderProps> = ({
 
       {/* Filtering status indicators */}
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-        {isFiltering && (
-          <Chip
-            icon={<FilterIcon />}
-            label="Smart filtering enabled"
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-        )}
-        
         <Chip
           label={`${filteredCount} of ${totalCount} stations`}
           size="small"
