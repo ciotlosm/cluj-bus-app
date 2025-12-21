@@ -8,7 +8,7 @@ import { useVehicleStore } from './vehicleStore';
 import { useConfigStore } from './configStore';
 
 // Mock the enhanced API service
-vi.mock('../services/tranzyApiService', () => ({
+vi.mock('../services/api/tranzyApiService', () => ({
   enhancedTranzyApi: {
     setApiKey: vi.fn(),
     getStops: vi.fn(),
@@ -91,7 +91,7 @@ describe('VehicleStore Data Fetching Methods', () => {
         }
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue(mockStations);
 
       const store = useVehicleStore.getState();
@@ -107,7 +107,7 @@ describe('VehicleStore Data Fetching Methods', () => {
 
     it('should handle errors gracefully', async () => {
       const mockError = new Error('API Error');
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getStops).mockRejectedValue(mockError);
 
       const store = useVehicleStore.getState();
@@ -121,7 +121,7 @@ describe('VehicleStore Data Fetching Methods', () => {
 
     it('should support custom options', async () => {
       const mockStations = [];
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue(mockStations);
 
       const store = useVehicleStore.getState();
@@ -149,7 +149,7 @@ describe('VehicleStore Data Fetching Methods', () => {
         }
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue(mockVehicles);
 
       const store = useVehicleStore.getState();
@@ -164,7 +164,7 @@ describe('VehicleStore Data Fetching Methods', () => {
 
     it('should support route filtering', async () => {
       const mockVehicles = [];
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue(mockVehicles);
 
       const store = useVehicleStore.getState();
@@ -188,7 +188,7 @@ describe('VehicleStore Data Fetching Methods', () => {
         }
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getRoutes).mockResolvedValue(mockRoutes);
 
       const store = useVehicleStore.getState();
@@ -216,7 +216,7 @@ describe('VehicleStore Data Fetching Methods', () => {
         }
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getStopTimes).mockResolvedValue(mockStopTimes);
 
       const store = useVehicleStore.getState();
@@ -231,7 +231,7 @@ describe('VehicleStore Data Fetching Methods', () => {
 
     it('should support filtering by stop and trip', async () => {
       const mockStopTimes = [];
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getStopTimes).mockResolvedValue(mockStopTimes);
 
       const store = useVehicleStore.getState();

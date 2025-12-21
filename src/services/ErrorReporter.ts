@@ -14,7 +14,7 @@ import { TransformationError } from '../types/transformationPipeline';
 import type { ValidationError, ValidationWarning } from '../types/transformationPipeline';
 import type { StandardError } from '../hooks/shared/errors/types';
 import { ErrorHandler } from '../hooks/shared/errors/ErrorHandler';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/shared/logger';
 
 // ============================================================================
 // ERROR REPORTING TYPES

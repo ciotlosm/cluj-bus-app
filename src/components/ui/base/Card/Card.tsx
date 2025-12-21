@@ -699,7 +699,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({
 };
 
 // Export internal components with expected names for testing
-export const LoadingState = CardLoadingState;
-export const ErrorState = CardErrorState;
+export const CardLoadingStateComponent = CardLoadingState;
+export const CardErrorStateComponent = CardErrorState;
 
 export default Card;

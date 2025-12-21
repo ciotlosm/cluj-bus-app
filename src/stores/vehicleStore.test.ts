@@ -20,7 +20,7 @@ import type {
 // Mock services
 // Don't mock retryUtils globally - we'll mock it selectively in error tests
 
-vi.mock('../services/tranzyApiService', () => ({
+vi.mock('../services/api/tranzyApiService', () => ({
   enhancedTranzyApi: {
     setApiKey: vi.fn(),
     getVehicles: vi.fn(),
@@ -79,7 +79,7 @@ vi.mock('./locationStore', () => ({
   },
 }));
 
-vi.mock('../utils/logger', () => ({
+vi.mock('../utils/shared/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -247,7 +247,7 @@ describe('VehicleStore Unit Tests', () => {
         },
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue(mockVehicles);
 
       const eventHandler = vi.fn();
@@ -287,7 +287,7 @@ describe('VehicleStore Unit Tests', () => {
       });
 
       const mockError = new Error('Network error');
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockRejectedValue(mockError);
 
       const store = useVehicleStore.getState();
@@ -333,7 +333,7 @@ describe('VehicleStore Unit Tests', () => {
         },
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue(mockVehicles);
 
       const store = useVehicleStore.getState();
@@ -372,7 +372,7 @@ describe('VehicleStore Unit Tests', () => {
         },
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue(mockStops);
 
       const store = useVehicleStore.getState();
@@ -386,7 +386,7 @@ describe('VehicleStore Unit Tests', () => {
     });
 
     it('should force refresh all data types', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.forceRefreshAll).mockResolvedValue(undefined);
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue([]);
       vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue([]);
@@ -439,7 +439,7 @@ describe('VehicleStore Unit Tests', () => {
     });
 
     it('should handle manual refresh', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue([]);
 
       const store = useVehicleStore.getState();
@@ -477,7 +477,7 @@ describe('VehicleStore Unit Tests', () => {
     });
 
     it('should clear cache completely', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       
       // Set some initial state
       useVehicleStore.setState({
@@ -524,7 +524,7 @@ describe('VehicleStore Unit Tests', () => {
         isStale: true,
       });
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockRejectedValue(mockError);
 
       const store = useVehicleStore.getState();
@@ -616,7 +616,7 @@ describe('VehicleStore Unit Tests', () => {
     });
 
     it('should trigger refresh when coming back online', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue([]);
 
       // Mock the config store to ensure it's available
@@ -647,7 +647,7 @@ describe('VehicleStore Unit Tests', () => {
 
   describe('Property-Based Tests', () => {
     it('should handle any valid refresh options', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       
       await fc.assert(
         fc.asyncProperty(refreshOptionsArb, async (options) => {
@@ -709,7 +709,7 @@ describe('VehicleStore Unit Tests', () => {
 
   describe('Integration with Shared Utilities', () => {
     it('should emit events through StoreEventManager', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockResolvedValue([]);
 
       const eventHandler = vi.fn();
@@ -792,7 +792,7 @@ describe('VehicleStore Unit Tests', () => {
         isStale: true,
       });
       
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getVehicles).mockRejectedValue(new Error('Network error'));
       
       // Call refreshVehicles and wait for it to complete

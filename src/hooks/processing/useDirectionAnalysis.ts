@@ -4,7 +4,7 @@ import type { CoreVehicle } from '../../types/coreVehicle';
 import { DirectionStatus, ConfidenceLevel } from '../../types/coreVehicle';
 import type { DirectionAnalysisResult } from '../shared/processing/types';
 // Distance calculation handled by direction analysis utilities
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 import { InputValidator } from '../shared/validation/InputValidator';
 import { validateCoordinates } from '../shared/validation/coordinateValidators';
 import { validateArray } from '../shared/validation/arrayValidators';

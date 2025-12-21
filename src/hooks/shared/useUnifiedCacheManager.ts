@@ -8,8 +8,8 @@
 import { useCallback, useState } from 'react';
 import { useVehicleStore } from '../../stores/vehicleStore';
 import { unifiedCache } from './cache/instance';
-import { enhancedTranzyApi } from '../../services/tranzyApiService';
-import { logger } from '../../utils/logger';
+import { enhancedTranzyApi } from '../../services/api/tranzyApiService';
+import { logger } from '../../utils/shared/logger';
 
 export interface CacheStats {
   totalEntries: number;

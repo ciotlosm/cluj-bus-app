@@ -10,18 +10,32 @@ export { ComprehensiveValidationPipeline, DEFAULT_VALIDATION_CONFIG } from './Co
 export { PerformanceDegradationMonitor } from './PerformanceDegradationMonitor';
 
 // Existing Services
-export { default as agencyService } from './agencyService';
-export { default as appVersionService } from './appVersionService';
-export { default as geocodingService } from './geocodingService';
-export { default as routeMappingService } from './routeMappingService';
-export { default as routePlanningService } from './routePlanningService';
-export { default as serviceWorkerService } from './serviceWorkerService';
-export { default as tranzyApiService } from './tranzyApiService';
+export { agencyService } from './agencyService';
+export { appVersionService } from './api/appVersionService';
+export { geocodingService } from './geocodingService';
+export { routeMappingService } from './routeMappingService';
+export { routePlanningService } from './routePlanningService';
+export { ServiceWorkerService, getServiceWorkerService } from './api/serviceWorkerService';
+export { tranzyApiService } from '../api/tranzyApiService';
 
 // Data Processing Services
 export { gpsFirstDataLoader } from './gpsFirstDataLoader';
 export { stationSelector } from './stationSelector';
-export { routeAssociationFilter } from './routeAssociationFilter';
+export { 
+  type RouteAssociation,
+  type RouteAssociationResult,
+  type StationWithValidatedRoutes,
+  type RouteValidationResult,
+  type RouteAssociationFilterOptions,
+  validateRouteData,
+  validateStopTimesData,
+  validateTripsData,
+  determineStationRouteAssociations,
+  filterStationsWithValidRoutes,
+  getStationRouteAssociation,
+  validateStationForDisplay,
+  getRouteAssociationStatistics
+} from './routeAssociationFilter';
 
 // Utility Services
 export { DataValidator } from './DataValidator';

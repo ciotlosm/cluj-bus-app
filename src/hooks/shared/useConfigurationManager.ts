@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConfigStore } from '../../stores/configStore';
 
-import { logger, LogLevel } from '../../utils/logger';
+import { logger, LogLevel } from '../../utils/shared/logger';
 import type { UserConfig, Coordinates } from '../../types';
 
 interface ValidationErrors {

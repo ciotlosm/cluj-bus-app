@@ -14,9 +14,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useConfigStore } from '../stores/configStore';
-import { gpsFirstDataLoader, type GpsFirstDataResult, type GpsFirstDataOptions } from '../services/gpsFirstDataLoader';
-import { getEffectiveLocation } from '../utils/locationUtils';
-import { logger } from '../utils/logger';
+import { gpsFirstDataLoader, type GpsFirstDataResult, type GpsFirstDataOptions } from '../services/business-logic/gpsFirstDataLoader';
+import { getEffectiveLocation } from '../utils/formatting/locationUtils';
+import { logger } from '../utils/shared/logger';
 
 // ============================================================================
 // INTERFACES

@@ -1,5 +1,5 @@
 import type { Coordinates } from '../types';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/shared/logger';
 
 export interface AddressSearchResult {
   address: string;

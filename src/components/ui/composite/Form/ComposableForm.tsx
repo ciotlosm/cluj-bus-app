@@ -324,7 +324,7 @@ export const ComposableForm = <T extends Record<string, any> = Record<string, an
 
       {/* Render with complete custom render prop */}
       {render ? (
-        render(context as FormCompositionContext<T>)
+        render(context.data)
       ) : (
         <Stack spacing={slotProps?.fields?.spacing || 3}>
           {/* Header Section */}

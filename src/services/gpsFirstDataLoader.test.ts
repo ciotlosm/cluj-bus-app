@@ -11,7 +11,7 @@ import type { StopTime, Trip, Route } from '../types/tranzyApi';
 import type { CoreVehicle } from '../types/coreVehicle';
 
 // Mock the enhanced API service
-vi.mock('./tranzyApiService', () => ({
+vi.mock('../api/tranzyApiService', () => ({
   enhancedTranzyApi: {
     getStops: vi.fn(),
     getStopTimes: vi.fn(),
@@ -33,7 +33,7 @@ describe('GpsFirstDataLoader', () => {
 
   describe('loadValidatedData', () => {
     it('should return empty result when no stops are available', async () => {
-      const { enhancedTranzyApi } = await import('./tranzyApiService');
+      const { enhancedTranzyApi } = await import('../api/tranzyApiService');
       
       // Mock empty stops response
       vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue([]);
@@ -52,7 +52,7 @@ describe('GpsFirstDataLoader', () => {
     });
 
     it('should find primary stop with valid trip_ids', async () => {
-      const { enhancedTranzyApi } = await import('./tranzyApiService');
+      const { enhancedTranzyApi } = await import('../api/tranzyApiService');
       
       // Mock stops data
       const mockStops: Station[] = [
@@ -180,7 +180,7 @@ describe('GpsFirstDataLoader', () => {
     });
 
     it('should find second stop within radius', async () => {
-      const { enhancedTranzyApi } = await import('./tranzyApiService');
+      const { enhancedTranzyApi } = await import('../api/tranzyApiService');
       
       // Mock stops data - two stops close to each other
       const mockStops: Station[] = [
@@ -289,7 +289,7 @@ describe('GpsFirstDataLoader', () => {
     });
 
     it('should filter out stops without valid trip_ids', async () => {
-      const { enhancedTranzyApi } = await import('./tranzyApiService');
+      const { enhancedTranzyApi } = await import('../api/tranzyApiService');
       
       const mockStops: Station[] = [
         {

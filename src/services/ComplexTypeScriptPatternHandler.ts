@@ -4,7 +4,7 @@
  */
 
 import * as ts from 'typescript';
-import path from 'path';
+import * as path from 'path';
 
 export interface ComplexPattern {
   type: 'generic' | 'conditional' | 'mapped' | 'template-literal' | 'decorator' | 'namespace' | 'module-augmentation' | 'intersection' | 'union' | 'tuple' | 'recursive';
@@ -126,8 +126,8 @@ export class ComplexTypeScriptPatternHandler {
       ).filter(c => c);
     }
 
-    // Check for decorators
-    if (node.decorators && node.decorators.length > 0) {
+    // Check for decorators (TypeScript 5.x compatibility)
+    if (this.hasDecorators(node)) {
       element.hasDecorators = true;
     }
 
@@ -175,8 +175,8 @@ export class ComplexTypeScriptPatternHandler {
       ).filter(c => c);
     }
 
-    // Check for decorators
-    if (node.decorators && node.decorators.length > 0) {
+    // Check for decorators (TypeScript 5.x compatibility)
+    if (this.hasDecorators(node)) {
       element.hasDecorators = true;
     }
 
@@ -332,8 +332,8 @@ export class ComplexTypeScriptPatternHandler {
     element.type = 'variable';
     element.name = declaration.name.text;
 
-    // Check for decorators
-    if (node.decorators && node.decorators.length > 0) {
+    // Check for decorators (TypeScript 5.x compatibility)
+    if (this.hasDecorators(node)) {
       element.hasDecorators = true;
     }
 
@@ -519,7 +519,7 @@ export class ComplexTypeScriptPatternHandler {
     };
 
     visit(typeNode);
-    return [...new Set(dependencies)]; // Remove duplicates
+    return Array.from(new Set(dependencies)); // Remove duplicates
   }
 
   /**
@@ -628,7 +628,7 @@ export class ComplexTypeScriptPatternHandler {
       }
     }
     
-    return [...new Set(dependencies)];
+    return Array.from(new Set(dependencies));
   }
 
   private extractDecoratorDependencies(node: ts.Node, sourceFile: ts.SourceFile): string[] {
@@ -662,7 +662,7 @@ export class ComplexTypeScriptPatternHandler {
       }
     }
     
-    return [...new Set(dependencies)];
+    return Array.from(new Set(dependencies));
   }
 
   private hasExportModifier(node: ts.Node): boolean {

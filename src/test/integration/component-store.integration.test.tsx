@@ -19,7 +19,7 @@ import { useConfigStore, useVehicleStore, useLocationStore } from '../../stores'
 import { ThemeToggle } from '../../components/ui';
 
 // Mock external dependencies
-vi.mock('../services/tranzyApiService', () => ({
+vi.mock('../services/api/tranzyApiService', () => ({
   tranzyApiService: {
     validateApiKey: vi.fn().mockResolvedValue(true),
     fetchAgencies: vi.fn().mockResolvedValue([

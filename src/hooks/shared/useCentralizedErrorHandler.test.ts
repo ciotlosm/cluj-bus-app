@@ -5,7 +5,7 @@ import { ErrorHandler } from './errors/ErrorHandler';
 import { ErrorType } from './errors/types';
 
 // Mock logger
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../utils/shared/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),

@@ -22,7 +22,7 @@ import {
   exportResultsToJson,
   type BenchmarkResults,
   type MigrationComparison
-} from '../../utils/migrationPerformanceBenchmark';
+} from '../../utils/performance/migrationPerformanceBenchmark';
 
 // Import components to benchmark
 import { useVehicleDisplay } from '../../hooks/controllers/useVehicleDisplay';

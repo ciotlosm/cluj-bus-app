@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 export interface AsyncOperationOptions {
   /** Custom error message prefix */

@@ -15,7 +15,7 @@ import { RouteClassification as RouteClass } from './RouteActivityAnalyzer';
 import { routeFilteringConfigurationManager } from './RouteFilteringConfigurationManager';
 import { routeActivityAnalyzer } from './RouteActivityAnalyzer';
 import { intelligentVehicleFilter } from './IntelligentVehicleFilter';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/shared/logger';
 
 // ============================================================================
 // INTERFACES AND TYPES

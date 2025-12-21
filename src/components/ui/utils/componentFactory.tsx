@@ -171,12 +171,14 @@ function createPolymorphicComponent<
   type PolymorphicProps = PolymorphicComponentPropsWithRef<ElementType, P>;
 
   const Component = forwardRef<any, PolymorphicProps>(
-    ({ as: Element = defaultElement, ...props }, ref) => {
+    (allProps, ref) => {
+      const Element = (allProps as any).as || defaultElement;
+      const { as, ...props } = allProps as any;
       // Merge props with defaults and variant-specific props
       const mergedProps = {
         ...defaultProps,
         ...props,
-      } as P;
+      } as unknown as P;
 
       // Apply variant-specific props
       if (mergedProps.variant && variants[mergedProps.variant]) {
@@ -308,7 +310,7 @@ function createHOC<InjectedProps = {}, AdditionalProps = {}>(
         // Invalid props - could be logged here if needed
       }
 
-      const combinedProps = { ...props, ...injectedProps } as P;
+      const combinedProps = { ...props, ...injectedProps } as unknown as P;
       return React.createElement(WrappedComponent, combinedProps);
     };
 

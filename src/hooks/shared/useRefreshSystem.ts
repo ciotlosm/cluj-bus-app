@@ -16,7 +16,7 @@ import { useConfigStore } from '../../stores/configStore';
 import { useVehicleStore } from '../../stores/vehicleStore';
 import { useStoreData } from './useStoreData';
 // Auto refresh managed by vehicle store
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 export interface RefreshSystemState {
   isLoading: boolean;

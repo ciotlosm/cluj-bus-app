@@ -29,7 +29,7 @@ vi.mock('child_process', () => ({
   execSync: vi.fn()
 }));
 
-vi.mock('../utils/logger', () => ({
+vi.mock('../utils/shared/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -38,7 +38,7 @@ vi.mock('../utils/logger', () => ({
   }
 }));
 
-vi.mock('../utils/performance', () => ({
+vi.mock('../utils/performance/performance', () => ({
   performanceMonitor: {
     recordTiming: vi.fn(),
     getSummary: vi.fn(() => ({}))

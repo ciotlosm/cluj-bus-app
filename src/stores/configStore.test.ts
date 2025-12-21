@@ -10,7 +10,7 @@ import { StoreEventManager, StoreEvents } from './shared/storeEvents';
 import type { UserConfig, Agency, ThemeMode } from '../types';
 
 // Mock services
-vi.mock('../services/tranzyApiService', () => ({
+vi.mock('../services/api/tranzyApiService', () => ({
   enhancedTranzyApi: {
     getAgencies: vi.fn(),
   },
@@ -21,7 +21,7 @@ vi.mock('../services/tranzyApiService', () => ({
   })),
 }));
 
-vi.mock('../services/routeMappingService', () => ({
+vi.mock('../services/business-logic/routeMappingService', () => ({
   routeMappingService: {
     updateCacheDuration: vi.fn(),
   },
@@ -29,7 +29,7 @@ vi.mock('../services/routeMappingService', () => ({
 
 // Don't mock retryUtils globally - we'll mock it selectively in error tests
 
-vi.mock('../utils/logger', () => ({
+vi.mock('../utils/shared/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -308,7 +308,7 @@ describe('ConfigStore Unit Tests', () => {
         { id: 'agency2', name: 'Test Agency 2' },
       ];
 
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getAgencies).mockResolvedValue(mockAgencies);
 
       const eventHandler = vi.fn();
@@ -343,7 +343,7 @@ describe('ConfigStore Unit Tests', () => {
       });
 
       const mockError = new Error('Network error');
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       vi.mocked(enhancedTranzyApi.getAgencies).mockRejectedValue(mockError);
 
       const eventHandler = vi.fn();
@@ -374,7 +374,7 @@ describe('ConfigStore Unit Tests', () => {
         { id: 'agency1', name: 'Test Agency 1' },
       ];
 
-      const { tranzyApiService } = await import('../services/tranzyApiService');
+      const { tranzyApiService } = await import('../services/api/tranzyApiService');
       const mockService = {
         setApiKey: vi.fn(),
         validateApiKey: vi.fn().mockResolvedValue(true),
@@ -396,7 +396,7 @@ describe('ConfigStore Unit Tests', () => {
     });
 
     it('should handle invalid API key', async () => {
-      const { tranzyApiService } = await import('../services/tranzyApiService');
+      const { tranzyApiService } = await import('../services/api/tranzyApiService');
       const mockService = {
         setApiKey: vi.fn(),
         validateApiKey: vi.fn().mockResolvedValue(false),
@@ -436,7 +436,7 @@ describe('ConfigStore Unit Tests', () => {
     });
 
     it('should prevent concurrent agency fetches', async () => {
-      const { enhancedTranzyApi } = await import('../services/tranzyApiService');
+      const { enhancedTranzyApi } = await import('../services/api/tranzyApiService');
       let resolvePromise: (value: Agency[]) => void;
       const mockPromise = new Promise<Agency[]>((resolve) => {
         resolvePromise = resolve;

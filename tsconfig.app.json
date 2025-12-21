@@ -25,5 +25,5 @@
     "noUncheckedSideEffectImports": false
   },
   "include": ["src"],
-  "exclude": ["**/*.test.ts", "**/*.test.tsx", "src/test/**/*"]
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "src/test/**/*", "refactoring-toolkit/**/*"]
 }

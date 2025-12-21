@@ -12,12 +12,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { VehicleTransformationService } from '../../services/VehicleTransformationService';
+import { VehicleTransformationService } from '../../services/data-processing/VehicleTransformationService';
 import { TransformationContext, TranzyVehicleResponse, CoreVehicle, RouteType, ConfidenceLevel } from '../../types';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 // Mock logger to avoid console noise during benchmarks
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../utils/shared/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),

@@ -3,7 +3,7 @@ import { useConfigStore } from '../../stores/configStore';
 import { useLocationStore } from '../../stores/locationStore';
 import { useRefreshSystem } from './useRefreshSystem';
 import { useApiConfig } from './useApiConfig';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/shared/logger';
 
 export interface AppInitializationState {
   isInitializing: boolean;
