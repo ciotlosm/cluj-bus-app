@@ -80,3 +80,74 @@
 - Never commit corrupted transformations
 
 **Remember: The cost of testing transformations is ALWAYS less than the cost of corrupting the entire codebase.**
+
+## 6. EXPLICIT CONFIRMATION PROTOCOL FOR DESTRUCTIVE OPERATIONS
+
+### 🛡️ User Consent Required Before Any Destructive Changes
+
+**NEVER delete, remove, or make significant architectural changes without explicit user permission**
+
+#### **Operations That REQUIRE Confirmation:**
+
+**Deletions:**
+- File deletions (any `rm`, `deleteFile`, or similar operations)
+- Directory removals (removing entire folders)
+- Code removals (deleting functions, classes, or significant code blocks)
+- Configuration changes that remove existing settings
+- Dependency removals from package.json
+
+**Architectural Changes:**
+- Moving files between directories (restructuring)
+- Changing import patterns across multiple files
+- Modifying core interfaces or type definitions
+- Changing state management patterns (store structure changes)
+- Altering build configuration (vite.config.ts, tsconfig.json changes)
+- Service layer restructuring (combining or splitting services)
+
+#### **MANDATORY Confirmation Workflow:**
+
+1. **Stop and identify** the change I'm about to make
+2. **List exactly** what will be deleted/changed
+3. **Explain why** I think the change is needed
+4. **Use `userInput` tool** to ask for explicit permission
+5. **Wait for user approval** before proceeding
+6. **Only execute** after user confirms
+
+#### **Required Confirmation Template:**
+
+```
+🚨 CONFIRMATION REQUIRED
+
+**Proposed Change**: [What I want to do]
+**Files Affected**: [List of files]
+**Code/Content to be Removed**: [Specific items]
+**Reason**: [Why I think this change is needed]
+
+**Options**:
+- "Yes, proceed with the changes"
+- "No, keep the existing code"
+- "Let me review the specific changes first"
+```
+
+#### **Example of Proper Protocol:**
+
+Instead of silently removing code, I must say:
+
+> "I'm about to remove the following code from TripStore:
+> - `clearStopTimes()` method (lines 15-18)
+> - `lastUpdated` property (line 8)
+> 
+> **Reason**: These appear unused in current implementation
+> 
+> **Question**: Should I proceed with removing this code, or would you like to keep it for future use?"
+
+#### **Trigger Words That Require Confirmation:**
+- "Remove", "eliminate", "delete" in my planning
+- Any `rm` or delete operations
+- Moving files between directories
+- Changing core interfaces or types
+- Modifying store structures
+- Altering build configurations
+- Combining or splitting services
+
+**Remember: User maintains full control over what gets changed or removed. Never make assumptions about what should be deleted or restructured.**
