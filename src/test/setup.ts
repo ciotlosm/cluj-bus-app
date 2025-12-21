@@ -1,6 +1,8 @@
 // Test setup file for vitest
 // This file is imported before all test files
 
+import '@testing-library/jest-dom';
+
 // Mock browser APIs that might not be available in test environment
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

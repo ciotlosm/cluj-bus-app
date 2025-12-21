@@ -1,7 +1,52 @@
 // Shared error handling utility for services
 // Eliminates duplication and keeps services focused
+// Includes API status tracking for aggregated health monitoring
 
 import axios from 'axios';
+
+/**
+ * API call result tracking for status aggregation
+ */
+interface ApiCallResult {
+  success: boolean;
+  responseTime: number;
+  timestamp: number;
+  operation: string;
+}
+
+/**
+ * Lightweight API status tracker - aggregates status from actual API calls
+ */
+export const apiStatusTracker = {
+  lastCall: null as ApiCallResult | null,
+  consecutiveFailures: 0,
+  
+  recordSuccess(operation: string, responseTime: number) {
+    this.lastCall = { success: true, responseTime, timestamp: Date.now(), operation };
+    this.consecutiveFailures = 0;
+  },
+  
+  recordFailure(operation: string) {
+    this.lastCall = { success: false, responseTime: 0, timestamp: Date.now(), operation };
+    this.consecutiveFailures++;
+  },
+  
+  getStatus(): 'online' | 'offline' | 'error' {
+    // Check current network status
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline';
+    if (!this.lastCall) return 'offline';
+    if (this.consecutiveFailures >= 3) return 'error';
+    return this.lastCall.success ? 'online' : 'error';
+  },
+  
+  getLastResponseTime(): number | null {
+    return this.lastCall?.success ? this.lastCall.responseTime : null;
+  },
+  
+  getLastCheckTime(): number | null {
+    return this.lastCall?.timestamp || null;
+  }
+};
 
 /**
  * Maps HTTP status codes to user-friendly error messages
@@ -31,10 +76,23 @@ function processAxiosError(errorObj: any): string {
 }
 
 /**
- * Handles API errors with consistent error messages
+ * Handles API errors with consistent error messages and status tracking
  */
 export function handleApiError(error: unknown, operation: string): never {
   console.error(`Failed to ${operation}:`, error);
+  
+  // Record failure for status tracking
+  apiStatusTracker.recordFailure(operation);
+  
+  // Update status store if available
+  if (typeof window !== 'undefined') {
+    // Use dynamic import to avoid circular dependencies
+    import('../stores/statusStore').then(({ useStatusStore }) => {
+      useStatusStore.getState().updateFromApiCall(false, undefined, operation);
+    }).catch(() => {
+      // Ignore import errors - status store may not be available
+    });
+  }
   
   // Handle axios errors (primary method)
   if (axios.isAxiosError(error)) {

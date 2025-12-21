@@ -17,7 +17,7 @@ Implementation of a header status indicator component that displays GPS and API 
   - **Property 2: API Visual State Mapping**
   - **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
 
-- [ ] 2. Create GpsStatusIcon component
+- [x] 2. Create GpsStatusIcon component
   - Create `src/components/features/GpsStatusIcon.tsx`
   - Implement icon and color mapping based on GPS state
   - Add tooltip with descriptive GPS status information
@@ -33,7 +33,7 @@ Implementation of a header status indicator component that displays GPS and API 
   - Test click handler for detailed info
   - _Requirements: 1.5, 5.2_
 
-- [ ] 3. Create ApiStatusIcon component
+- [x] 3. Create ApiStatusIcon component
   - Create `src/components/features/ApiStatusIcon.tsx`
   - Implement icon and color mapping based on API/network state
   - Add tooltip distinguishing network vs API issues
@@ -45,11 +45,10 @@ Implementation of a header status indicator component that displays GPS and API 
   - Test click handler for connection details
   - _Requirements: 2.6, 5.3_
 
-- [ ] 4. Create main StatusIndicator component
+- [x] 4. Create main StatusIndicator component
   - Create `src/components/features/StatusIndicator.tsx`
   - Integrate GpsStatusIcon and ApiStatusIcon
   - Connect to LocationStore and StatusStore
-  - Implement responsive layout for mobile devices
   - _Requirements: 3.1, 3.2, 3.4_
 
 - [ ]* 4.1 Write property test for status update reactivity
@@ -60,7 +59,7 @@ Implementation of a header status indicator component that displays GPS and API 
   - **Property 6: Layout Integration**
   - **Validates: Requirements 3.2, 3.4, 3.5**
 
-- [ ] 5. Integrate StatusIndicator into Header component
+- [x] 5. Integrate StatusIndicator into Header component
   - Update `src/components/layout/Header.tsx`
   - Position StatusIndicator in top right area
   - Ensure existing header functionality is preserved
@@ -72,7 +71,7 @@ Implementation of a header status indicator component that displays GPS and API 
   - Test responsive behavior across screen sizes
   - _Requirements: 3.5, 3.4_
 
-- [ ] 6. Implement real-time status monitoring
+- [x] 6. Implement real-time status monitoring
   - Add GPS status monitoring to StatusIndicator
   - Implement API health check scheduling
   - Add smooth transition animations between states
