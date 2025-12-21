@@ -3,6 +3,7 @@
 // Handles edge cases like missing data and provides fast lookup functions
 
 import type { TranzyStopTimeResponse, TranzyVehicleResponse } from '../types/rawTranzyApi';
+import { CACHE_DURATIONS } from './constants';
 
 /**
  * Mapping of stop_id to array of route_ids serving that station
@@ -169,7 +170,7 @@ interface CacheEntry {
 }
 
 let globalMappingCache: CacheEntry | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache duration
+const CACHE_DURATION = CACHE_DURATIONS.ROUTE_MAPPING;
 
 /**
  * Create a simple hash of the input data for cache invalidation

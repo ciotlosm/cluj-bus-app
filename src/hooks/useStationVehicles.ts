@@ -12,6 +12,7 @@ import {
   getCachedStationRouteMapping, 
   getRouteIdsForStation 
 } from '../utils/routeStationMapping';
+import { CACHE_DURATIONS } from '../utils/constants';
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse } from '../types/rawTranzyApi';
 
 export interface StationVehicle {
@@ -70,8 +71,8 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
         const vehicleStore = useVehicleStore.getState();
         if (allVehicles.length === 0 && !vehicleLoading && !vehicleError) {
           loadVehicles(apiKey, agency_id);
-        } else if (allVehicles.length > 0 && !vehicleStore.isDataFresh(60000)) {
-          // Refresh if data is older than 1 minute
+        } else if (allVehicles.length > 0 && !vehicleStore.isDataFresh(CACHE_DURATIONS.VEHICLES)) {
+          // Refresh if data is older than configured duration
           loadVehicles(apiKey, agency_id);
         }
         

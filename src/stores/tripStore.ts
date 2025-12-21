@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import type { TranzyStopTimeResponse } from '../types/rawTranzyApi';
+import { CACHE_DURATIONS } from '../utils/constants';
 
 interface TripStore {
   // Raw API data - no transformations
@@ -69,8 +70,8 @@ export const useTripStore = create<TripStore>((set, get) => ({
     set({ error: null });
   },
   
-  // Performance helper: check if data is fresh (default 10 minutes for stop times)
-  isDataFresh: (maxAgeMs = 600000) => {
+  // Performance helper: check if data is fresh (default from constants)
+  isDataFresh: (maxAgeMs = CACHE_DURATIONS.STOP_TIMES) => {
     const { lastUpdated } = get();
     if (!lastUpdated) return false;
     return (Date.now() - lastUpdated) < maxAgeMs;

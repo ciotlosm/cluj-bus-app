@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import type { TranzyVehicleResponse } from '../types/rawTranzyApi';
+import { CACHE_DURATIONS } from '../utils/constants';
 
 interface VehicleStore {
   // Raw API data - no transformations
@@ -66,8 +67,8 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
   clearVehicles: () => set({ vehicles: [], error: null, lastUpdated: null }),
   clearError: () => set({ error: null }),
   
-  // Performance helper: check if data is fresh (default 30 seconds)
-  isDataFresh: (maxAgeMs = 30000) => {
+  // Performance helper: check if data is fresh (default from constants)
+  isDataFresh: (maxAgeMs = CACHE_DURATIONS.VEHICLES) => {
     const { lastUpdated } = get();
     if (!lastUpdated) return false;
     return (Date.now() - lastUpdated) < maxAgeMs;

@@ -82,23 +82,23 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ station, 
                 </Stack>
               }
               secondary={
-                <Stack spacing={0.5} sx={{ mt: 0.5 }} component="div">
+                <Stack spacing={0.5} sx={{ mt: 0.5 }} component="span">
                   {/* Speed and timestamp */}
-                  <Stack direction="row" alignItems="center" spacing={2} component="div">
-                    <Box display="flex" alignItems="center" gap={0.5}>
+                  <Stack direction="row" alignItems="center" spacing={2} component="span">
+                    <Box display="flex" alignItems="center" gap={0.5} component="span">
                       <SpeedIcon fontSize="small" color="action" />
                       <Typography variant="caption" component="span">{formatSpeed(vehicle.speed)}</Typography>
                     </Box>
-                    <Box display="flex" alignItems="center" gap={0.5}>
+                    <Box display="flex" alignItems="center" gap={0.5} component="span">
                       <TimeIcon fontSize="small" color="action" />
                       <Typography variant="caption" component="span">{formatTimestamp(vehicle.timestamp)}</Typography>
                     </Box>
                   </Stack>
                   
                   {/* Accessibility information */}
-                  <Stack direction="row" alignItems="center" spacing={1} component="div">
+                  <Stack direction="row" alignItems="center" spacing={1} component="span">
                     {getAccessibilityFeatures(vehicle.wheelchair_accessible, vehicle.bike_accessible).map(feature => (
-                      <Box key={feature.type} display="flex" alignItems="center" gap={0.25}>
+                      <Box key={feature.type} display="flex" alignItems="center" gap={0.25} component="span">
                         {feature.type === 'wheelchair' ? (
                           <WheelchairIcon fontSize="small" color="primary" />
                         ) : (
@@ -112,6 +112,7 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ station, 
                   </Stack>
                 </Stack>
               }
+              secondaryTypographyProps={{ component: 'div' }}
             />
           </ListItem>
         ))}
