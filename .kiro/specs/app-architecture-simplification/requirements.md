@@ -42,7 +42,7 @@ A comprehensive refactoring program to simplify the Cluj Bus App architecture by
 
 ### Requirement 3: Folder Structure Optimization
 
-**User Story:** As a developer, I want folders to contain no more than 10 files each, so that navigation is intuitive and the project structure is manageable.
+**User Story:** As a developer, I want folders to contain no more than 10 files each with clean separation between files and subfolders, so that navigation is intuitive and the project structure is manageable.
 
 #### Acceptance Criteria
 
@@ -51,6 +51,8 @@ A comprehensive refactoring program to simplify the Cluj Bus App architecture by
 3. WHEN creating subfolders THEN the naming SHALL reflect the functional grouping of contained files
 4. WHEN reorganization is complete THEN no folder SHALL contain more than the Folder_Limit
 5. WHEN files are moved THEN all import paths SHALL be updated automatically
+6. WHEN subfolders are created to organize files THEN the original folder SHALL NOT contain both loose files and subfolders (except index files)
+7. WHEN reorganizing overcrowded folders THEN ALL non-index files SHALL be moved into appropriately named subfolders based on their domain or functionality
 
 ### Requirement 4: Human-Friendly Naming Conventions
 

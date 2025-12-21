@@ -41,6 +41,7 @@ interface RefactoringEngine {
   consolidateDuplicates(duplicates: DuplicationReport): RefactoringPlan;
   splitLargeFiles(oversizedFiles: FileInfo[]): RefactoringPlan;
   reorganizeFolders(structure: StructureReport): RefactoringPlan;
+  enforceCleanSeparation(folders: FolderInfo[]): RefactoringPlan;
   renameFiles(naming: NamingReport): RefactoringPlan;
   executeRefactoring(plan: RefactoringPlan): RefactoringResult;
 }
@@ -77,6 +78,18 @@ interface RefactoringPlan {
   dependencies: DependencyMap;
   executionOrder: string[];
   rollbackPlan: RollbackOperation[];
+}
+```
+
+### FolderInfo
+```typescript
+interface FolderInfo {
+  path: string;
+  fileCount: number;
+  hasSubfolders: boolean;
+  hasLooseFiles: boolean;
+  files: FileInfo[];
+  subfolders: string[];
 }
 ```
 

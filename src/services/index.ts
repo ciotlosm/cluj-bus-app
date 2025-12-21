@@ -1,8 +1,8 @@
-export { debugMonitoringService } from './utilities/DebugMonitoringService';
-export { gracefulDegradationService, DegradationLevel, FallbackStrategy } from './utilities/GracefulDegradationService';
-export { realTimeConfigurationManager } from './business-logic/RealTimeConfigurationManager';
-export { routeActivityAnalyzer } from './business-logic/RouteActivityAnalyzer';
-export { routeFilteringConfigurationManager } from './business-logic/RouteFilteringConfigurationManager';
-export * from './api/agencyService';
-export * from './api/geocodingService';
-export * from './utilities/PerformanceDegradationMonitor';
+// Clean services exports - domain-focused services only
+// No complex transformations, no factory patterns
+
+export { agencyService } from './agencyService';
+export { routeService } from './routeService';
+export { stationService } from './stationService';
+export { vehicleService } from './vehicleService';
+export { tripService } from './tripService';
