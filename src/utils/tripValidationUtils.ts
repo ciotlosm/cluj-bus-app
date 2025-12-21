@@ -17,7 +17,6 @@ export function hasActiveTrips(
 ): boolean {
   // Handle edge cases
   if (!station || !station.stop_id || !Array.isArray(stopTimes) || stopTimes.length === 0) {
-    console.log(`hasActiveTrips: Early return for station ${station?.stop_id || 'unknown'} - stopTimes length: ${stopTimes?.length || 0}`);
     return false;
   }
 
@@ -26,15 +25,10 @@ export function hasActiveTrips(
     stopTime => stopTime && stopTime.stop_id === station.stop_id
   );
   
-  console.log(`hasActiveTrips: Station ${station.stop_id} (${station.stop_name}) - found ${stationStopTimes.length} stop times`);
-  
   // Station has active trips if it has stop times with valid trip_id
-  const hasTrips = stationStopTimes.some(stopTime => 
+  return stationStopTimes.some(stopTime => 
     stopTime && stopTime.trip_id && stopTime.trip_id.trim().length > 0
   );
-  
-  console.log(`hasActiveTrips: Station ${station.stop_id} has trips: ${hasTrips}`);
-  return hasTrips;
 }
 
 
