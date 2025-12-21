@@ -1,0 +1,124 @@
+// StationVehicleList - Display vehicles serving routes that pass through a specific station
+// Follows Material-UI patterns and responsive design, keeps under 150 lines
+// Includes performance optimizations with memoization to prevent unnecessary re-renders
+
+import type { FC } from 'react';
+import { memo } from 'react';
+import { 
+  List, ListItem, ListItemText, Typography, Chip, Stack, Box,
+  CircularProgress, Alert, Button, Divider
+} from '@mui/material';
+import { 
+  DirectionsBus as BusIcon, AccessibleForward as WheelchairIcon,
+  DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon
+} from '@mui/icons-material';
+import { useStationVehicles } from '../../../hooks/useStationVehicles';
+import { formatTimestamp, formatSpeed, getAccessibilityFeatures } from '../../../utils/vehicleFormatUtils';
+import type { TranzyStopResponse } from '../../../types/rawTranzyApi';
+
+interface StationVehicleListProps {
+  station: TranzyStopResponse;
+  expanded: boolean;
+}
+
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ station, expanded }) => {
+  const { vehicles, loading, error, refresh } = useStationVehicles(station);
+
+  // Don't load data when collapsed (performance optimization)
+  if (!expanded) return null;
+
+  // Loading state
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+        <CircularProgress size={24} />
+        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+          Loading vehicles...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Error state with retry option
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ m: 1 }} action={<Button size="small" onClick={refresh}>Retry</Button>}>
+        Unable to load vehicles: {error}
+      </Alert>
+    );
+  }
+
+  // Empty state - no vehicles found
+  if (vehicles.length === 0) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ p: 2, fontStyle: 'italic' }}>
+        No active vehicles serving this station
+      </Typography>
+    );
+  }
+
+  return (
+    <Box>
+      <Divider sx={{ my: 1 }} />
+      <Typography variant="caption" color="text.secondary" sx={{ px: 2, display: 'block' }}>
+        Active Vehicles ({vehicles.length})
+      </Typography>
+      
+      <List dense>
+        {vehicles.map(({ vehicle, route }) => (
+          <ListItem key={vehicle.id} sx={{ py: 1 }}>
+            <ListItemText
+              primary={
+                <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                  <BusIcon fontSize="small" color="action" />
+                  <Typography variant="subtitle2" component="span">{vehicle.label}</Typography>
+                  
+                  {/* Route information */}
+                  {route ? (
+                    <Chip label={route.route_short_name} size="small" color="primary" variant="outlined" />
+                  ) : vehicle.route_id && (
+                    <Chip label={`Route ${vehicle.route_id}`} size="small" color="default" variant="outlined" />
+                  )}
+                </Stack>
+              }
+              secondary={
+                <Stack spacing={0.5} sx={{ mt: 0.5 }} component="div">
+                  {/* Speed and timestamp */}
+                  <Stack direction="row" alignItems="center" spacing={2} component="div">
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <SpeedIcon fontSize="small" color="action" />
+                      <Typography variant="caption" component="span">{formatSpeed(vehicle.speed)}</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <TimeIcon fontSize="small" color="action" />
+                      <Typography variant="caption" component="span">{formatTimestamp(vehicle.timestamp)}</Typography>
+                    </Box>
+                  </Stack>
+                  
+                  {/* Accessibility information */}
+                  <Stack direction="row" alignItems="center" spacing={1} component="div">
+                    {getAccessibilityFeatures(vehicle.wheelchair_accessible, vehicle.bike_accessible).map(feature => (
+                      <Box key={feature.type} display="flex" alignItems="center" gap={0.25}>
+                        {feature.type === 'wheelchair' ? (
+                          <WheelchairIcon fontSize="small" color="primary" />
+                        ) : (
+                          <BikeIcon fontSize="small" color="primary" />
+                        )}
+                        <Typography variant="caption" color="primary" component="span">
+                          {feature.label}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Stack>
+              }
+            />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
+});
+
+// Display name for debugging
+StationVehicleList.displayName = 'StationVehicleList';

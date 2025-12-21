@@ -61,8 +61,6 @@ export const StationView: FC = () => {
     );
   }
 
-  const hasActiveTrips = filteredStations.some(fs => fs.hasActiveTrips);
-
   return (
     <Box>
       <StationViewHeader
@@ -77,6 +75,7 @@ export const StationView: FC = () => {
       <StationList 
         stations={filteredStations} 
         utilities={utilities}
+        isFiltering={isFiltering}
       />
       
       <StationEmptyState

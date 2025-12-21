@@ -10,6 +10,7 @@ import {
   Chip, 
   Box 
 } from '@mui/material';
+import { formatTimestamp, formatSpeed } from '../../../utils/vehicleFormatUtils';
 import type { TranzyVehicleResponse } from '../../../types/rawTranzyApi';
 
 interface VehicleListProps {
@@ -46,8 +47,8 @@ export const VehicleList: FC<VehicleListProps> = ({ vehicles }) => {
             }
             secondary={
               `Lat: ${vehicle.latitude}, Lon: ${vehicle.longitude}` +
-              (vehicle.speed ? ` | Speed: ${vehicle.speed} km/h` : '') +
-              ` | Updated: ${new Date(vehicle.timestamp).toLocaleTimeString()}`
+              (vehicle.speed ? ` | Speed: ${formatSpeed(vehicle.speed)}` : '') +
+              ` | Updated: ${formatTimestamp(vehicle.timestamp)}`
             }
           />
         </ListItem>

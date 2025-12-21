@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import { getApiIcon, getApiColor, getApiTooltip } from '../../../utils/apiStatusHelpers';
+import { formatTimestamp } from '../../../utils/vehicleFormatUtils';
 
 interface ApiStatusIconProps {
   status: 'online' | 'offline' | 'error';
@@ -25,7 +26,7 @@ export const ApiStatusIcon: FC<ApiStatusIconProps> = ({
   let tooltipText = tooltip;
   
   if (lastCheck) {
-    const lastCheckTime = new Date(lastCheck).toLocaleTimeString();
+    const lastCheckTime = formatTimestamp(new Date(lastCheck).toISOString());
     tooltipText += ` (Last check: ${lastCheckTime})`;
   }
   

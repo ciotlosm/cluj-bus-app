@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import type { PermissionState, LocationAccuracy } from '../../../types/location';
 import { getGpsIcon, getGpsColor, getGpsTooltip } from '../../../utils/gpsStatusHelpers';
+import { formatTimestamp } from '../../../utils/vehicleFormatUtils';
 
 interface GpsStatusIconProps {
   status: 'available' | 'unavailable' | 'disabled';
@@ -23,7 +24,7 @@ export const GpsStatusIcon: FC<GpsStatusIconProps> = ({
   const tooltip = getGpsTooltip(status, accuracy, permissionState);
   
   const tooltipText = lastUpdated 
-    ? `${tooltip} (Updated: ${new Date(lastUpdated).toLocaleTimeString()})`
+    ? `${tooltip} (Updated: ${formatTimestamp(new Date(lastUpdated).toISOString())})`
     : tooltip;
 
   return (

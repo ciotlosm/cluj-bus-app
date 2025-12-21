@@ -29,7 +29,7 @@ const getStationTypeColor = (stationType: 'primary' | 'secondary' | 'all'): 'pri
 const getStationTypeLabel = (stationType: 'primary' | 'secondary' | 'all'): string => {
   if (stationType === 'primary') return 'Closest';
   if (stationType === 'secondary') return 'Nearby';
-  return ''; // No label for 'all' type
+  return ''; // No label for filtered view
 };
 
 // Safe distance calculation with error handling
@@ -73,19 +73,24 @@ export function useSmartStationFilter(): SmartStationFilterResult {
 
     // When filtering is disabled, return all stations sorted by distance (if location available)
     if (!isFiltering) {
-      const allStations = stops.map(station => ({
+      const allStations = stops.map((station, index) => ({
         station,
         distance: currentPosition ? safeCalculateDistance(
           { lat: currentPosition.coords.latitude, lon: currentPosition.coords.longitude },
           { lat: station.stop_lat, lon: station.stop_lon }
         ) : 0,
         hasActiveTrips: hasActiveTrips(station, stopTimes),
-        stationType: 'all' as const // No type labels when showing all stations
+        stationType: 'all' as const // Will be updated after sorting
       }));
 
       // Sort by distance if location is available
       if (currentPosition) {
-        return allStations.sort((a, b) => a.distance - b.distance);
+        const sorted = allStations.sort((a, b) => a.distance - b.distance);
+        // First station gets "Closest", others get no label
+        return sorted.map((station, index) => ({
+          ...station,
+          stationType: index === 0 ? 'primary' : 'all' as const
+        }));
       }
       
       return allStations;
@@ -122,7 +127,7 @@ export function useSmartStationFilter(): SmartStationFilterResult {
       station: primaryStation,
       distance: safeCalculateDistance(userLocation, { lat: primaryStation.stop_lat, lon: primaryStation.stop_lon }),
       hasActiveTrips: true,
-      stationType: 'primary' // Designated as primary station
+      stationType: 'all' // No labels in filtered view - position indicates priority
     }];
     
     // Find secondary station within 100m of primary that also has active trips
@@ -144,7 +149,7 @@ export function useSmartStationFilter(): SmartStationFilterResult {
         station: secondaryStation,
         distance: safeCalculateDistance(userLocation, { lat: secondaryStation.stop_lat, lon: secondaryStation.stop_lon }),
         hasActiveTrips: true,
-        stationType: 'secondary'
+        stationType: 'all' // No labels in filtered view
       });
     }
     

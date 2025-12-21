@@ -21,6 +21,15 @@ export interface FilteredStation {
 }
 
 /**
+ * Station utility functions interface
+ */
+export interface StationUtilities {
+  formatDistance: (distance: number) => string;
+  getStationTypeColor: (stationType: 'primary' | 'secondary' | 'all') => 'primary' | 'secondary' | 'default';
+  getStationTypeLabel: (stationType: 'primary' | 'secondary' | 'all') => string;
+}
+
+/**
  * Hook result interface
  */
 export interface SmartStationFilterResult {
@@ -31,9 +40,5 @@ export interface SmartStationFilterResult {
   totalStations: number;
   toggleFiltering: () => void;
   retryFiltering: () => void;
-  utilities: {
-    formatDistance: (distance: number) => string;
-    getStationTypeColor: (stationType: 'primary' | 'secondary' | 'all') => 'primary' | 'secondary' | 'default';
-    getStationTypeLabel: (stationType: 'primary' | 'secondary' | 'all') => string;
-  };
+  utilities: StationUtilities;
 }
