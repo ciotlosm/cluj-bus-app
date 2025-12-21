@@ -9,7 +9,7 @@ import { useVehicleStore } from '../stores/vehicleStore';
 import { useRouteStore } from '../stores/routeStore';
 import { useTripStore } from '../stores/tripStore';
 import { 
-  createCompleteStationRouteMapping, 
+  getCachedStationRouteMapping, 
   getRouteIdsForStation 
 } from '../utils/routeStationMapping';
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse } from '../types/rawTranzyApi';
@@ -56,14 +56,16 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
     loadStopTimes 
   } = useTripStore();
 
-  // Auto-load data when hook is used
+  // Auto-load data when hook is used - with performance optimizations
   useEffect(() => {
     const loadAllData = async () => {
       const { useConfigStore } = await import('../stores/configStore');
       const { apiKey, agency_id } = useConfigStore.getState();
       
       if (apiKey && agency_id) {
-        // Load all required data if not already loaded
+        // Performance optimization: only load data if not already loaded or fresh
+        // This ensures data sharing across all station components
+        
         if (allVehicles.length === 0 && !vehicleLoading && !vehicleError) {
           loadVehicles(apiKey, agency_id);
         }
@@ -84,6 +86,7 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
   ]);
 
   // Create route-to-station mapping and get route IDs for this station
+  // Uses cached mapping for performance optimization across all station components
   const routeIds = useMemo((): number[] => {
     // Return empty array if we don't have the required data
     if (stopTimes.length === 0 || allVehicles.length === 0) {
@@ -91,8 +94,9 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
     }
 
     try {
-      // Create complete mapping from stop times and vehicle data
-      const stationRouteMap = createCompleteStationRouteMapping(stopTimes, allVehicles);
+      // Use cached mapping to avoid repeated expensive calculations
+      // This ensures all station components share the same mapping data
+      const stationRouteMap = getCachedStationRouteMapping(stopTimes, allVehicles);
       
       // Get route IDs for this specific station
       return getRouteIdsForStation(station.stop_id, stationRouteMap);
@@ -104,15 +108,8 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
 
   // Filter vehicles by route IDs and combine with route information
   const vehicles = useMemo((): StationVehicle[] => {
-    console.log('🚗 useStationVehicles: Starting vehicle filtering', {
-      routeIdsLength: routeIds.length,
-      routeIds: routeIds,
-      vehiclesLength: allVehicles.length
-    });
-
     // Return empty array if no route IDs or vehicles
     if (routeIds.length === 0 || allVehicles.length === 0) {
-      console.log('❌ useStationVehicles: Cannot filter - missing route IDs or vehicles');
       return [];
     }
 
@@ -124,16 +121,8 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
         routeIds.includes(vehicle.route_id)
       );
 
-      console.log('🔍 useStationVehicles: Vehicle filtering results', {
-        totalVehicles: allVehicles.length,
-        vehiclesWithRouteId: allVehicles.filter(v => v.route_id !== null).length,
-        matchingVehicles: filteredVehicles.length,
-        vehicleRouteIds: allVehicles.map(v => v.route_id).filter(id => id !== null).slice(0, 10),
-        stationRouteIds: routeIds
-      });
-
       // Combine vehicle data with route information
-      const result = filteredVehicles.map(vehicle => {
+      return filteredVehicles.map(vehicle => {
         // Find the route for this vehicle
         const route = allRoutes.find(r => r.route_id === vehicle.route_id) || null;
         
@@ -142,15 +131,8 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
           route
         };
       });
-
-      console.log('✅ useStationVehicles: Final result', {
-        vehicleCount: result.length,
-        vehicles: result.map(v => ({ id: v.vehicle.id, label: v.vehicle.label, route_id: v.vehicle.route_id }))
-      });
-
-      return result;
     } catch (error) {
-      console.error('💥 useStationVehicles: Failed to filter vehicles:', error);
+      console.warn('Failed to filter vehicles:', error);
       return [];
     }
   }, [allVehicles, allRoutes, routeIds]);

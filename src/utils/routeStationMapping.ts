@@ -26,18 +26,12 @@ export interface TripRouteMap {
  * @returns Mapping of trip_id to route_id
  */
 export function createTripRouteMapping(vehicles: TranzyVehicleResponse[]): TripRouteMap {
-  console.log('🚌 createTripRouteMapping: Starting', { vehiclesLength: vehicles.length });
-  
   const tripRouteMap: TripRouteMap = {};
   
   // Handle edge case: empty or invalid vehicles array
   if (!Array.isArray(vehicles)) {
-    console.log('❌ createTripRouteMapping: Invalid vehicles array');
     return tripRouteMap;
   }
-  
-  let validMappings = 0;
-  let skippedVehicles = 0;
   
   for (const vehicle of vehicles) {
     // Skip vehicles with missing or invalid data
@@ -47,21 +41,12 @@ export function createTripRouteMapping(vehicles: TranzyVehicleResponse[]): TripR
         vehicle.trip_id.trim() === '' ||
         vehicle.route_id === null || 
         vehicle.route_id === undefined) {
-      skippedVehicles++;
       continue;
     }
     
     // Map trip_id to route_id
     tripRouteMap[vehicle.trip_id] = vehicle.route_id;
-    validMappings++;
   }
-  
-  console.log('✅ createTripRouteMapping: Complete', {
-    totalVehicles: vehicles.length,
-    validMappings,
-    skippedVehicles,
-    sampleMappings: Object.entries(tripRouteMap).slice(0, 5)
-  });
   
   return tripRouteMap;
 }
@@ -77,22 +62,12 @@ export function createStationRouteMapping(
   stopTimes: TranzyStopTimeResponse[], 
   tripRouteMap: TripRouteMap
 ): StationRouteMap {
-  console.log('🚏 createStationRouteMapping: Starting', {
-    stopTimesLength: stopTimes.length,
-    tripRouteMapSize: Object.keys(tripRouteMap).length
-  });
-
   const stationRouteMap: StationRouteMap = {};
   
   // Handle edge case: empty or invalid stop times array
   if (!Array.isArray(stopTimes)) {
-    console.log('❌ createStationRouteMapping: Invalid stopTimes array');
     return stationRouteMap;
   }
-  
-  let processedStopTimes = 0;
-  let skippedStopTimes = 0;
-  let foundRoutes = 0;
   
   for (const stopTime of stopTimes) {
     // Skip invalid stop times
@@ -101,11 +76,8 @@ export function createStationRouteMapping(
         stopTime.stop_id === undefined ||
         !stopTime.trip_id || 
         stopTime.trip_id.trim() === '') {
-      skippedStopTimes++;
       continue;
     }
-    
-    processedStopTimes++;
     
     // Get route_id for this trip_id
     const route_id = tripRouteMap[stopTime.trip_id];
@@ -114,8 +86,6 @@ export function createStationRouteMapping(
     if (route_id === null || route_id === undefined) {
       continue;
     }
-    
-    foundRoutes++;
     
     // Initialize array for this station if it doesn't exist
     if (!stationRouteMap[stopTime.stop_id]) {
@@ -127,15 +97,6 @@ export function createStationRouteMapping(
       stationRouteMap[stopTime.stop_id].push(route_id);
     }
   }
-  
-  console.log('✅ createStationRouteMapping: Complete', {
-    totalStopTimes: stopTimes.length,
-    processedStopTimes,
-    skippedStopTimes,
-    foundRoutes,
-    stationsWithRoutes: Object.keys(stationRouteMap).length,
-    sampleStations: Object.entries(stationRouteMap).slice(0, 5)
-  });
   
   return stationRouteMap;
 }
@@ -171,32 +132,16 @@ export function createCompleteStationRouteMapping(
   stopTimes: TranzyStopTimeResponse[],
   vehicles: TranzyVehicleResponse[]
 ): StationRouteMap {
-  console.log('🗺️ createCompleteStationRouteMapping: Starting', {
-    stopTimesLength: stopTimes.length,
-    vehiclesLength: vehicles.length
-  });
-
   // Handle edge cases
   if (!Array.isArray(stopTimes) || !Array.isArray(vehicles)) {
-    console.log('❌ createCompleteStationRouteMapping: Invalid input arrays');
     return {};
   }
   
   // Step 1: Create trip-to-route mapping from vehicle data
-  console.log('🔧 createCompleteStationRouteMapping: Creating trip-route mapping...');
   const tripRouteMap = createTripRouteMapping(vehicles);
-  console.log('✅ createCompleteStationRouteMapping: Trip-route mapping created', {
-    tripCount: Object.keys(tripRouteMap).length,
-    sampleEntries: Object.entries(tripRouteMap).slice(0, 5)
-  });
   
   // Step 2: Create station-to-routes mapping using stop times and trip-route mapping
-  console.log('🔧 createCompleteStationRouteMapping: Creating station-route mapping...');
   const stationRouteMap = createStationRouteMapping(stopTimes, tripRouteMap);
-  console.log('✅ createCompleteStationRouteMapping: Station-route mapping created', {
-    stationCount: Object.keys(stationRouteMap).length,
-    sampleEntries: Object.entries(stationRouteMap).slice(0, 5)
-  });
   
   return stationRouteMap;
 }
@@ -214,5 +159,89 @@ export function hasRoutesForStation(
 ): boolean {
   const routeIds = getRouteIdsForStation(stop_id, stationRouteMap);
   return routeIds.length > 0;
+}
+
+// Performance optimization: Global cache for route-to-station mapping
+interface CacheEntry {
+  mapping: StationRouteMap;
+  timestamp: number;
+  dataHash: string;
+}
+
+let globalMappingCache: CacheEntry | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache duration
+
+/**
+ * Create a simple hash of the input data for cache invalidation
+ * 
+ * @param stopTimes - Stop times data
+ * @param vehicles - Vehicle data
+ * @returns Simple hash string
+ */
+function createDataHash(stopTimes: TranzyStopTimeResponse[], vehicles: TranzyVehicleResponse[]): string {
+  // Simple hash based on data lengths and first/last items
+  const stopTimesHash = stopTimes.length > 0 ? 
+    `${stopTimes.length}-${stopTimes[0]?.trip_id}-${stopTimes[stopTimes.length - 1]?.trip_id}` : 
+    '0';
+  const vehiclesHash = vehicles.length > 0 ? 
+    `${vehicles.length}-${vehicles[0]?.id}-${vehicles[vehicles.length - 1]?.id}` : 
+    '0';
+  return `${stopTimesHash}:${vehiclesHash}`;
+}
+
+/**
+ * Check if cached mapping is still valid
+ * 
+ * @param stopTimes - Current stop times data
+ * @param vehicles - Current vehicle data
+ * @returns True if cache is valid, false otherwise
+ */
+function isCacheValid(stopTimes: TranzyStopTimeResponse[], vehicles: TranzyVehicleResponse[]): boolean {
+  if (!globalMappingCache) return false;
+  
+  const now = Date.now();
+  const isNotExpired = (now - globalMappingCache.timestamp) < CACHE_DURATION;
+  const currentHash = createDataHash(stopTimes, vehicles);
+  const isSameData = globalMappingCache.dataHash === currentHash;
+  
+  return isNotExpired && isSameData;
+}
+
+/**
+ * Get cached route-to-station mapping or create new one if cache is invalid
+ * This function provides efficient caching to avoid repeated expensive calculations
+ * 
+ * @param stopTimes - Array of stop time responses from API
+ * @param vehicles - Array of vehicle responses from API
+ * @returns Cached or newly created station-to-routes mapping
+ */
+export function getCachedStationRouteMapping(
+  stopTimes: TranzyStopTimeResponse[],
+  vehicles: TranzyVehicleResponse[]
+): StationRouteMap {
+  // Return cached mapping if valid
+  if (isCacheValid(stopTimes, vehicles)) {
+    return globalMappingCache!.mapping;
+  }
+  
+  // Create new mapping and cache it
+  const mapping = createCompleteStationRouteMapping(stopTimes, vehicles);
+  const dataHash = createDataHash(stopTimes, vehicles);
+  
+  globalMappingCache = {
+    mapping,
+    timestamp: Date.now(),
+    dataHash
+  };
+  
+  return mapping;
+}
+
+/**
+ * Clear the global mapping cache
+ * Useful when you want to force a fresh calculation
+ */
+export function clearMappingCache(): void {
+  globalMappingCache = null;
 }
 
