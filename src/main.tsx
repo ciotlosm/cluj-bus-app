@@ -1,7 +1,7 @@
 // Clean main entry point - minimal setup
 // Single file for app initialization
 
-import { StrictMode, useState, useEffect } from 'react';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppLayout } from './components/layout/AppLayout';
 import { Navigation } from './components/layout/Navigation';
@@ -9,31 +9,13 @@ import { StationView } from './components/features/StationView';
 import { VehicleView } from './components/features/VehicleView';
 import { SettingsView } from './components/features/SettingsView';
 import { ThemeProvider } from './components/theme/ThemeProvider';
-import { useLocationStore } from './stores/locationStore';
+import { useAutoLocation } from './hooks/useAutoLocation';
 
 function App() {
   const [currentView, setCurrentView] = useState(0); // 0 = stations, 1 = vehicles, 2 = settings
-  const { requestLocation } = useLocationStore();
-
-  // Request location on app start and when returning from background
-  useEffect(() => {
-    // Request location immediately when app starts
-    requestLocation();
-
-    // Handle visibility changes - request location when coming back to foreground
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Browser came back to foreground - request location once
-        requestLocation();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [requestLocation]);
+  
+  // Auto-request location on app start and foreground return
+  useAutoLocation();
 
   const renderContent = () => {
     switch (currentView) {
