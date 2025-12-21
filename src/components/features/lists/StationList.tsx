@@ -67,20 +67,19 @@ export const StationList: FC<StationListProps> = ({ stations, utilities }) => {
                 </Stack>
               }
               secondary={
-                <Stack spacing={0.5} mt={0.5}>
+                <>
                   {/* Distance information */}
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
-                    <LocationIcon fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">
-                      {formatDistance(distance)} away
-                    </Typography>
-                  </Stack>
+                  <Typography variant="body2" color="text.secondary" component="span">
+                    <LocationIcon fontSize="small" color="action" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                    {formatDistance(distance)} away
+                  </Typography>
+                  <br />
                   
                   {/* Station details */}
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" component="span">
                     ID: {station.stop_id} | Lat: {station.stop_lat}, Lon: {station.stop_lon}
                   </Typography>
-                </Stack>
+                </>
               }
             />
           </ListItem>
