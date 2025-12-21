@@ -11,8 +11,6 @@ import {
   Divider
 } from '@mui/material';
 import { useStationStore } from '../../../stores/stationStore';
-import { useTripStore } from '../../../stores/tripStore';
-import { useConfigStore } from '../../../stores/configStore';
 import { useSmartStationFilter } from '../../../hooks/useSmartStationFilter';
 import { StationViewHeader } from '../headers/StationViewHeader';
 import { StationList } from '../lists/StationList';
@@ -20,8 +18,6 @@ import { StationEmptyState } from '../states/StationEmptyState';
 
 export const StationView: FC = () => {
   const { loadStops } = useStationStore();
-  const { loadStopTimes } = useTripStore();
-  const { apiKey, agency_id } = useConfigStore();
   const { 
     filteredStations, 
     loading, 
@@ -35,12 +31,7 @@ export const StationView: FC = () => {
 
   useEffect(() => {
     loadStops();
-    
-    // Load stop times if we have the required config
-    if (apiKey && agency_id) {
-      loadStopTimes(apiKey, agency_id);
-    }
-  }, [loadStops, loadStopTimes, apiKey, agency_id]);
+  }, [loadStops]);
 
   if (loading) {
     return (

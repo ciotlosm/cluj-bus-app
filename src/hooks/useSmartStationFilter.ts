@@ -3,7 +3,7 @@
  * Minimal implementation for location-based station filtering
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useStationStore } from '../stores/stationStore';
 import { useTripStore } from '../stores/tripStore';
@@ -41,9 +41,25 @@ const safeCalculateDistance = (from: { lat: number; lon: number }, to: { lat: nu
 export function useSmartStationFilter(): SmartStationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
-  const { stopTimes, loading: tripLoading, error: tripError } = useTripStore();
+  const { stopTimes, loading: tripLoading, error: tripError, loadStopTimes } = useTripStore();
   
   const [isFiltering, setIsFiltering] = useState(true);
+  
+  // Auto-load stop times when hook is used
+  useEffect(() => {
+    const loadTripData = async () => {
+      if (stopTimes.length === 0 && !tripLoading && !tripError) {
+        const { useConfigStore } = await import('../stores/configStore');
+        const { apiKey, agency_id } = useConfigStore.getState();
+        
+        if (apiKey && agency_id) {
+          loadStopTimes(apiKey, agency_id);
+        }
+      }
+    };
+    
+    loadTripData();
+  }, [stopTimes.length, tripLoading, tripError, loadStopTimes]);
   
   const filteredStations = useMemo((): FilteredStation[] => {
     // Early return if no stations available

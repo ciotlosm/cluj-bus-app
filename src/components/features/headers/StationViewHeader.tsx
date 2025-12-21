@@ -60,7 +60,7 @@ export const StationViewHeader: FC<StationViewHeaderProps> = ({
         {hasActiveTrips && (
           <Chip
             icon={<BusIcon />}
-            label="Service verified"
+            label="Active routes"
             size="small"
             color="success"
             variant="outlined"
