@@ -11,8 +11,7 @@ import {
   Stack
 } from '@mui/material';
 import { 
-  LocationOn as LocationIcon,
-  DirectionsBus as BusIcon
+  LocationOn as LocationIcon
 } from '@mui/icons-material';
 import type { FilteredStation } from '../../../types/smartStationFilter';
 
@@ -53,17 +52,6 @@ export const StationList: FC<StationListProps> = ({ stations, utilities }) => {
                     color={getStationTypeColor(stationType)}
                     variant="filled"
                   />
-                  
-                  {/* Trip validation status */}
-                  {hasActiveTrips && (
-                    <Chip
-                      icon={<BusIcon />}
-                      label="Active"
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                    />
-                  )}
                 </Stack>
               }
               secondary={

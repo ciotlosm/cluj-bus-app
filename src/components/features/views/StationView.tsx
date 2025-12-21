@@ -70,7 +70,6 @@ export const StationView: FC = () => {
         toggleFiltering={toggleFiltering}
         filteredCount={filteredStations.length}
         totalCount={totalStations}
-        hasActiveTrips={hasActiveTrips}
       />
       
       <Divider />

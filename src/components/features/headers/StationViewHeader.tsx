@@ -10,24 +10,19 @@ import {
   Chip,
   Stack
 } from '@mui/material';
-import { 
-  DirectionsBus as BusIcon
-} from '@mui/icons-material';
 
 interface StationViewHeaderProps {
   isFiltering: boolean;
   toggleFiltering: () => void;
   filteredCount: number;
   totalCount: number;
-  hasActiveTrips: boolean;
 }
 
 export const StationViewHeader: FC<StationViewHeaderProps> = ({
   isFiltering,
   toggleFiltering,
   filteredCount,
-  totalCount,
-  hasActiveTrips
+  totalCount
 }) => {
   return (
     <Box sx={{ p: 2, pb: 1 }}>
@@ -56,16 +51,6 @@ export const StationViewHeader: FC<StationViewHeaderProps> = ({
           size="small"
           variant="outlined"
         />
-        
-        {hasActiveTrips && (
-          <Chip
-            icon={<BusIcon />}
-            label="Active routes"
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-        )}
       </Stack>
     </Box>
   );
