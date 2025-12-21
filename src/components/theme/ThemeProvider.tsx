@@ -3,7 +3,7 @@
 
 import type { FC, ReactNode } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { useConfigStore } from '../stores/configStore';
+import { useConfigStore } from '../../stores/configStore';
 
 interface ThemeProviderProps {
   children: ReactNode;

@@ -2,6 +2,13 @@
 
 ## Recent Updates (December 2024)
 
+### December 21, 2024 - Theme Toggle Implementation
+- **✨ NEW FEATURE**: Added theme toggle functionality for light/dark mode switching
+- **UI Enhancement**: Theme toggle button now visible in Settings view with smooth transitions
+- **Store Update**: Added `toggleTheme()` method to ConfigStore for easy theme switching
+- **User Experience**: Toggle shows current mode with tooltip and 180° rotation animation on hover
+- **Integration**: ThemeProvider properly connected to user theme preferences with persistence
+
 ### December 20, 2024 - Enhanced Empty State Message with Station Details
 - **✨ IMPROVEMENT**: Enhanced "No Vehicles Found" message to show which nearby stations were checked
 - **🐛 BUG FIX**: Fixed React hooks violation that caused "Rendered fewer hooks than expected" error

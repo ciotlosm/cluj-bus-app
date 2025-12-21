@@ -9,12 +9,16 @@ import {
   TextField, 
   Button, 
   Alert,
-  CircularProgress
+  CircularProgress,
+  Card,
+  CardContent,
+  Divider
 } from '@mui/material';
-import { useConfigStore } from '../stores/configStore';
+import { useConfigStore } from '../../stores/configStore';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 export const SettingsView: FC = () => {
-  const { apiKey, agency_id, setApiKey, setAgency, error, loading, clearError } = useConfigStore();
+  const { apiKey, agency_id, theme, setApiKey, setAgency, error, loading, clearError } = useConfigStore();
   const [localApiKey, setLocalApiKey] = useState(apiKey || '');
   const [localAgencyId, setLocalAgencyId] = useState(agency_id?.toString() || '');
 
@@ -94,6 +98,24 @@ export const SettingsView: FC = () => {
           {loading ? 'Saving...' : 'Save Configuration'}
         </Button>
       </Box>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Card variant="outlined">
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                Theme
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {theme === 'dark' ? 'Dark Mode' : theme === 'light' ? 'Light Mode' : 'System Default'}
+              </Typography>
+            </Box>
+            <ThemeToggle size="large" />
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

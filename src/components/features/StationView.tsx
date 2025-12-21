@@ -13,8 +13,8 @@ import {
   ListItemText,
   Button
 } from '@mui/material';
-import { useStationStore } from '../stores/stationStore';
-import { useConfigStore } from '../stores/configStore';
+import { useStationStore } from '../../stores/stationStore';
+import { useConfigStore } from '../../stores/configStore';
 
 export const StationView: FC = () => {
   const { stops, loading, error, loadStops } = useStationStore();

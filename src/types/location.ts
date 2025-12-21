@@ -1,0 +1,96 @@
+/**
+ * Location-related TypeScript interfaces and types
+ * Following the established patterns from rawTranzyApi.ts
+ */
+
+export interface LocationPreferences {
+  enableAutoLocation: boolean;
+  locationAccuracy: 'high' | 'balanced' | 'low';
+  maxCacheAge: number; // milliseconds
+  distanceThreshold: number; // meters for proximity filtering
+}
+
+export interface LocationError {
+  code: number;
+  message: string;
+  type: 'permission_denied' | 'position_unavailable' | 'timeout' | 'not_supported' | 'network_error' | 'retry_exhausted';
+  retryable: boolean;
+}
+
+export interface LocationState {
+  // Raw GPS data - no transformations
+  currentPosition: GeolocationPosition | null;
+  previousPosition: GeolocationPosition | null;
+  permissionState: 'prompt' | 'granted' | 'denied' | 'disabled' | null;
+  lastUpdated: number | null;
+  
+  // Simple loading and error states
+  loading: boolean;
+  error: string | null;
+  disabled: boolean;
+  
+  // Configuration
+  enableAutoLocation: boolean;
+  locationAccuracy: 'high' | 'balanced' | 'low';
+  cacheTimeout: number;
+  distanceThreshold: number;
+}
+
+export interface LocationServiceOptions {
+  enableHighAccuracy?: boolean;
+  timeout?: number;
+  maximumAge?: number;
+}
+
+// Type aliases for common coordinate patterns
+export type PermissionState = 'prompt' | 'granted' | 'denied' | 'disabled';
+export type LocationAccuracy = 'high' | 'balanced' | 'low';
+export type LocationErrorType = 'permission_denied' | 'position_unavailable' | 'timeout' | 'not_supported' | 'network_error' | 'retry_exhausted';
+
+// Utility type for objects that have coordinates (extends the interface from distanceUtils)
+export interface HasCoordinates {
+  lat: number;
+  lon: number;
+}
+
+// Type for location-aware filtering results
+export interface LocationFilterResult<T> {
+  items: T[];
+  center: HasCoordinates;
+  radius: number;
+  totalFiltered: number;
+}
+
+// Configuration for location accuracy settings
+export interface LocationAccuracyConfig {
+  high: LocationServiceOptions;
+  balanced: LocationServiceOptions;
+  low: LocationServiceOptions;
+}
+
+// Default accuracy configurations
+export const DEFAULT_LOCATION_ACCURACY: LocationAccuracyConfig = {
+  high: {
+    enableHighAccuracy: true,
+    timeout: 15000,
+    maximumAge: 60000 // 1 minute
+  },
+  balanced: {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 300000 // 5 minutes
+  },
+  low: {
+    enableHighAccuracy: false,
+    timeout: 5000,
+    maximumAge: 600000 // 10 minutes
+  }
+};
+
+// Default preferences
+export const DEFAULT_LOCATION_PREFERENCES: LocationPreferences = {
+  enableAutoLocation: false, // Require explicit user consent
+  locationAccuracy: 'balanced',
+  maxCacheAge: 300000, // 5 minutes
+  distanceThreshold: 1000 // 1km default radius
+};

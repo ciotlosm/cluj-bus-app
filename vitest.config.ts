@@ -27,12 +27,27 @@ export default defineConfig({
     restoreMocks: true,
     // Monitor memory usage but allow parallel execution
     logHeapUsage: true,
+    // Exclude backup and legacy folders from tests
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.git/**',
+      '**/coverage/**',
+      '**/backup-complex-architecture/**',
+      '**/backup-stores/**',
+      '**/refactoring-backup-*/**',
+      '**/refactoring-toolkit/**'
+    ],
     // Optimize file watching
     watchExclude: [
       '**/node_modules/**',
       '**/dist/**',
       '**/.git/**',
-      '**/coverage/**'
+      '**/coverage/**',
+      '**/backup-complex-architecture/**',
+      '**/backup-stores/**',
+      '**/refactoring-backup-*/**',
+      '**/refactoring-toolkit/**'
     ]
   },
 })

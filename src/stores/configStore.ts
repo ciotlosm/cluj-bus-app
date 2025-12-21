@@ -22,6 +22,7 @@ interface ConfigStore {
   setHomeLocation: (lat: number, lon: number) => void;
   setWorkLocation: (lat: number, lon: number) => void;
   setTheme: (theme: 'light' | 'dark' | 'auto') => void;
+  toggleTheme: () => void;
   clearError: () => void;
 }
 
@@ -60,6 +61,11 @@ export const useConfigStore = create<ConfigStore>()(
         set({ work_location: { lat, lon }, error: null }),
       setTheme: (theme: 'light' | 'dark' | 'auto') => 
         set({ theme, error: null }),
+      toggleTheme: () => 
+        set((state) => ({ 
+          theme: state.theme === 'dark' ? 'light' : 'dark', 
+          error: null 
+        })),
       clearError: () => set({ error: null }),
     }),
     {

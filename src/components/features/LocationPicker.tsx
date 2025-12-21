@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import type { FC } from 'react';
 import { Box, TextField, Button, Typography, Alert, CircularProgress } from '@mui/material';
+import { handleLocationError } from '../../services/errorHandler';
 
 interface LocationPickerProps {
   label: string;
@@ -41,7 +42,8 @@ export const LocationPicker: FC<LocationPickerProps> = ({
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by this browser');
+      const error = handleLocationError(new Error('Geolocation not supported'), 'get current location');
+      setError(error.message);
       return;
     }
     
@@ -59,20 +61,8 @@ export const LocationPicker: FC<LocationPickerProps> = ({
       },
       (geoError) => {
         setLoading(false);
-        switch (geoError.code) {
-          case geoError.PERMISSION_DENIED:
-            setError('Location access denied. Please enable location permissions.');
-            break;
-          case geoError.POSITION_UNAVAILABLE:
-            setError('Location information unavailable.');
-            break;
-          case geoError.TIMEOUT:
-            setError('Location request timed out.');
-            break;
-          default:
-            setError('Unable to get current location.');
-            break;
-        }
+        const locationError = handleLocationError(geoError, 'get current location');
+        setError(locationError.message);
       },
       {
         timeout: 10000,

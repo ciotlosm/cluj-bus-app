@@ -8,7 +8,7 @@ import {
   ListItemText, 
   Typography 
 } from '@mui/material';
-import type { TranzyStopResponse } from '../types/rawTranzyApi';
+import type { TranzyStopResponse } from '../../types/rawTranzyApi';
 
 interface StopListProps {
   stops: TranzyStopResponse[];

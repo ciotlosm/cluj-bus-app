@@ -3,12 +3,12 @@
 
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AppLayout } from './components/AppLayout';
-import { Navigation } from './components/Navigation';
-import { StationView } from './components/StationView';
-import { VehicleView } from './components/VehicleView';
-import { SettingsView } from './components/SettingsView';
-import { ThemeProvider } from './components/ThemeProvider';
+import { AppLayout } from './components/layout/AppLayout';
+import { Navigation } from './components/layout/Navigation';
+import { StationView } from './components/features/StationView';
+import { VehicleView } from './components/features/VehicleView';
+import { SettingsView } from './components/features/SettingsView';
+import { ThemeProvider } from './components/theme/ThemeProvider';
 
 function App() {
   const [currentView, setCurrentView] = useState(0); // 0 = stations, 1 = vehicles, 2 = settings

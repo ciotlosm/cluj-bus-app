@@ -4,51 +4,46 @@
 import axios from 'axios';
 
 /**
+ * Maps HTTP status codes to user-friendly error messages
+ */
+function getErrorMessageForStatus(status: number): string {
+  switch (status) {
+    case 401: return 'Invalid API key';
+    case 403: return 'Access denied - check API key permissions';
+    case 404: return 'Agency not found - check agency ID';
+    default: return status >= 500 
+      ? 'Server error - please try again later'
+      : `API error: ${status}`;
+  }
+}
+
+/**
+ * Processes axios-like error objects with consistent logic
+ */
+function processAxiosError(errorObj: any): string {
+  if (errorObj.response?.status) {
+    return getErrorMessageForStatus(errorObj.response.status);
+  }
+  if (errorObj.code === 'NETWORK_ERROR' || !errorObj.response) {
+    return 'Network error - check your connection';
+  }
+  return `API error: ${errorObj.response?.status || 'Unknown'}`;
+}
+
+/**
  * Handles API errors with consistent error messages
  */
 export function handleApiError(error: unknown, operation: string): never {
   console.error(`Failed to ${operation}:`, error);
   
+  // Handle axios errors (primary method)
   if (axios.isAxiosError(error)) {
-    if (error.response?.status === 401) {
-      throw new Error('Invalid API key');
-    }
-    if (error.response?.status === 403) {
-      throw new Error('Access denied - check API key permissions');
-    }
-    if (error.response?.status === 404) {
-      throw new Error('Agency not found - check agency ID');
-    }
-    if (error.response?.status >= 500) {
-      throw new Error('Server error - please try again later');
-    }
-    if (error.code === 'NETWORK_ERROR' || !error.response) {
-      throw new Error('Network error - check your connection');
-    }
-    throw new Error(`API error: ${error.response?.status || 'Unknown'}`);
+    throw new Error(processAxiosError(error));
   }
   
-  // Handle non-axios errors or when axios.isAxiosError doesn't work properly
-  if (error && typeof error === 'object') {
-    if ('isAxiosError' in error && error.isAxiosError) {
-      const axiosError = error as any; // Type assertion for fallback handling
-      if (axiosError.response?.status === 401) {
-        throw new Error('Invalid API key');
-      }
-      if (axiosError.response?.status === 403) {
-        throw new Error('Access denied - check API key permissions');
-      }
-      if (axiosError.response?.status === 404) {
-        throw new Error('Agency not found - check agency ID');
-      }
-      if (axiosError.response?.status >= 500) {
-        throw new Error('Server error - please try again later');
-      }
-      if (axiosError.code === 'NETWORK_ERROR' || !axiosError.response) {
-        throw new Error('Network error - check your connection');
-      }
-      throw new Error(`API error: ${axiosError.response?.status || 'Unknown'}`);
-    }
+  // Handle non-axios errors with axios-like structure (fallback)
+  if (error && typeof error === 'object' && 'isAxiosError' in error && error.isAxiosError) {
+    throw new Error(processAxiosError(error));
   }
   
   throw new Error(`Failed to ${operation}`);
@@ -70,4 +65,127 @@ export function validateAgencyId(agency_id: number): void {
   if (!agency_id || agency_id <= 0) {
     throw new Error('Valid agency ID is required');
   }
+}
+
+/**
+ * Location-specific error types and messages
+ */
+export const LocationErrorTypes = {
+  PERMISSION_DENIED: 'permission_denied',
+  POSITION_UNAVAILABLE: 'position_unavailable', 
+  TIMEOUT: 'timeout',
+  NOT_SUPPORTED: 'not_supported',
+  NETWORK_ERROR: 'network_error',
+  RETRY_EXHAUSTED: 'retry_exhausted'
+} as const;
+
+export type LocationErrorType = typeof LocationErrorTypes[keyof typeof LocationErrorTypes];
+
+export interface LocationError {
+  code: number;
+  message: string;
+  type: LocationErrorType;
+  retryable: boolean;
+}
+
+/**
+ * Handles location service errors with specific error types and messages
+ */
+export function handleLocationError(error: GeolocationPositionError | Error | unknown, operation: string): LocationError {
+  console.error(`Location service failed to ${operation}:`, error);
+
+  // Handle GeolocationPositionError
+  if (error && typeof error === 'object' && 'code' in error) {
+    const geoError = error as GeolocationPositionError;
+    const errorMap = {
+      1: { message: 'Location access denied by user. Please enable location permissions in your browser settings.', type: LocationErrorTypes.PERMISSION_DENIED, retryable: false },
+      2: { message: 'Location position unavailable. GPS signal may be weak or blocked.', type: LocationErrorTypes.POSITION_UNAVAILABLE, retryable: true },
+      3: { message: 'Location request timed out. Please try again.', type: LocationErrorTypes.TIMEOUT, retryable: true }
+    };
+    
+    const errorInfo = errorMap[geoError.code as keyof typeof errorMap] || {
+      message: 'Unknown location error occurred.',
+      type: LocationErrorTypes.NETWORK_ERROR,
+      retryable: true
+    };
+    
+    return { code: geoError.code, ...errorInfo };
+  }
+
+  // Handle generic errors
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('not supported') || message.includes('geolocation')) {
+      return { code: 0, message: 'Location services not supported by this browser. Please use manual location entry.', type: LocationErrorTypes.NOT_SUPPORTED, retryable: false };
+    }
+    if (message.includes('network') || message.includes('connection')) {
+      return { code: 0, message: 'Network error during location request. Check your internet connection.', type: LocationErrorTypes.NETWORK_ERROR, retryable: true };
+    }
+    if (message.includes('retry') || message.includes('exhausted')) {
+      return { code: 0, message: 'Location request failed after multiple attempts. Please try manual location entry.', type: LocationErrorTypes.RETRY_EXHAUSTED, retryable: false };
+    }
+  }
+
+  // Fallback for unknown errors
+  return { code: 0, message: `Failed to ${operation}. Please try again or use manual location entry.`, type: LocationErrorTypes.NETWORK_ERROR, retryable: true };
+}
+
+/**
+ * Retry configuration for location requests
+ */
+export interface RetryConfig {
+  maxAttempts: number;
+  baseDelay: number; // milliseconds
+  maxDelay: number; // milliseconds
+  backoffMultiplier: number;
+}
+
+export const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxAttempts: 3,
+  baseDelay: 1000, // 1 second
+  maxDelay: 10000, // 10 seconds
+  backoffMultiplier: 2
+};
+
+/**
+ * Implements exponential backoff retry logic for location requests
+ */
+export async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  config: RetryConfig = DEFAULT_RETRY_CONFIG,
+  operationName: string = 'location request'
+): Promise<T> {
+  let lastError: unknown;
+  
+  for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      
+      // Check if error is retryable
+      const locationError = handleLocationError(error, operationName);
+      if (!locationError.retryable) {
+        throw error;
+      }
+      
+      // Don't wait after the last attempt
+      if (attempt === config.maxAttempts) {
+        break;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = Math.min(
+        config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1),
+        config.maxDelay
+      );
+      
+      console.log(`Location ${operationName} attempt ${attempt} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  // All attempts failed, throw the last error with retry exhausted message
+  throw new Error(`Location request failed after ${config.maxAttempts} attempts. Please try manual location entry.`);
 }
