@@ -5,6 +5,7 @@
 
 import * as ts from 'typescript';
 import path from 'path';
+import { ComplexTypeScriptPatternHandler, AdvancedCodeElement } from './ComplexTypeScriptPatternHandler.js';
 
 export interface CodeElement {
   type: 'function' | 'class' | 'interface' | 'type' | 'variable' | 'import' | 'export';
@@ -45,6 +46,7 @@ export interface ExportInfo {
 export class ASTAnalysisService {
   private program: ts.Program | null = null;
   private checker: ts.TypeChecker | null = null;
+  private complexPatternHandler: ComplexTypeScriptPatternHandler | null = null;
 
   constructor(private projectRoot: string = process.cwd()) {}
 
@@ -83,6 +85,7 @@ export class ASTAnalysisService {
     const files = await this.findTypeScriptFiles();
     this.program = ts.createProgram(files, compilerOptions);
     this.checker = this.program.getTypeChecker();
+    this.complexPatternHandler = new ComplexTypeScriptPatternHandler(this.program);
   }
 
   /**
@@ -115,8 +118,93 @@ export class ASTAnalysisService {
   }
 
   /**
-   * Suggests how to split a large file into smaller modules
+   * Analyzes complex TypeScript patterns in a file
    */
+  async analyzeComplexPatterns(filePath: string): Promise<AdvancedCodeElement[]> {
+    if (!this.program || !this.complexPatternHandler) {
+      await this.initializeProgram();
+    }
+
+    const resolvedPath = path.resolve(this.projectRoot, filePath);
+    const sourceFile = this.program!.getSourceFile(resolvedPath);
+    if (!sourceFile) {
+      throw new Error(`Could not find source file: ${filePath} (resolved to: ${resolvedPath})`);
+    }
+
+    return this.complexPatternHandler!.analyzeComplexPatterns(sourceFile);
+  }
+
+  /**
+   * Enhanced file split suggestion with complex pattern awareness
+   */
+  async suggestFileSplitWithComplexPatterns(filePath: string, maxLinesPerFile: number = 200): Promise<FileSplitSuggestion> {
+    const complexElements = await this.analyzeComplexPatterns(filePath);
+    const resolvedPath = path.resolve(this.projectRoot, filePath);
+    const sourceFile = this.program!.getSourceFile(resolvedPath)!;
+    
+    if (!sourceFile) {
+      throw new Error(`Could not find source file: ${filePath} (resolved to: ${resolvedPath})`);
+    }
+    
+    const sourceText = sourceFile.getFullText();
+    
+    // Filter elements that can be safely split
+    const splittableElements: AdvancedCodeElement[] = [];
+    const preserveElements: AdvancedCodeElement[] = [];
+    
+    for (const element of complexElements) {
+      const recommendation = this.complexPatternHandler!.getSplittingRecommendation(element);
+      if (recommendation.canSplit) {
+        splittableElements.push(element);
+      } else {
+        preserveElements.push(element);
+        console.warn(`⚠️  Preserving ${element.name} in original file: ${recommendation.reason}`);
+      }
+    }
+    
+    // Group splittable elements by complexity and relationships
+    const groups = this.groupComplexElements(splittableElements);
+    
+    // Create split suggestions
+    const suggestedSplits: FileSplitSuggestion['suggestedSplits'] = [];
+    const baseName = path.basename(filePath, path.extname(filePath));
+    const baseDir = path.dirname(filePath);
+
+    for (let i = 0; i < groups.length; i++) {
+      const group = groups[i];
+      const totalLines = group.reduce((sum, el) => sum + (el.endLine - el.startLine), 0);
+      
+      if (totalLines > 50) { // Only split if group is substantial
+        const fileName = this.generateComplexSplitFileName(baseName, group, i);
+        const filePath = path.join(baseDir, fileName);
+        
+        const imports = this.calculateComplexRequiredImports(group, complexElements);
+        const exports = group.flatMap(el => el.exports);
+        const content = this.generateComplexFileContent(group, imports, exports, sourceText);
+        
+        suggestedSplits.push({
+          fileName: filePath,
+          elements: group.map(el => this.convertToCodeElement(el)),
+          imports,
+          exports,
+          content
+        });
+      }
+    }
+
+    // Calculate remaining content (preserved elements + non-moved splittable elements)
+    const movedElements = new Set(suggestedSplits.flatMap(split => split.elements.map(e => e.name)));
+    const remainingElements = complexElements.filter(el => 
+      !movedElements.has(el.name) || preserveElements.includes(el)
+    );
+    const remainingContent = this.generateComplexFileContent(remainingElements, [], [], sourceText);
+
+    return {
+      originalFile: filePath,
+      suggestedSplits,
+      remainingContent
+    };
+  }
   async suggestFileSplit(filePath: string, maxLinesPerFile: number = 200): Promise<FileSplitSuggestion> {
     const elements = await this.analyzeFile(filePath);
     const resolvedPath = path.resolve(this.projectRoot, filePath);
