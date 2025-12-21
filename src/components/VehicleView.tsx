@@ -1,4 +1,4 @@
-// StationView - Core view component for stations (< 80 lines)
+// VehicleView - Core view component for vehicles (< 80 lines)
 // Displays raw API data directly
 
 import { useEffect } from 'react';
@@ -7,24 +7,22 @@ import {
   Box, 
   Typography, 
   CircularProgress, 
-  Alert, 
-  List, 
-  ListItem, 
-  ListItemText,
+  Alert,
   Button
 } from '@mui/material';
-import { useStationStore } from '../stores/stationStore';
+import { useVehicleStore } from '../stores/vehicleStore';
 import { useConfigStore } from '../stores/configStore';
+import { VehicleList } from './VehicleList';
 
-export const StationView: FC = () => {
-  const { stops, loading, error, loadStops } = useStationStore();
+export const VehicleView: FC = () => {
+  const { vehicles, loading, error, loadVehicles } = useVehicleStore();
   const { apiKey, agency_id } = useConfigStore();
 
   useEffect(() => {
     if (apiKey && agency_id) {
-      loadStops(apiKey, agency_id);
+      loadVehicles(apiKey, agency_id);
     }
-  }, [apiKey, agency_id, loadStops]);
+  }, [apiKey, agency_id, loadVehicles]);
 
   if (loading) {
     return (
@@ -45,7 +43,7 @@ export const StationView: FC = () => {
             size="small" 
             onClick={() => {
               if (apiKey && agency_id) {
-                loadStops(apiKey, agency_id);
+                loadVehicles(apiKey, agency_id);
               }
             }}
           >
@@ -69,23 +67,14 @@ export const StationView: FC = () => {
   return (
     <Box>
       <Typography variant="h5" gutterBottom sx={{ p: 2 }}>
-        Stations
+        Live Vehicles
       </Typography>
       
-      <List>
-        {stops.map((stop) => (
-          <ListItem key={stop.stop_id} divider>
-            <ListItemText
-              primary={stop.stop_name}
-              secondary={`ID: ${stop.stop_id} | Lat: ${stop.stop_lat}, Lon: ${stop.stop_lon}`}
-            />
-          </ListItem>
-        ))}
-      </List>
+      <VehicleList vehicles={vehicles} />
       
-      {stops.length === 0 && (
+      {vehicles.length === 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-          No stations found
+          No vehicles found
         </Typography>
       )}
     </Box>

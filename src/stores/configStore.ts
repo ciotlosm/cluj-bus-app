@@ -10,6 +10,7 @@ interface ConfigStore {
   agency_id: number | null;
   home_location: { lat: number; lon: number } | null;
   work_location: { lat: number; lon: number } | null;
+  theme: 'light' | 'dark' | 'auto' | null;
   
   // Simple loading and error states
   loading: boolean;
@@ -20,6 +21,7 @@ interface ConfigStore {
   setAgency: (agency_id: number) => void;
   setHomeLocation: (lat: number, lon: number) => void;
   setWorkLocation: (lat: number, lon: number) => void;
+  setTheme: (theme: 'light' | 'dark' | 'auto') => void;
   clearError: () => void;
 }
 
@@ -31,18 +33,33 @@ export const useConfigStore = create<ConfigStore>()(
       agency_id: null,
       home_location: null,
       work_location: null,
+      theme: null,
       
       // Simple states
       loading: false,
       error: null,
       
       // Actions
-      setApiKey: (key: string) => set({ apiKey: key, error: null }),
-      setAgency: (agency_id: number) => set({ agency_id, error: null }),
+      setApiKey: (key: string) => {
+        set({ loading: true, error: null });
+        // Simulate validation - in real app, you might validate the API key
+        setTimeout(() => {
+          set({ apiKey: key, loading: false, error: null });
+        }, 100);
+      },
+      setAgency: (agency_id: number) => {
+        set({ loading: true, error: null });
+        // Simulate validation
+        setTimeout(() => {
+          set({ agency_id, loading: false, error: null });
+        }, 100);
+      },
       setHomeLocation: (lat: number, lon: number) => 
         set({ home_location: { lat, lon }, error: null }),
       setWorkLocation: (lat: number, lon: number) => 
         set({ work_location: { lat, lon }, error: null }),
+      setTheme: (theme: 'light' | 'dark' | 'auto') => 
+        set({ theme, error: null }),
       clearError: () => set({ error: null }),
     }),
     {

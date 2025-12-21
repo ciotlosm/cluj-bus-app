@@ -1,18 +1,20 @@
 // SettingsView - Core view component for settings (< 60 lines)
 // Simple configuration form
 
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { FC } from 'react';
 import { 
   Box, 
   Typography, 
   TextField, 
   Button, 
-  Alert 
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { useConfigStore } from '../stores/configStore';
 
-export const SettingsView: React.FC = () => {
-  const { apiKey, agency_id, setApiKey, setAgency, error } = useConfigStore();
+export const SettingsView: FC = () => {
+  const { apiKey, agency_id, setApiKey, setAgency, error, loading, clearError } = useConfigStore();
   const [localApiKey, setLocalApiKey] = useState(apiKey || '');
   const [localAgencyId, setLocalAgencyId] = useState(agency_id?.toString() || '');
 
@@ -34,7 +36,19 @@ export const SettingsView: React.FC = () => {
       </Typography>
       
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ mb: 2 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={clearError}
+            >
+              Dismiss
+            </Button>
+          }
+        >
           {error}
         </Alert>
       )}
@@ -46,6 +60,9 @@ export const SettingsView: React.FC = () => {
           value={localApiKey}
           onChange={(e) => setLocalApiKey(e.target.value)}
           fullWidth
+          disabled={loading}
+          error={!localApiKey.trim()}
+          helperText={!localApiKey.trim() ? 'API key is required' : ''}
         />
         
         <TextField
@@ -54,14 +71,27 @@ export const SettingsView: React.FC = () => {
           value={localAgencyId}
           onChange={(e) => setLocalAgencyId(e.target.value)}
           fullWidth
+          disabled={loading}
+          error={isNaN(parseInt(localAgencyId)) || parseInt(localAgencyId) <= 0}
+          helperText={
+            isNaN(parseInt(localAgencyId)) || parseInt(localAgencyId) <= 0 
+              ? 'Valid agency ID is required' 
+              : ''
+          }
         />
         
         <Button 
           variant="contained" 
           onClick={handleSave}
-          disabled={!localApiKey.trim()}
+          disabled={
+            loading || 
+            !localApiKey.trim() || 
+            isNaN(parseInt(localAgencyId)) || 
+            parseInt(localAgencyId) <= 0
+          }
+          startIcon={loading ? <CircularProgress size={16} /> : undefined}
         >
-          Save Configuration
+          {loading ? 'Saving...' : 'Save Configuration'}
         </Button>
       </Box>
     </Box>

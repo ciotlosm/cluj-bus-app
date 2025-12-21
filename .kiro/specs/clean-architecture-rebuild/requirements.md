@@ -57,11 +57,13 @@ A complete architectural rebuild of the Bus Tracking App to eliminate complexity
 
 #### Acceptance Criteria
 
-1. THE System SHALL implement one Zustand store per domain (vehicles, config, location)
+1. THE System SHALL implement one Zustand store per domain (vehicles, config, stations, routes, trips)
 2. THE System SHALL eliminate complex state transformations and computed values
 3. WHEN storing API data, THE System SHALL store raw API responses without transformation
 4. THE System SHALL implement simple loading and error states per store
 5. THE System SHALL eliminate cross-store dependencies and complex state synchronization
+6. WHEN storing user preferences, THE System SHALL store persistent configuration (API key, agency, locations, theme) in ConfigStore
+7. WHEN handling ephemeral data, THE System SHALL NOT store runtime state (current location, temporary UI state) in persistent stores
 
 ### Requirement 5: Skeleton Application Structure
 

@@ -1,7 +1,7 @@
 // Navigation - Bottom navigation component (< 40 lines)
 // Uses Material-UI directly without wrappers
 
-import React from 'react';
+import type { FC } from 'react';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import { 
   DirectionsBus as BusIcon, 
@@ -14,7 +14,7 @@ interface NavigationProps {
   onChange: (value: number) => void;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ value, onChange }) => {
+export const Navigation: FC<NavigationProps> = ({ value, onChange }) => {
   return (
     <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
       <BottomNavigation

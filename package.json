@@ -15,7 +15,8 @@
     "test:ui": "vitest --ui",
     "update-version": "node scripts/update-version.js",
     "analyze": "node scripts/analyze-codebase.js",
-    "benchmark:transformation": "node scripts/benchmark-vehicle-transformation.js"
+    "benchmark:transformation": "node scripts/benchmark-vehicle-transformation.js",
+    "test:performance": "node scripts/performance-test.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

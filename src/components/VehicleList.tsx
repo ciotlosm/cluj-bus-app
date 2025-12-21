@@ -1,7 +1,7 @@
 // VehicleList - Simple display component (< 50 lines)
 // Uses raw API field names directly
 
-import React from 'react';
+import type { FC } from 'react';
 import { 
   List, 
   ListItem, 
@@ -16,7 +16,7 @@ interface VehicleListProps {
   vehicles: TranzyVehicleResponse[];
 }
 
-export const VehicleList: React.FC<VehicleListProps> = ({ vehicles }) => {
+export const VehicleList: FC<VehicleListProps> = ({ vehicles }) => {
   if (vehicles.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>

@@ -1,7 +1,7 @@
 // StopList - Simple display component (< 40 lines)
 // Uses raw API field names directly
 
-import React from 'react';
+import type { FC } from 'react';
 import { 
   List, 
   ListItem, 
@@ -14,7 +14,7 @@ interface StopListProps {
   stops: TranzyStopResponse[];
 }
 
-export const StopList: React.FC<StopListProps> = ({ stops }) => {
+export const StopList: FC<StopListProps> = ({ stops }) => {
   if (stops.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>

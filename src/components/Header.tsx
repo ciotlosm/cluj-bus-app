@@ -1,7 +1,7 @@
 // Header - Simple header component (< 30 lines)
 // Uses Material-UI directly without wrappers
 
-import React from 'react';
+import type { FC } from 'react';
 import { AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 
@@ -9,7 +9,7 @@ interface HeaderProps {
   onSettingsClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onSettingsClick }) => {
+export const Header: FC<HeaderProps> = ({ onSettingsClick }) => {
   return (
     <AppBar position="static">
       <Toolbar>

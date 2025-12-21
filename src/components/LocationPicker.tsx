@@ -1,14 +1,9 @@
-// LocationPicker - Basic location selection component (< 70 lines)
+// LocationPicker - Basic location selection component (< 100 lines)
 // Simple location input without fancy UI
 
-import React, { useState } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  Typography, 
-  Alert 
-} from '@mui/material';
+import { useState } from 'react';
+import type { FC } from 'react';
+import { Box, TextField, Button, Typography, Alert, CircularProgress } from '@mui/material';
 
 interface LocationPickerProps {
   label: string;
@@ -16,7 +11,7 @@ interface LocationPickerProps {
   onChange: (location: { lat: number; lon: number }) => void;
 }
 
-export const LocationPicker: React.FC<LocationPickerProps> = ({ 
+export const LocationPicker: FC<LocationPickerProps> = ({ 
   label, 
   value, 
   onChange 
@@ -24,8 +19,9 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   const [lat, setLat] = useState(value?.lat?.toString() || '');
   const [lon, setLon] = useState(value?.lon?.toString() || '');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const validateAndSave = () => {
     const latNum = parseFloat(lat);
     const lonNum = parseFloat(lon);
     
@@ -34,13 +30,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
       return;
     }
     
-    if (latNum < -90 || latNum > 90) {
-      setError('Latitude must be between -90 and 90');
-      return;
-    }
-    
-    if (lonNum < -180 || lonNum > 180) {
-      setError('Longitude must be between -180 and 180');
+    if (latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
+      setError('Invalid coordinates range (lat: -90 to 90, lon: -180 to 180)');
       return;
     }
     
@@ -48,31 +39,66 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     onChange({ lat: latNum, lon: lonNum });
   };
 
-  const handleCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newLat = position.coords.latitude;
-          const newLon = position.coords.longitude;
-          setLat(newLat.toString());
-          setLon(newLon.toString());
-          onChange({ lat: newLat, lon: newLon });
-        },
-        () => setError('Unable to get current location')
-      );
-    } else {
-      setError('Geolocation is not supported');
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser');
+      return;
     }
+    
+    setLoading(true);
+    setError(null);
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLat = position.coords.latitude;
+        const newLon = position.coords.longitude;
+        setLat(newLat.toString());
+        setLon(newLon.toString());
+        onChange({ lat: newLat, lon: newLon });
+        setLoading(false);
+      },
+      (geoError) => {
+        setLoading(false);
+        switch (geoError.code) {
+          case geoError.PERMISSION_DENIED:
+            setError('Location access denied. Please enable location permissions.');
+            break;
+          case geoError.POSITION_UNAVAILABLE:
+            setError('Location information unavailable.');
+            break;
+          case geoError.TIMEOUT:
+            setError('Location request timed out.');
+            break;
+          default:
+            setError('Unable to get current location.');
+            break;
+        }
+      },
+      {
+        timeout: 10000,
+        enableHighAccuracy: true
+      }
+    );
   };
 
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        {label}
-      </Typography>
+      <Typography variant="h6" gutterBottom>{label}</Typography>
       
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ mb: 2 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
+          }
+        >
           {error}
         </Alert>
       )}
@@ -84,6 +110,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           onChange={(e) => setLat(e.target.value)}
           type="number"
           inputProps={{ step: 'any' }}
+          error={lat !== '' && (isNaN(parseFloat(lat)) || parseFloat(lat) < -90 || parseFloat(lat) > 90)}
+          helperText={
+            lat !== '' && (isNaN(parseFloat(lat)) || parseFloat(lat) < -90 || parseFloat(lat) > 90)
+              ? 'Must be between -90 and 90'
+              : ''
+          }
         />
         <TextField
           label="Longitude"
@@ -91,15 +123,35 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           onChange={(e) => setLon(e.target.value)}
           type="number"
           inputProps={{ step: 'any' }}
+          error={lon !== '' && (isNaN(parseFloat(lon)) || parseFloat(lon) < -180 || parseFloat(lon) > 180)}
+          helperText={
+            lon !== '' && (isNaN(parseFloat(lon)) || parseFloat(lon) < -180 || parseFloat(lon) > 180)
+              ? 'Must be between -180 and 180'
+              : ''
+          }
         />
       </Box>
       
       <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button variant="contained" onClick={handleSave}>
+        <Button 
+          variant="contained" 
+          onClick={validateAndSave}
+          disabled={
+            !lat || !lon || 
+            isNaN(parseFloat(lat)) || isNaN(parseFloat(lon)) ||
+            parseFloat(lat) < -90 || parseFloat(lat) > 90 ||
+            parseFloat(lon) < -180 || parseFloat(lon) > 180
+          }
+        >
           Save Location
         </Button>
-        <Button variant="outlined" onClick={handleCurrentLocation}>
-          Use Current Location
+        <Button 
+          variant="outlined" 
+          onClick={useCurrentLocation}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} /> : undefined}
+        >
+          {loading ? 'Getting Location...' : 'Use Current Location'}
         </Button>
       </Box>
     </Box>

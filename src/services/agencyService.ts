@@ -2,7 +2,8 @@
 // Uses raw API field names, no transformations
 
 import axios from 'axios';
-import type { TranzyAgencyResponse } from '../types/rawTranzyApi';
+import type { TranzyAgencyResponse } from '../types/rawTranzyApi.ts';
+import { handleApiError, validateApiKey } from './errorHandler';
 
 const API_BASE = '/api/tranzy/v1/opendata';
 
@@ -12,6 +13,8 @@ export const agencyService = {
    * Note: Agency endpoint doesn't require X-Agency-Id header
    */
   async getAgencies(apiKey: string): Promise<TranzyAgencyResponse[]> {
+    validateApiKey(apiKey);
+
     try {
       const response = await axios.get(`${API_BASE}/agency`, {
         headers: {
@@ -20,23 +23,7 @@ export const agencyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch agencies:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Get agency by city name
-   */
-  async getAgencyByCity(apiKey: string, city: string): Promise<TranzyAgencyResponse | null> {
-    try {
-      const agencies = await this.getAgencies(apiKey);
-      return agencies.find(agency => 
-        agency.agency_name.toLowerCase().includes(city.toLowerCase())
-      ) || null;
-    } catch (error) {
-      console.error('Failed to fetch agency by city:', error);
-      throw error;
+      handleApiError(error, 'fetch agencies');
     }
   }
 };

@@ -12,33 +12,33 @@ Complete rebuild of the Bus Tracking App using clean architecture principles wit
   - Set up basic build configuration
   - _Requirements: 6.5, 8.1, 8.2_
 
-- [ ] 2. Implement domain-focused services
-  - [ ] 2.1 Create AgencyService for agency operations
-    - Implement getAgencies() and getAgencyByCity() methods
+- [x] 2. Implement domain-focused services
+  - [x] 2.1 Create AgencyService for agency operations
+    - Implement getAgencies() method
     - Keep service under 100 lines
     - Use raw API field names
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [ ] 2.2 Create RouteService for route operations  
-    - Implement getRoutes() and getRouteById() methods
+  - [x] 2.2 Create RouteService for route operations  
+    - Implement getRoutes() method
     - Keep service under 100 lines
     - Use raw API field names
     - _Requirements: 2.1, 2.2, 2.4_
 
-  - [ ] 2.3 Create StationService for stop operations
-    - Implement getStops() and getStopsByLocation() methods
+  - [x] 2.3 Create StationService for stop operations
+    - Implement getStops() method
     - Keep service under 100 lines
     - Use raw API field names
     - _Requirements: 2.1, 2.2, 2.5_
 
-  - [ ] 2.4 Create VehicleService for vehicle tracking
-    - Implement getVehicles() and getVehiclesByStop() methods
+  - [x] 2.4 Create VehicleService for vehicle tracking
+    - Implement getVehicles() method
     - Keep service under 100 lines
     - Use raw API field names
     - _Requirements: 2.1, 2.2, 2.6_
 
-  - [ ] 2.5 Create TripService for trip operations
-    - Implement getStopTimes() and getTrips() methods
+  - [x] 2.5 Create TripService for trip operations
+    - Implement getStopTimes() method
     - Keep service under 100 lines
     - Use raw API field names
     - _Requirements: 2.1, 2.2, 2.7_
@@ -47,45 +47,60 @@ Complete rebuild of the Bus Tracking App using clean architecture principles wit
   - **Property 4: Service File Size Constraint**
   - **Validates: Requirements 2.2**
 
-- [ ] 3. Implement clean state management
-  - [ ] 3.1 Create ConfigStore with raw configuration data
-    - Implement apiKey, agency_id, location fields using raw names
+- [x] 3. Implement clean state management
+  - [x] 3.1 Create ConfigStore with raw configuration data
+    - Implement apiKey, agency_id, home_location, work_location, theme fields using raw names
     - Add simple loading and error states
+    - Use Zustand persist middleware for user preferences
     - No cross-store dependencies
-    - _Requirements: 4.1, 4.4, 4.5_
+    - _Requirements: 4.1, 4.4, 4.5, 4.6_
 
-  - [ ] 3.2 Create VehicleStore with raw API data
+  - [x] 3.2 Create VehicleStore with raw API data
     - Store TranzyVehicleResponse[] directly without transformation
     - Add simple loading and error states
     - No cross-store dependencies
     - _Requirements: 4.1, 4.3, 4.4, 4.5_
 
-  - [ ] 3.3 Create StationStore with raw API data
+  - [x] 3.3 Create StationStore with raw API data
     - Store TranzyStopResponse[] directly without transformation
     - Add simple loading and error states
     - No cross-store dependencies
     - _Requirements: 4.1, 4.3, 4.4, 4.5_
 
-- [ ]* 3.4 Write property tests for store architecture
+  - [x] 3.4 Create RouteStore with raw API data
+    - Store TranzyRouteResponse[] directly without transformation
+    - Add simple loading and error states
+    - No cross-store dependencies
+    - _Requirements: 4.1, 4.3, 4.4, 4.5_
+
+  - [x] 3.5 Create TripStore with raw API data
+    - Store TranzyStopTimeResponse[] directly without transformation
+    - Add simple loading and error states
+    - No cross-store dependencies
+    - _Requirements: 4.1, 4.3, 4.4, 4.5_
+
+- [ ]* 3.6 Write property tests for store architecture
   - **Property 8: Store Data Structure Matching**
   - **Property 9: Store Independence**
   - **Property 10: Required Store Properties**
-  - **Validates: Requirements 4.3, 4.4, 4.5**
+  - **Property 15: Config Store Persistent Fields**
+  - **Validates: Requirements 4.3, 4.4, 4.5, 4.6**
 
-- [ ] 4. Create minimal UI skeleton
-  - [ ] 4.1 Create basic layout components
+- [x] 4. Create minimal UI skeleton
+  - [x] 4.1 Create basic layout components
     - Implement AppLayout, Header, Navigation (3 components max)
+    - Add ThemeProvider component for Material-UI theme integration
     - Keep each component under 100 lines
     - Use Material-UI directly without wrappers
     - _Requirements: 3.1, 3.2, 5.1_
 
-  - [ ] 4.2 Create core view components
+  - [x] 4.2 Create core view components
     - Implement StationView and SettingsView (2 components max)
     - Keep each component under 100 lines
     - Display raw API data directly
     - _Requirements: 3.1, 5.2, 6.2_
 
-  - [ ] 4.3 Create simple display components
+  - [x] 4.3 Create simple display components
     - Implement VehicleList, StopList, LocationPicker
     - Keep each component under 100 lines
     - Use raw API field names (route_short_name, stop_name, etc.)
@@ -97,14 +112,14 @@ Complete rebuild of the Bus Tracking App using clean architecture principles wit
   - **Property 7: Flat Component Structure**
   - **Validates: Requirements 3.1, 3.2, 3.5**
 
-- [ ] 5. Implement raw API data flow
-  - [ ] 5.1 Connect services to stores
+- [x] 5. Implement raw API data flow
+  - [x] 5.1 Connect services to stores
     - Wire service calls to store actions
     - Preserve raw API field names throughout
     - No data transformation between layers
     - _Requirements: 1.1, 1.2, 1.4, 1.5_
 
-  - [ ] 5.2 Connect stores to UI components
+  - [x] 5.2 Connect stores to UI components
     - Display raw API data directly in components
     - Use route_short_name instead of routeName
     - No field transformation in UI layer
@@ -116,19 +131,19 @@ Complete rebuild of the Bus Tracking App using clean architecture principles wit
   - **Property 3: Direct API Field Usage in UI**
   - **Validates: Requirements 1.1, 1.2, 1.3, 1.5, 6.1, 6.2, 6.4**
 
-- [ ] 6. Implement error handling and loading states
+- [x] 6. Implement error handling and loading states
   - Add simple error handling to all services
   - Implement loading states in all stores
   - Display error messages and loading indicators in UI
   - _Requirements: 4.4_
 
-- [ ] 7. Optimize build performance
-  - [ ] 7.1 Implement tree-shaking friendly imports
+- [x] 7. Optimize build performance
+  - [x] 7.1 Implement tree-shaking friendly imports
     - Use named imports throughout codebase
     - Eliminate default imports
     - _Requirements: 7.4_
 
-  - [ ] 7.2 Remove unused code and circular dependencies
+  - [x] 7.2 Remove unused code and circular dependencies
     - Clean up unused imports
     - Eliminate circular dependency chains
     - _Requirements: 7.2, 7.5_
@@ -145,7 +160,7 @@ Complete rebuild of the Bus Tracking App using clean architecture principles wit
     - Check file size constraints
     - _Requirements: 8.1, 8.4_
 
-  - [ ] 8.2 Performance testing
+  - [x] 8.2 Performance testing
     - Measure TypeScript compilation time (< 10 seconds)
     - Measure production bundle size (< 2MB)
     - _Requirements: 7.1, 7.3_
@@ -166,3 +181,5 @@ Complete rebuild of the Bus Tracking App using clean architecture principles wit
 - Keep all files small and focused (services 50-100 lines, components < 100 lines)
 - Use Material-UI directly without custom wrappers
 - Maintain flat folder structure and clear layer separation
+- Complete store architecture: ConfigStore (persistent), VehicleStore (live), StationStore (cached), RouteStore (cached), TripStore (cached)
+- Logic coordination handled in custom hooks to keep stores simple

@@ -1,25 +1,14 @@
 // Clean main entry point - minimal setup
 // Single file for app initialization
 
-import React, { StrictMode, useState } from 'react';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { 
-  AppLayout, 
-  Navigation, 
-  StationView, 
-  SettingsView 
-} from './components';
-
-// Simple theme configuration
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-  },
-});
+import { AppLayout } from './components/AppLayout';
+import { Navigation } from './components/Navigation';
+import { StationView } from './components/StationView';
+import { VehicleView } from './components/VehicleView';
+import { SettingsView } from './components/SettingsView';
+import { ThemeProvider } from './components/ThemeProvider';
 
 function App() {
   const [currentView, setCurrentView] = useState(0); // 0 = stations, 1 = vehicles, 2 = settings
@@ -29,7 +18,7 @@ function App() {
       case 0:
         return <StationView />;
       case 1:
-        return <StationView />; // For now, same as stations
+        return <VehicleView />;
       case 2:
         return <SettingsView />;
       default:
@@ -38,8 +27,7 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeProvider>
       <AppLayout>
         {renderContent()}
         <Navigation 

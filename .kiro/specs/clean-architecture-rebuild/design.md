@@ -86,14 +86,23 @@ interface ConfigStore {
   agency_id: number | null;
   home_location: { lat: number; lon: number } | null;
   work_location: { lat: number; lon: number } | null;
+  theme: 'light' | 'dark' | 'auto' | null;
+  
+  // Simple states
+  loading: boolean;
+  error: string | null;
   
   // Actions
   setApiKey: (key: string) => void;
   setAgency: (agency_id: number) => void;
   setHomeLocation: (lat: number, lon: number) => void;
   setWorkLocation: (lat: number, lon: number) => void;
+  setTheme: (theme: 'light' | 'dark' | 'auto') => void;
+  clearError: () => void;
 }
 ```
+
+**Note**: Current user location is **ephemeral runtime state** (fetched via geolocation API when needed) and should NOT be stored in ConfigStore. Only persistent user preferences belong in config.
 
 #### VehicleStore
 ```typescript
@@ -123,12 +132,41 @@ interface StationStore {
 }
 ```
 
+#### RouteStore
+```typescript
+interface RouteStore {
+  // Raw API data
+  routes: TranzyRouteResponse[];
+  loading: boolean;
+  error: string | null;
+  
+  // Actions
+  loadRoutes: (agency_id: number) => Promise<void>;
+  clearRoutes: () => void;
+}
+```
+
+#### TripStore
+```typescript
+interface TripStore {
+  // Raw API data
+  stopTimes: TranzyStopTimeResponse[];
+  loading: boolean;
+  error: string | null;
+  
+  // Actions
+  loadStopTimes: (agency_id: number) => Promise<void>;
+  clearStopTimes: () => void;
+}
+```
+
 ### UI Layer
 
 #### Layout Components
 - **AppLayout** (< 50 lines): Header + Content + Navigation
 - **Header** (< 30 lines): Title + Status indicators
 - **Navigation** (< 40 lines): Bottom navigation tabs
+- **ThemeProvider** (< 20 lines): Material-UI theme integration with ConfigStore theme preference
 
 #### View Components  
 - **StationView** (< 80 lines): Display stops and vehicles
@@ -246,6 +284,10 @@ interface TranzyStopTimeResponse {
 ### Property 14: TypeScript Interface Completeness
 *For any* API endpoint, there should be a corresponding TypeScript interface with matching field names
 **Validates: Requirements 8.4**
+
+### Property 15: Config Store Persistent Fields
+*For any* field in ConfigStore, it should be a persistent user preference (apiKey, agency_id, locations, theme) and not ephemeral runtime state (current location, temporary UI state)
+**Validates: Requirements 4.6, 4.7**
 
 ## Error Handling
 
