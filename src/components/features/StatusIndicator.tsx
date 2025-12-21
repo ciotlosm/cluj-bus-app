@@ -37,12 +37,8 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
 
   // Handle GPS icon click - request location
   const handleGpsClick = () => {
-    requestLocation().catch((error) => {
-      console.warn('Failed to request location:', error);
-    });
-    
-    // Call the optional onGpsClick prop if provided
-    onGpsClick?.();
+    requestLocation(); // Let LocationStore handle errors and update state
+    onGpsClick?.(); // Always call - let parent decide what to do
   };
 
   // Listen to browser online/offline events for immediate network status updates
