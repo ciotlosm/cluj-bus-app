@@ -66,9 +66,15 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
         // Performance optimization: only load data if not already loaded or fresh
         // This ensures data sharing across all station components
         
+        // Check if vehicle data is fresh before loading
+        const vehicleStore = useVehicleStore.getState();
         if (allVehicles.length === 0 && !vehicleLoading && !vehicleError) {
           loadVehicles(apiKey, agency_id);
+        } else if (allVehicles.length > 0 && !vehicleStore.isDataFresh(60000)) {
+          // Refresh if data is older than 1 minute
+          loadVehicles(apiKey, agency_id);
         }
+        
         if (allRoutes.length === 0 && !routeLoading && !routeError) {
           loadRoutes(apiKey, agency_id);
         }
@@ -114,6 +120,9 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
     }
 
     try {
+      // Performance optimization: create route lookup map for faster access
+      const routeMap = new Map(allRoutes.map(route => [route.route_id, route]));
+      
       // Filter vehicles that match this station's route IDs
       const filteredVehicles = allVehicles.filter(vehicle => 
         vehicle.route_id !== null && 
@@ -121,10 +130,10 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
         routeIds.includes(vehicle.route_id)
       );
 
-      // Combine vehicle data with route information
+      // Combine vehicle data with route information using the lookup map
       return filteredVehicles.map(vehicle => {
-        // Find the route for this vehicle
-        const route = allRoutes.find(r => r.route_id === vehicle.route_id) || null;
+        // Use map lookup for O(1) route access instead of O(n) find
+        const route = routeMap.get(vehicle.route_id) || null;
         
         return {
           vehicle,
@@ -150,6 +159,11 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
       const { apiKey, agency_id } = useConfigStore.getState();
       
       if (apiKey && agency_id) {
+        // Performance optimization: avoid concurrent refresh calls
+        if (loading) {
+          return; // Already refreshing
+        }
+        
         // Reload all data sources
         await Promise.all([
           loadVehicles(apiKey, agency_id),
@@ -160,7 +174,7 @@ export function useStationVehicles(station: TranzyStopResponse): UseStationVehic
     } catch (error) {
       console.warn('Failed to refresh station vehicle data:', error);
     }
-  }, [loadVehicles, loadRoutes, loadStopTimes]);
+  }, [loadVehicles, loadRoutes, loadStopTimes, loading]);
 
   return {
     vehicles,

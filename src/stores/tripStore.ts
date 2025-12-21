@@ -1,5 +1,6 @@
 // TripStore - Clean state management with raw API data
 // No cross-store dependencies, simple loading and error states
+// Includes performance optimizations for data sharing across components
 
 import { create } from 'zustand';
 import type { TranzyStopTimeResponse } from '../types/rawTranzyApi';
@@ -12,10 +13,16 @@ interface TripStore {
   loading: boolean;
   error: string | null;
   
+  // Performance optimization: track last update time
+  lastUpdated: number | null;
+  
   // Actions
   loadStopTimes: (apiKey: string, agency_id: number) => Promise<void>;
   clearStopTimes: () => void;
   clearError: () => void;
+  
+  // Performance helper: check if data is fresh
+  isDataFresh: (maxAgeMs?: number) => boolean;
 }
 
 export const useTripStore = create<TripStore>((set, get) => ({
@@ -23,9 +30,16 @@ export const useTripStore = create<TripStore>((set, get) => ({
   stopTimes: [],
   loading: false,
   error: null,
+  lastUpdated: null,
   
   // Actions
   async loadStopTimes(apiKey: string, agency_id: number) {
+    // Performance optimization: avoid duplicate requests if already loading
+    const currentState = get();
+    if (currentState.loading) {
+      return;
+    }
+    
     set({ loading: true, error: null });
     
     try {
@@ -33,7 +47,12 @@ export const useTripStore = create<TripStore>((set, get) => ({
       const { tripService } = await import('../services/tripService');
       const stopTimes = await tripService.getStopTimes(apiKey, agency_id);
       
-      set({ stopTimes, loading: false, error: null });
+      set({ 
+        stopTimes, 
+        loading: false, 
+        error: null, 
+        lastUpdated: Date.now() 
+      });
     } catch (error) {
       set({ 
         loading: false, 
@@ -43,10 +62,17 @@ export const useTripStore = create<TripStore>((set, get) => ({
   },
   
   clearStopTimes() {
-    set({ stopTimes: [], error: null });
+    set({ stopTimes: [], error: null, lastUpdated: null });
   },
   
   clearError() {
     set({ error: null });
-  }
+  },
+  
+  // Performance helper: check if data is fresh (default 10 minutes for stop times)
+  isDataFresh: (maxAgeMs = 600000) => {
+    const { lastUpdated } = get();
+    if (!lastUpdated) return false;
+    return (Date.now() - lastUpdated) < maxAgeMs;
+  },
 }));
