@@ -27,8 +27,8 @@ import {
 // Import components to benchmark
 import { useVehicleDisplay } from '../../hooks/controllers/useVehicleDisplay';
 import { useRouteManager } from '../../hooks/controllers/useRouteManager';
-import { useVehicleStore } from '../../stores/vehicleStore';
-import { useConfigStore } from '../../stores/configStore';
+import { useVehicleStore } from '@/stores/vehicleStore';
+import { useConfigStore } from '@/stores/configStore';
 
 // Mock the hooks and stores
 vi.mock('../../hooks/controllers/useVehicleDisplay');

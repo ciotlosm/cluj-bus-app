@@ -7,8 +7,8 @@
  * Requirements: 10.2, 10.3 - Performance measurement and documentation
  */
 
-import { logger } from './logger';
-import { performanceMonitor } from './performance';
+import { logger } from '../shared/logger';
+import { performanceMonitor } from '../performance/performance';
 
 // ============================================================================
 // BENCHMARK METRICS TYPES

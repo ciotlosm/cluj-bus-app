@@ -242,13 +242,23 @@ export const useLocationStore = create<LocationStore>((set) => ({
     return validateCoordinates(coords);
   },
 
-  watchLocation: async (
+  watchLocation: (
     callback: (coordinates: Coordinates) => void,
     errorCallback?: (error: Error) => void
-  ): Promise<number> => {
-    try {
-      const watchId = await LocationService.watchPosition(
-        (coordinates) => {
+  ): number => {
+    if (!navigator.geolocation) {
+      throw new Error('Geolocation is not supported by this browser');
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const coordinates: Coordinates = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        };
+        
+        if (validateCoordinates(coordinates)) {
           set({ currentLocation: coordinates });
           
           // Emit location change event
@@ -258,15 +268,44 @@ export const useLocationStore = create<LocationStore>((set) => ({
           });
           
           callback(coordinates);
-        },
-        errorCallback
-      );
-      return watchId;
-    } catch (error) {
-      if (errorCallback && error instanceof Error) {
-        errorCallback(error);
+        } else if (errorCallback) {
+          errorCallback(new Error('Invalid coordinates received from GPS'));
+        }
+      },
+      (error) => {
+        if (errorCallback) {
+          let errorMessage = 'Location watch error: ';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += 'Location access denied by user';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += 'Location information unavailable';
+              break;
+            case error.TIMEOUT:
+              errorMessage += 'Location request timed out';
+              break;
+            default:
+              errorMessage += error.message || 'Unknown location error';
+          }
+          
+          errorCallback(new Error(errorMessage));
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000,
       }
-      throw error;
+    );
+
+    return watchId;
+  },
+
+  clearWatch: (watchId: number): void => {
+    if (navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
     }
   },
 

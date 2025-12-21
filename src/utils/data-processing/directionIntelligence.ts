@@ -1,6 +1,6 @@
-import type { Coordinates, BusInfo, UserConfig } from '../types';
-import { calculateBearing, findClosestCoordinate } from './locationUtils';
-import { validateCoordinates } from '../stores/locationStore';
+import type { Coordinates, BusInfo, UserConfig } from '../../types';
+import { calculateBearing, findClosestCoordinate } from '../formatting/locationUtils';
+import { validateCoordinates } from '../../stores/locationStore';
 
 /**
  * Direction intelligence utilities for determining bus directions

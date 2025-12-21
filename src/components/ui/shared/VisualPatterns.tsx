@@ -193,14 +193,16 @@ interface InteractiveButtonProps {
   variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
   /** Button size */
   size?: 'small' | 'medium' | 'large';
-  /** Whether button is disabled */
+  /** Whether button is isDisabled */
   disabled?: boolean;
-  /** Whether button is loading */
+  /** Whether button is isLoading */
   loading?: boolean;
   /** Tooltip text */
   tooltip?: string;
   /** Additional styling */
   sx?: SxProps<Theme>;
+  isDisabled?: boolean;
+  isLoading?: boolean;
 }
 
 const InteractiveButton: React.FC<InteractiveButtonProps> = ({
@@ -208,8 +210,8 @@ const InteractiveButton: React.FC<InteractiveButtonProps> = ({
   onClick,
   variant = 'primary',
   size = 'medium',
-  disabled = false,
-  loading = false,
+  isDisabled = false,
+  isLoading = false,
   tooltip,
   sx,
 }) => {
@@ -231,23 +233,23 @@ const InteractiveButton: React.FC<InteractiveButtonProps> = ({
     large: { minWidth: 48, minHeight: 48, fontSize: '1rem' },
   };
 
-  const buttonProps = createAccessibleHandler(onClick, undefined, { disabled: disabled || loading });
+  const buttonProps = createAccessibleHandler(onClick, undefined, { isDisabled: isDisabled || isLoading });
 
   const button = (
     <IconButton
       {...buttonProps}
-      disabled={disabled || loading}
+      disabled={isDisabled || isLoading}
       sx={[
         {
           ...sizeMap[size],
           borderRadius: 2,
           position: 'relative',
-          ...getInteractiveStateStyles(colorMap[variant], { disabled: disabled || loading }),
+          ...getInteractiveStateStyles(colorMap[variant], { isDisabled: isDisabled || isLoading }),
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
     >
-      {loading ? (
+      {isLoading ? (
         <CircularProgress size={size === 'small' ? 16 : size === 'large' ? 24 : 20} />
       ) : (
         children
@@ -255,7 +257,7 @@ const InteractiveButton: React.FC<InteractiveButtonProps> = ({
     </IconButton>
   );
 
-  if (tooltip && !disabled && !loading) {
+  if (tooltip && !isDisabled && !isLoading) {
     return (
       <Tooltip title={tooltip} placement="top">
         {button}

@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Import the actual theme system
 import { getTheme } from '../../theme/materialTheme';
-import { useConfigStore } from '../../stores/configStore';
+import { useConfigStore } from '@/stores/configStore';
 
 // Import components to test
 import { Button } from '../../components/ui/base/Button';

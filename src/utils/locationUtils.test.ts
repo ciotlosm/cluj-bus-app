@@ -10,7 +10,7 @@ import {
   coordinatesEqual,
   normalizeCoordinates,
 } from './locationUtils';
-import type { Coordinates } from '../types';
+import type { Coordinates } from '../../types';
 
 describe('locationUtils', () => {
   const validCoords: Coordinates = { latitude: 40.7128, longitude: -74.0060 };

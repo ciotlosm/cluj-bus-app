@@ -16,7 +16,7 @@ export interface UseRouteFilteringConfigReturn {
   /** Current configuration */
   config: RouteFilteringConfig;
   
-  /** Whether configuration is loading */
+  /** Whether configuration is isLoading */
   isLoading: boolean;
   
   /** Configuration validation errors */

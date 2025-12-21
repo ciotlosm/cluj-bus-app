@@ -14,7 +14,7 @@ import type { StandardLoadingProps } from '../../../../types/componentProps';
 
 /**
  * LoadingState component props with Material-UI integration
- * Implements consistent loading indicators with multiple variants
+ * Implements consistent isLoading indicators with multiple variants
  * Follows standardized prop patterns for consistency
  * Validates Requirements: 3.1, 3.3, 3.5, 8.1
  */
@@ -23,7 +23,7 @@ interface LoadingStateProps extends Omit<StandardLoadingProps, 'variant'> {
   variant?: 'spinner' | 'skeleton' | 'progress';
   /** Size variant with consistent scaling */
   size?: 'small' | 'medium' | 'large';
-  /** Optional text to display alongside loading indicator */
+  /** Optional text to display alongside isLoading indicator */
   text?: string;
   /** Full height container for centering */
   isFullHeight?: boolean;
@@ -52,7 +52,7 @@ interface LoadingSpinnerProps {
 
 /**
  * LoadingState component using Material-UI components exclusively
- * Implements multiple loading variants with consistent styling
+ * Implements multiple isLoading variants with consistent styling
  * Validates Requirements: 5.1, 7.1
  */
 export const LoadingState: React.FC<LoadingStateProps> = ({

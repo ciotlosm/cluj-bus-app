@@ -14,47 +14,46 @@ import type {
   CoreVehicle, 
   Coordinates, 
   RouteType 
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import { 
   DirectionStatus, 
   ConfidenceLevel 
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import type { 
   VehicleSchedule, 
   VehicleDirection, 
   RouteInfo 
-} from '../types/businessLogic';
+} from '../../types/businessLogic';
 import type { 
   TransformationContext, 
   VehicleDisplayData, 
   TransformedVehicleData,
   TransformationStation
-} from '../types/presentationLayer';
-import { createEmptyTransformedVehicleData } from '../types/presentationLayer';
+} from '../../types/presentationLayer';
+import { createEmptyTransformedVehicleData } from '../../types/presentationLayer';
 import type { 
   TranzyVehicleResponse,
   TranzyRouteResponse,
   TranzyStopResponse,
   TranzyStopTimeResponse,
   TranzyTripResponse
-} from '../types/tranzyApi';
+} from '../../types/tranzyApi';
 import { 
   TransformationPipeline, 
   TransformationError,
   createSuccessValidation,
   createFailureValidation,
   createValidationError
-} from '../types/transformationPipeline';
-import type { TransformationStep } from '../types/transformationPipeline';
+} from '../../types/transformationPipeline';
+import type { TransformationStep } from '../../types/transformationPipeline';
 import { DataValidator } from './DataValidator';
-import { errorReporter } from './ErrorReporter';
 import { transformationRetryManager } from './TransformationRetryManager';
-import { routeFilteringConfigurationManager } from './RouteFilteringConfigurationManager';
-import { routeActivityAnalyzer } from './RouteActivityAnalyzer';
-import { intelligentVehicleFilter } from './IntelligentVehicleFilter';
-import { realTimeConfigurationManager } from './RealTimeConfigurationManager';
-import type { FilteringContext } from './IntelligentVehicleFilter';
-import { logger } from '../utils/shared/logger';
+import { routeFilteringConfigurationManager } from '../RouteFilteringConfigurationManager';
+import { routeActivityAnalyzer } from '../RouteActivityAnalyzer';
+import { intelligentVehicleFilter } from '../data-processing/IntelligentVehicleFilter';
+import { realTimeConfigurationManager } from '../RealTimeConfigurationManager';
+import type { FilteringContext } from '../data-processing/IntelligentVehicleFilter';
+import { logger } from '../../utils/shared/logger';
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION TYPES
@@ -1210,7 +1209,11 @@ export class VehicleTransformationService {
             // Only report systemic errors, not individual vehicle issues
             for (const error of apiValidation.errors) {
               if (error.code === 'SYSTEMIC_DATA_ISSUE') {
-                await errorReporter.reportValidationError(error);
+                logger.error('Systemic data issue detected', {
+                  error: error.message,
+                  code: error.code,
+                  field: error.field
+                });
               }
             }
           } else {
@@ -1225,7 +1228,11 @@ export class VehicleTransformationService {
             
             // Report all validation errors for poor recovery
             for (const error of apiValidation.errors) {
-              await errorReporter.reportValidationError(error);
+              logger.error('API validation error', {
+                error: error.message,
+                code: error.code,
+                field: error.field
+              });
             }
           }
           
@@ -1267,7 +1274,11 @@ export class VehicleTransformationService {
           
           // Report validation errors
           for (const error of contextValidation.errors) {
-            await errorReporter.reportValidationError(error);
+            logger.error('Context validation error', {
+              error: error.message,
+              code: error.code,
+              field: error.field
+            });
           }
         } else {
           // Create detailed error message
@@ -1389,12 +1400,16 @@ export class VehicleTransformationService {
         transformationCount: this.transformationCount
       }, 'TRANSFORMATION');
 
-      // Report error through error reporter
+      // Report error through logger
       if (error instanceof TransformationError) {
-        await errorReporter.reportTransformationError(error);
+        logger.error('Transformation error details', {
+          step: error.step,
+          recoverable: error.recoverable,
+          vehicleId: error.vehicleId
+        });
         throw error;
       } else if (error instanceof Error) {
-        await errorReporter.reportError(error, {
+        logger.error('Vehicle transformation error details', {
           operation: 'vehicle-transformation',
           duration,
           transformationCount: this.transformationCount,
@@ -1416,7 +1431,13 @@ export class VehicleTransformationService {
         }
       );
 
-      await errorReporter.reportTransformationError(transformationError);
+      logger.error('Unexpected transformation error', {
+        step: transformationError.step,
+        recoverable: transformationError.recoverable,
+        duration,
+        transformationCount: this.transformationCount,
+        vehicleCount: rawData?.length || 0
+      });
       throw transformationError;
     }
   }
@@ -2182,9 +2203,9 @@ export class VehicleTransformationService {
    * Requirements 2.5, 3.3, 5.1: Real-time configuration updates with immediate effect
    */
   async applyRealTimeConfigurationUpdate(
-    configChange: Partial<import('../types/routeFiltering').RouteFilteringConfig>,
+    configChange: Partial<import('../../types/routeFiltering').RouteFilteringConfig>,
     currentVehicles: CoreVehicle[]
-  ): Promise<import('./RealTimeConfigurationManager').RealTimeUpdateResult> {
+  ): Promise<import('../RealTimeConfigurationManager').RealTimeUpdateResult> {
     logger.info('Applying real-time configuration update to VehicleTransformationService', {
       configChange,
       vehicleCount: currentVehicles.length
@@ -2237,7 +2258,7 @@ export class VehicleTransformationService {
    * 
    * @returns Current route filtering configuration
    */
-  getRouteFilteringConfig(): import('../types/routeFiltering').RouteFilteringConfig {
+  getRouteFilteringConfig(): import('../../types/routeFiltering').RouteFilteringConfig {
     return routeFilteringConfigurationManager.getRouteFilteringConfig();
   }
 
@@ -2248,7 +2269,7 @@ export class VehicleTransformationService {
    * @returns Unsubscribe function
    */
   onRouteTransition(
-    callback: (transition: import('./RealTimeConfigurationManager').RouteTransitionEvent) => void
+    callback: (transition: import('../RealTimeConfigurationManager').RouteTransitionEvent) => void
   ): () => void {
     return realTimeConfigurationManager.onRouteTransition(callback);
   }
@@ -2258,7 +2279,7 @@ export class VehicleTransformationService {
    * 
    * @returns Current performance metrics
    */
-  getRealTimePerformanceMetrics(): import('./RealTimeConfigurationManager').RealTimePerformanceMetrics {
+  getRealTimePerformanceMetrics(): import('../RealTimeConfigurationManager').RealTimePerformanceMetrics {
     return realTimeConfigurationManager.getPerformanceMetrics();
   }
 
@@ -2267,7 +2288,7 @@ export class VehicleTransformationService {
    * 
    * @returns Current circuit breaker state
    */
-  getCircuitBreakerState(): import('./RealTimeConfigurationManager').CircuitBreakerState {
+  getCircuitBreakerState(): import('../RealTimeConfigurationManager').CircuitBreakerState {
     return realTimeConfigurationManager.getCircuitBreakerState();
   }
   

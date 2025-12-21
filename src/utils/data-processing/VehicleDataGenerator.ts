@@ -18,13 +18,13 @@ import {
   DirectionStatus,
   ConfidenceLevel,
   RouteType
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import {
   createDefaultUserPreferences,
   createDefaultTransformationContext,
   createEmptyTransformedVehicleData
-} from '../types/presentationLayer';
-import { TransformationError } from '../types/transformationPipeline';
+} from '../../types/presentationLayer';
+import { TransformationError } from '../../types/transformationPipeline';
 
 import type {
   CoreVehicle,
@@ -32,20 +32,20 @@ import type {
   DirectionStatusValue,
   ConfidenceLevelValue,
   RouteTypeValue
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import type {
   VehicleSchedule,
   VehicleDirection,
   RouteInfo,
   EnhancedVehicleWithBusinessLogic
-} from '../types/businessLogic';
+} from '../../types/businessLogic';
 import type {
   VehicleDisplayData,
   TransformationContext,
   TransformedVehicleData,
   TransformationStation,
   UserPreferences
-} from '../types/presentationLayer';
+} from '../../types/presentationLayer';
 
 // ============================================================================
 // GENERATOR CONFIGURATION
@@ -441,7 +441,7 @@ export class VehicleDataGenerator {
         lastDeparture: '23:30:00',
         frequencyMinutes: 15
       } : undefined,
-      isActive: true,
+      isActive: Math.random() > 0.1, // 90% chance of being active
       operatesWeekends: Math.random() > 0.3,
       operatesHolidays: Math.random() > 0.7,
       accessibility: {

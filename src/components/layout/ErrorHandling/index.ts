@@ -1,2 +1,2 @@
-export { ErrorBoundary } from './ErrorBoundary';
-export { ErrorDisplay } from './ErrorDisplay';
+export * from './ErrorBoundary';
+export * from './ErrorDisplay';

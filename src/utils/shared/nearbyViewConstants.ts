@@ -9,8 +9,8 @@
  * Requirements: 3.1, 3.2, 3.4
  */
 
-import type { Coordinates, Station } from '../types';
-import { calculateDistance } from './distanceUtils';
+import type { Coordinates, Station } from '../../types';
+import { calculateDistance } from '../data-processing/distanceUtils';
 
 // ============================================================================
 // GLOBAL CONSTANTS

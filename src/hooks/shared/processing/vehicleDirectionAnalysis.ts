@@ -2,7 +2,7 @@ import type { Station, StopTime } from '../../../types';
 import type { CoreVehicle } from '../../../types/coreVehicle';
 import type { DirectionAnalysisResult } from './types';
 import { DirectionStatus, ConfidenceLevel } from '../../../types/coreVehicle';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 
 /**
  * Analyze vehicle direction and arrival/departure status relative to a station

@@ -1,2 +1,2 @@
-export * from './VehicleTypeGuards';
+export * from '../validation/VehicleTypeGuards';
 export * from './propValidation';

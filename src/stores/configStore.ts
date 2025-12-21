@@ -208,6 +208,10 @@ export const useConfigStore = create<ConfigStore>()(
         }
       },
 
+      getSystemTheme: (): ThemeMode => {
+        return getSystemTheme();
+      },
+
       toggleTheme: () => {
         const currentTheme = get().theme;
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -215,6 +219,58 @@ export const useConfigStore = create<ConfigStore>()(
       },
 
       // Agency actions (integrated from agencyStore)
+      loadAgencies: async () => {
+        const { isAgenciesLoading } = get();
+        
+        if (isAgenciesLoading) {
+          logger.warn('Agency fetch already in progress');
+          return;
+        }
+
+        set({ isAgenciesLoading: true, agenciesError: null });
+        logger.info('Starting agency fetch');
+
+        try {
+          const agencies = await StoreErrorHandler.withRetry(
+            () => enhancedTranzyApi.getAgencies(),
+            StoreErrorHandler.createContext('ConfigStore', 'loadAgencies')
+          );
+          
+          logger.info('Agencies fetched successfully', { 
+            agencyCount: agencies.length 
+          });
+          
+          set({
+            agencies,
+            isAgenciesLoading: false,
+            agenciesError: null,
+            isApiValidated: true,
+          });
+
+          // Emit API validation event
+          StoreEventManager.emit(StoreEvents.API_KEY_VALIDATED, {
+            isValid: true,
+            agencies,
+          });
+        } catch (error) {
+          const errorState = StoreErrorHandler.createError(error, 
+            StoreErrorHandler.createContext('ConfigStore', 'loadAgencies')
+          );
+          
+          logger.error('Failed to fetch agencies', { error });
+          
+          set({
+            agenciesError: errorState,
+            isAgenciesLoading: false,
+            isApiValidated: false,
+          });
+
+          // Emit API validation event
+          StoreEventManager.emit(StoreEvents.API_KEY_VALIDATED, {
+            isValid: false,
+          });
+        }
+      },
       fetchAgencies: async () => {
         const { isAgenciesLoading } = get();
         
@@ -306,7 +362,7 @@ export const useConfigStore = create<ConfigStore>()(
               isValid: false,
             });
             
-            return false;
+            throw new Error('Invalid API key');
           }
 
           // If validation successful, fetch and cache agencies
@@ -328,8 +384,6 @@ export const useConfigStore = create<ConfigStore>()(
             isValid: true,
             agencies,
           });
-          
-          return true;
         } catch (error) {
           const errorState = StoreErrorHandler.createError(error,
             StoreErrorHandler.createContext('ConfigStore', 'validateApiKey', { keyLength: apiKey.length })
@@ -348,7 +402,7 @@ export const useConfigStore = create<ConfigStore>()(
             isValid: false,
           });
           
-          return false;
+          throw error;
         }
       },
 

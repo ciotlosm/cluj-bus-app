@@ -28,7 +28,7 @@ export interface StoreEventData {
     source: 'gps' | 'manual';
   };
   [StoreEvents.THEME_CHANGED]: { 
-    theme: 'light' | 'dark';
+    theme: 'light' | 'dark' | 'auto';
     source: 'user' | 'system';
   };
   [StoreEvents.API_KEY_VALIDATED]: { 

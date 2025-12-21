@@ -30,7 +30,7 @@ import { LocationSettingsSection } from './sections/LocationSettingsSection';
 import { AdvancedSettingsSection } from './sections/AdvancedSettingsSection';
 import { ThemeToggle } from '../../ui';
 import { useConfigStore } from '../../../stores/configStore';
-import { logger, LogLevel } from '../../../utils/logger';
+import { logger, LogLevel } from '../../../utils/shared/logger';
 
 interface ConfigurationManagerProps {
   onConfigComplete?: () => void;
@@ -226,9 +226,9 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
             <Button
               variant="filled"
               size="large"
-              fullWidth
+              isFullWidth
               onClick={handleSubmit}
-              loading={isSubmitting}
+              isLoading={isSubmitting}
               sx={{ py: 1.5 }}
             >
               Save Configuration

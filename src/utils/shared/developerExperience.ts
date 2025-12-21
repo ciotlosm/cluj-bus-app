@@ -73,7 +73,7 @@ export {
   // Types
   type GeneratorConfig,
   DEFAULT_GENERATOR_CONFIG
-} from './VehicleDataGenerator';
+} from '../data-processing/VehicleDataGenerator';
 
 // ============================================================================
 // TYPE GUARDS EXPORTS
@@ -105,7 +105,7 @@ export {
   type DetailedValidationResult,
   type ValidationOptions,
   DEFAULT_VALIDATION_OPTIONS
-} from './VehicleTypeGuards';
+} from '../validation/VehicleTypeGuards';
 
 // ============================================================================
 // FACTORY FUNCTIONS EXPORTS
@@ -134,7 +134,7 @@ export {
   // Types
   type FactoryConfig,
   DEFAULT_FACTORY_CONFIG
-} from './VehicleDataFactory';
+} from '../data-processing/VehicleDataFactory';
 
 // ============================================================================
 // RE-EXPORT CORE TYPE GUARDS FROM TYPE FILES
@@ -155,7 +155,7 @@ export {
   isTransformationError,
   isValidationFailure,
   isValidationSuccess
-} from '../types';
+} from '../../types';
 
 // ============================================================================
 // RE-EXPORT FACTORY FUNCTIONS FROM TYPE FILES
@@ -174,7 +174,7 @@ export {
   createFailureValidation,
   createValidationError,
   createValidationWarning
-} from '../types';
+} from '../../types';
 
 // ============================================================================
 // CONVENIENCE UTILITIES

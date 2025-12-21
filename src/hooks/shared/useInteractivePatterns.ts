@@ -115,7 +115,7 @@ export const useInteractivePatterns = () => {
       hover?: boolean;
       focus?: boolean;
       active?: boolean;
-      disabled?: boolean;
+      isDisabled?: boolean;
       intensity?: 'subtle' | 'medium' | 'strong';
     } = {}
   ): SxProps<Theme> => {
@@ -123,15 +123,15 @@ export const useInteractivePatterns = () => {
       hover = true,
       focus = true,
       active = true,
-      disabled = true,
+      isDisabled = true,
       intensity = 'medium',
     } = options;
 
     const animation = getAnimationStyles();
     const intensityMap = {
-      subtle: { hover: 0.04, focus: 0.08, active: 0.12, disabled: 0.38 },
-      medium: { hover: 0.08, focus: 0.12, active: 0.16, disabled: 0.38 },
-      strong: { hover: 0.12, focus: 0.16, active: 0.20, disabled: 0.38 },
+      subtle: { hover: 0.04, focus: 0.08, active: 0.12, isDisabled: 0.38 },
+      medium: { hover: 0.08, focus: 0.12, active: 0.16, isDisabled: 0.38 },
+      strong: { hover: 0.12, focus: 0.16, active: 0.20, isDisabled: 0.38 },
     };
 
     const alphaValues = intensityMap[intensity];
@@ -160,9 +160,9 @@ export const useInteractivePatterns = () => {
       };
     }
 
-    if (disabled) {
+    if (isDisabled) {
       styles['&:disabled, &.Mui-disabled'] = {
-        opacity: alphaValues.disabled,
+        opacity: alphaValues.isDisabled,
         cursor: 'not-allowed',
         transform: 'none',
         '&:hover': {
@@ -182,13 +182,13 @@ export const useInteractivePatterns = () => {
     options: {
       preventDefault?: boolean;
       stopPropagation?: boolean;
-      disabled?: boolean;
+      isDisabled?: boolean;
     } = {}
   ) => {
-    const { preventDefault = true, stopPropagation = false, disabled = false } = options;
+    const { preventDefault = true, stopPropagation = false, isDisabled = false } = options;
 
     return async (event: MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (isDisabled) return;
 
       if (preventDefault) event.preventDefault();
       if (stopPropagation) event.stopPropagation();
@@ -218,17 +218,17 @@ export const useInteractivePatterns = () => {
     data?: T,
     options: {
       keys?: string[];
-      disabled?: boolean;
+      isDisabled?: boolean;
     } = {}
   ) => {
-    const { keys = ['Enter', ' '], disabled = false } = options;
+    const { keys = ['Enter', ' '], isDisabled = false } = options;
 
     return {
-      onClick: createClickHandler(handler, data, { disabled }),
+      onClick: createClickHandler(handler, data, { isDisabled }),
       onKeyDown: createKeyboardHandler(handler, data, keys),
-      tabIndex: disabled ? -1 : 0,
+      tabIndex: isDisabled ? -1 : 0,
       role: 'button',
-      'aria-disabled': disabled,
+      'aria-disabled': isDisabled,
     };
   }, [createClickHandler, createKeyboardHandler]);
 

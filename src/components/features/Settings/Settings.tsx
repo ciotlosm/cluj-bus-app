@@ -211,7 +211,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={handleExportConfig}
-              disabled={!config}
+              isDisabled={!config}
             >
               Export Config
             </Button>
@@ -219,11 +219,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             <Button
               variant="outlined"
               startIcon={<UploadIcon />}
-              component="label"
             >
               Import Config
               <input
-                type="file"
                 accept=".json"
                 onChange={handleImportConfig}
                 style={{ display: 'none' }}

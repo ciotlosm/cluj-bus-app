@@ -15,15 +15,15 @@ export const useEventPatterns = () => {
     options: {
       preventDefault?: boolean;
       stopPropagation?: boolean;
-      disabled?: boolean;
+      isDisabled?: boolean;
       debounce?: number;
     } = {}
   ) => {
-    const { preventDefault = true, stopPropagation = false, disabled = false, debounce } = options;
+    const { preventDefault = true, stopPropagation = false, isDisabled = false, debounce } = options;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     return async (event: MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (isDisabled) return;
 
       if (preventDefault) event.preventDefault();
       if (stopPropagation) event.stopPropagation();
@@ -82,18 +82,18 @@ export const useEventPatterns = () => {
       keys?: string[];
       preventDefault?: boolean;
       stopPropagation?: boolean;
-      disabled?: boolean;
+      isDisabled?: boolean;
     } = {}
   ) => {
     const { 
       keys = ['Enter', ' '], 
       preventDefault = true, 
       stopPropagation = true, 
-      disabled = false 
+      isDisabled = false 
     } = options;
 
     return async (event: KeyboardEvent<HTMLElement>) => {
-      if (disabled || !keys.includes(event.key)) return;
+      if (isDisabled || !keys.includes(event.key)) return;
 
       if (preventDefault) event.preventDefault();
       if (stopPropagation) event.stopPropagation();
@@ -109,20 +109,20 @@ export const useEventPatterns = () => {
     options: {
       onFocus?: boolean;
       onBlur?: boolean;
-      disabled?: boolean;
+      isDisabled?: boolean;
     } = {}
   ) => {
-    const { onFocus = true, onBlur = false, disabled = false } = options;
+    const { onFocus = true, onBlur = false, isDisabled = false } = options;
 
     return {
       ...(onFocus && {
         onFocus: (event: FocusEvent<HTMLElement>) => {
-          if (!disabled) handler(data, event);
+          if (!isDisabled) handler(data, event);
         },
       }),
       ...(onBlur && {
         onBlur: (event: FocusEvent<HTMLElement>) => {
-          if (!disabled) handler(data, event);
+          if (!isDisabled) handler(data, event);
         },
       }),
     };
@@ -134,19 +134,19 @@ export const useEventPatterns = () => {
     data?: T,
     options: {
       keys?: string[];
-      disabled?: boolean;
+      isDisabled?: boolean;
       role?: string;
       ariaLabel?: string;
     } = {}
   ) => {
-    const { keys = ['Enter', ' '], disabled = false, role = 'button', ariaLabel } = options;
+    const { keys = ['Enter', ' '], isDisabled = false, role = 'button', ariaLabel } = options;
 
     return {
-      onClick: createClickHandler(handler, data, { disabled }),
-      onKeyDown: createKeyboardHandler(handler, data, { keys, disabled }),
-      tabIndex: disabled ? -1 : 0,
+      onClick: createClickHandler(handler, data, { isDisabled }),
+      onKeyDown: createKeyboardHandler(handler, data, { keys, isDisabled }),
+      tabIndex: isDisabled ? -1 : 0,
       role,
-      'aria-disabled': disabled,
+      'aria-disabled': isDisabled,
       ...(ariaLabel && { 'aria-label': ariaLabel }),
     };
   }, [createClickHandler, createKeyboardHandler]);
@@ -225,12 +225,12 @@ export const useEventPatterns = () => {
       onDragOver?: (event: React.DragEvent) => void;
       onDragEnter?: (event: React.DragEvent) => void;
       onDragLeave?: (event: React.DragEvent) => void;
-      disabled?: boolean;
+      isDisabled?: boolean;
     } = {}
   ) => {
-    const { onDragStart, onDragOver, onDragEnter, onDragLeave, disabled = false } = options;
+    const { onDragStart, onDragOver, onDragEnter, onDragLeave, isDisabled = false } = options;
 
-    if (disabled) return {};
+    if (isDisabled) return {};
 
     return {
       draggable: true,

@@ -8,8 +8,8 @@
  * Requirements: 5.5 - Performance optimization and validation
  */
 
-import { logger } from './logger';
-import { performanceMonitor } from './performance';
+import { logger } from '../shared/logger';
+import { performanceMonitor } from '../performance/performance';
 import {
   PERFORMANCE_THRESHOLDS,
   validateNearbyViewPerformance,

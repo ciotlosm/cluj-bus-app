@@ -8,7 +8,7 @@ import {
   TranzyStopResponse,
   TranzyRouteResponse,
   TranzyStopTimeResponse
-} from '../../types';
+} from '@/types';
 import type { CoreVehicle } from '../../types/coreVehicle';
 
 /**

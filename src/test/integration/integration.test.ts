@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
 import { useConfigStore, useVehicleStore } from '../../stores';
-import type { UserConfig } from '../../types';
+import type { UserConfig } from '@/types';
 import type { CoreVehicle } from '../../types/coreVehicle';
 import type { VehicleDisplayData } from '../../types/presentationLayer';
 

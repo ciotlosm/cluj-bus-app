@@ -17,7 +17,7 @@ import {
 } from '@mui/icons-material';
 import { getRouteTypeInfo } from '../../../../utils/routeUtils';
 import { useThemeUtils, useMuiUtils } from '../../../../hooks';
-import { logger } from '../../../../utils/logger';
+import { logger } from '../../../../utils/shared/logger';
 // Define the route type used by the store
 type StoreRoute = {
   id: string; // Internal route ID for API calls ("40", "42", etc.)

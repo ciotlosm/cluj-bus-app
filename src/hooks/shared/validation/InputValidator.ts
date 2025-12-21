@@ -2,7 +2,7 @@ import type {
   ValidationResult, 
   ValidationError
 } from './types';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 
 /**
  * Unified input validation class that consolidates validation logic

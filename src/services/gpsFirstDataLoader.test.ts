@@ -1,12 +1,12 @@
 /**
  * GPS-First Data Loader Tests
  * 
- * Tests the GPS-first data loading approach to ensure reliable data validation.
+ * Tests the GPS-first data isLoading approach to ensure reliable data validation.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GpsFirstDataLoader } from './gpsFirstDataLoader';
-import type { Coordinates, Station } from '../types';
+import type { Coordinates, Station } from '../../types';
 import type { StopTime, Trip, Route } from '../types/tranzyApi';
 import type { CoreVehicle } from '../types/coreVehicle';
 

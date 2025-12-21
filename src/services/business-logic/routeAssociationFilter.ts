@@ -7,10 +7,10 @@
  * Requirements: 1.2, 4.4, 6.2
  */
 
-import type { Station } from '../types';
-import { RouteType } from '../types';
-import type { Route, StopTime, Trip } from '../types/tranzyApi';
-import { logger } from '../utils/shared/logger';
+import type { Station } from '../../types';
+import { RouteType } from '../../types';
+import type { Route, StopTime, Trip } from '../../types/tranzyApi';
+import { logger } from '../../utils/shared/logger';
 
 // ============================================================================
 // INTERFACES

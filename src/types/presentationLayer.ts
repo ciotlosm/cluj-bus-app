@@ -85,6 +85,7 @@ export interface TransformationStation {
   accessibility: {
     wheelchairAccessible: boolean;
     bikeRacks: boolean;
+    bikeAccessible?: boolean;
     audioAnnouncements: boolean;
   };
 }

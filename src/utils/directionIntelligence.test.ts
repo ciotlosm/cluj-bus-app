@@ -9,7 +9,7 @@ import {
   type RouteEndpoint,
   type StationMetadata,
 } from './directionIntelligence';
-import type { BusInfo, Station, UserConfig, Coordinates } from '../types';
+import type { BusInfo, Station, UserConfig, Coordinates } from '../../types';
 
 // Generators for property-based testing
 const coordinatesArb = fc.record({

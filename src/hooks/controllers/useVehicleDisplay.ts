@@ -189,16 +189,16 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
     // Requirements 3.1, 3.2: Only consider stations with route associations
     // First, enhance stations with existing route data if available
     const stationsWithRouteInfo = allStations.map(station => {
-      // Use existing station.routes property if available (Requirements 3.2)
-      if (station.routes && Array.isArray(station.routes) && station.routes.length > 0) {
+      // Use existing station.routeIds property if available (Requirements 3.2)
+      if (station.routeIds && Array.isArray(station.routeIds) && station.routeIds.length > 0) {
         return {
           ...station,
           hasRouteAssociations: true,
-          routeIds: station.routes
+          routeIds: station.routeIds
         };
       }
       
-      // If no station.routes property, we'll rely on GTFS data in StationSelector
+      // If no station.routeIds property, we'll rely on GTFS data in StationSelector
       return {
         ...station,
         hasRouteAssociations: false,
@@ -708,7 +708,7 @@ export const useVehicleDisplay = (options: UseVehicleDisplayOptions = {}): UseVe
 };
 
 // Helper function to convert Station or StationWithRoutes to TransformationStation
-// Requirements 3.2: Use existing station.routes data when available
+// Requirements 3.2: Use existing station.routeIds data when available
 function convertToTransformationStation(
   station: Station | StationWithRoutes, 
   stopTimes?: any[], 
@@ -720,9 +720,9 @@ function convertToTransformationStation(
   if ('associatedRoutes' in station && station.associatedRoutes) {
     // StationWithRoutes has associatedRoutes array
     routeIds = station.associatedRoutes.map(route => route.id);
-  } else if (station.routes && Array.isArray(station.routes)) {
-    // Station has routes property (Requirements 3.2: Pass existing station.routes data)
-    routeIds = station.routes;
+  } else if (station.routeIds && Array.isArray(station.routeIds)) {
+    // Station has routes property (Requirements 3.2: Pass existing station.routeIds data)
+    routeIds = station.routeIds;
   } else if (stopTimes && trips) {
     // Fallback: Extract route IDs from GTFS data
     try {
@@ -764,7 +764,7 @@ function convertToTransformationStation(
       stationId: station.id,
       stationName: station.name,
       hasAssociatedRoutes: 'associatedRoutes' in station && !!station.associatedRoutes,
-      hasRoutesProperty: !!station.routes,
+      hasRoutesProperty: !!station.routeIds,
       hasGtfsData: !!(stopTimes && trips),
       stopTimesAvailable: stopTimes?.length || 0,
       tripsAvailable: trips?.length || 0

@@ -1,1 +1,1 @@
-export { RefreshStatusFooter } from './RefreshStatusFooter';
+export * from './RefreshStatusFooter';

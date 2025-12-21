@@ -2,7 +2,7 @@
  * Utility functions for consistent time formatting across the application
  */
 
-import { logger } from './logger';
+import { logger } from './shared/logger';
 
 /**
  * Format time in 24-hour format (HH:MM) without seconds

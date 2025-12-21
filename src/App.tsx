@@ -47,7 +47,7 @@ import { useAppInitialization } from './hooks/shared/useAppInitialization';
 import { useThemeUtils, useMuiUtils } from './hooks';
 
 import { useComponentLifecycle, logPerformanceMetrics } from './utils/performance';
-import { logger } from './utils/logger';
+import { logger } from './utils/shared/logger';
 
 
 
@@ -58,7 +58,7 @@ import { initializeServiceWorker } from './utils/serviceWorkerManager';
 
 
 
-// Import Settings component directly to avoid lazy loading issues
+// Import Settings component directly to avoid lazy isLoading issues
 import { Settings } from './components/features/Settings';
 
 
@@ -135,7 +135,7 @@ const MaterialBottomNav: React.FC<{
   const handleNavigation = React.useCallback((view: 'station' | 'settings') => {
     logger.debug('Navigation attempt', { from: currentView, to: view, isFullyConfigured }, 'NAVIGATION');
     
-    // Only prevent if disabled due to configuration
+    // Only prevent if isDisabled due to configuration
     if (view === 'station' && !isFullyConfigured) {
       logger.warn('Navigation blocked - not fully configured', { view, isFullyConfigured }, 'NAVIGATION');
       return;

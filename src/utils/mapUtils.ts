@@ -1,5 +1,5 @@
-import { calculateDistance } from './distanceUtils';
-import { logger } from './logger';
+import { calculateDistance } from './data-processing/distanceUtils';
+import { logger } from './shared/logger';
 
 /**
  * Default distance threshold for considering two points as overlapping on a map

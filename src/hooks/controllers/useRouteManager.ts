@@ -161,10 +161,10 @@ export const useRouteManager = (): UseRouteManagerReturn => {
             routeId: routeMapping.routeId,
             routeName: routeName,
             direction: 'to_work', // Default direction
-            stationId: '', // Will be set when station is selected
-            stationName: '', // Will be set when station is selected
-            isActive: true
-          };
+                                                notifications: false,
+      preferredStations: [],
+      addedAt: new Date()
+    };
           
           // Optimistically add to local state
           setSelectedRoutes(prev => [...prev, favoriteRoute]);

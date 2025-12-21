@@ -9,13 +9,13 @@
  * Requirements: 2.1, 2.2, 2.4, 6.1, 6.2, 6.3, 6.5
  */
 
-import type { CoreVehicle, Coordinates } from '../types/coreVehicle';
-import type { TransformationStation, TransformationContext } from '../types/presentationLayer';
-import type { RouteActivityInfo, RouteClassification } from './RouteActivityAnalyzer';
-import { RouteClassification as RouteClass } from './RouteActivityAnalyzer';
-import { logger } from '../utils/shared/logger';
-import { debugMonitoringService } from './DebugMonitoringService';
-import type { RouteClassificationDebug } from './DebugMonitoringService';
+import type { CoreVehicle, Coordinates } from '../../types/coreVehicle';
+import type { TransformationStation, TransformationContext } from '../../types/presentationLayer';
+import type { RouteActivityInfo, RouteClassification } from '../RouteActivityAnalyzer';
+import { RouteClassification as RouteClass } from '../RouteActivityAnalyzer';
+import { logger } from '../../utils/shared/logger';
+import { debugMonitoringService } from '../DebugMonitoringService';
+import type { RouteClassificationDebug } from '../DebugMonitoringService';
 
 // ============================================================================
 // INTERFACES AND TYPES

@@ -5,6 +5,8 @@ import {
   Stack,
   Alert,
   Typography,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Route as RouteIcon,
@@ -13,7 +15,7 @@ import {
 } from '@mui/icons-material';
 
 import { useRouteManager } from '../../../hooks/controllers';
-import { InfoCard, Input } from '../../ui';
+import { InfoCard } from '../../ui';
 import { LoadingState } from '../../ui/feedback/Loading';
 import { RouteTypeFilters } from './components/RouteTypeFilters';
 import { RoutesList } from './components/RoutesList';
@@ -47,16 +49,16 @@ export const SettingsRoute: React.FC<SettingsRouteProps> = ({ className = '' }) 
     handleTypeFilterChange,
   } = useRouteManager();
 
-  // Local loading state to ensure we show loading initially
+  // Local isLoading state to ensure we show isLoading initially
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
 
   // Mark as loaded when we have data or a definitive error
   useEffect(() => {
     if (!isLoading && (availableRoutes.length > 0 || error)) {
-      // Add a small delay to ensure loading state is visible
+      // Add a small delay to ensure isLoading state is visible
       const timer = setTimeout(() => {
         setHasInitiallyLoaded(true);
-      }, 500); // 500ms minimum loading time
+      }, 500); // 500ms minimum isLoading time
       
       return () => clearTimeout(timer);
     }
@@ -80,7 +82,7 @@ export const SettingsRoute: React.FC<SettingsRouteProps> = ({ className = '' }) 
     );
   }
 
-  // Show loading state during initial data fetch
+  // Show isLoading state during initial data fetch
   if (!hasInitiallyLoaded && config?.city) {
     return (
       <Box className={className}>
@@ -119,16 +121,22 @@ export const SettingsRoute: React.FC<SettingsRouteProps> = ({ className = '' }) 
             )}
           </Box>
 
-          {/* Search and Filter Section - Only show when not in initial loading */}
+          {/* Search and Filter Section - Only show when not in initial isLoading */}
           {hasInitiallyLoaded && (
             <Box>
               {/* Search Bar */}
-              <Input
+              <TextField
                 placeholder="Search routes by number, name, or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                leftIcon={<SearchIcon color="action" />}
                 disabled={isLoading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
                 sx={{
                   mb: 2,
                   '& .MuiOutlinedInput-root': {
@@ -146,7 +154,7 @@ export const SettingsRoute: React.FC<SettingsRouteProps> = ({ className = '' }) 
             </Box>
           )}
 
-          {/* Statistics - Only show when not in initial loading */}
+          {/* Statistics - Only show when not in initial isLoading */}
           {hasInitiallyLoaded && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
               <Chip
@@ -193,7 +201,7 @@ export const SettingsRoute: React.FC<SettingsRouteProps> = ({ className = '' }) 
             </Box>
           )}
 
-          {/* Status Messages - Only show when not in initial loading */}
+          {/* Status Messages - Only show when not in initial isLoading */}
           {hasInitiallyLoaded && (
             <StatusMessages
               isLoading={isLoading}

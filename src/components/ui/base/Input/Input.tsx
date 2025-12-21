@@ -51,7 +51,7 @@ export const Input: React.FC<InputProps> = ({
   rightIcon,
   isLoading = false,
   isClearable = false,
-  isFullWidth = true,
+  fullWidth = true,
   isDisabled = false,
   isRequired = false,
   isMultiline = false,
@@ -80,7 +80,7 @@ export const Input: React.FC<InputProps> = ({
       size={size}
       error={hasError}
       helperText={actualHelperText}
-      fullWidth={isFullWidth}
+      fullWidth={fullWidth}
       disabled={isDisabled}
       required={isRequired}
       multiline={isMultiline}

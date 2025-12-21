@@ -202,7 +202,7 @@ function GenericButton<T = any>({
         <GenericBox
           as="button"
           onClick={handleClick}
-          disabled={isDisabled || isLoading}
+          isDisabled={isDisabled || isLoading}
           sx={{
             ...buttonStyles,
             width: isFullWidth ? '100%' : 'auto',
@@ -223,7 +223,7 @@ function GenericButton<T = any>({
     <GenericBox
       as="button"
       onClick={handleClick}
-      disabled={isDisabled || isLoading}
+      isDisabled={isDisabled || isLoading}
       sx={{
         ...buttonStyles,
         width: isFullWidth ? '100%' : 'auto',

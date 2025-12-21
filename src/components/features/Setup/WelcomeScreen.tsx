@@ -142,7 +142,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onGetStarted }) =>
             onClick={onGetStarted}
             variant="filled"
             size="large"
-            fullWidth
+            isFullWidth
             sx={{
               bgcolor: 'white',
               color: theme.palette.primary.main,

@@ -48,10 +48,7 @@ export const useVehicleStore = create<VehicleStore>()(
         entriesWithTimestamps: {},
         lastCacheUpdate: 0,
       },
-      isOnline: navigator.onLine,
-      isUsingCachedData: false,
-      
-      // Auto-refresh state
+                  // Auto-refresh state
       isAutoRefreshEnabled: false,
 
       // Actions - Data Management
@@ -101,8 +98,7 @@ export const useVehicleStore = create<VehicleStore>()(
             lastCacheUpdate: now,
             isLoading: false,
             error: null,
-            isUsingCachedData: false,
-          });
+                      });
 
           // Update cache stats
           get().getCacheStats();
@@ -131,8 +127,7 @@ export const useVehicleStore = create<VehicleStore>()(
           if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
             set({
               vehicles: cachedData.data as CoreVehicle[],
-              isUsingCachedData: true,
-              lastCacheUpdate: new Date(Date.now() - cachedData.age),
+                            lastCacheUpdate: new Date(Date.now() - cachedData.age),
             });
             
             logger.warn('Using cached vehicle data due to fetch error', {
@@ -168,7 +163,13 @@ export const useVehicleStore = create<VehicleStore>()(
                 latitude: stop.stop_lat || stop.latitude || 0,
                 longitude: stop.stop_lon || stop.longitude || 0,
               },
+              routeIds: [], // Will be populated by route data
               isFavorite: false, // Will be updated by favorites store
+              accessibility: {
+                wheelchairAccessible: false,
+                bikeRacks: false,
+                audioAnnouncements: false,
+              },
             }));
           };
 
@@ -338,9 +339,8 @@ export const useVehicleStore = create<VehicleStore>()(
 
           return {
             data: stations,
-            isLoading: false,
             error: null,
-            lastUpdated: new Date()
+            lastUpdate: new Date()
           };
 
         } catch (error) {
@@ -349,9 +349,8 @@ export const useVehicleStore = create<VehicleStore>()(
           
           return {
             data: null,
-            isLoading: false,
             error: errorState,
-            lastUpdated: null
+            lastUpdate: null
           };
         }
       },
@@ -396,8 +395,7 @@ export const useVehicleStore = create<VehicleStore>()(
             lastCacheUpdate: now,
             isLoading: false,
             error: null,
-            isUsingCachedData: false,
-          });
+                      });
 
           // Emit event for other stores/components
           StoreEventManager.emit(StoreEvents.VEHICLES_UPDATED, {
@@ -415,9 +413,8 @@ export const useVehicleStore = create<VehicleStore>()(
 
           return {
             data: vehicles,
-            isLoading: false,
             error: null,
-            lastUpdated: now
+            lastUpdate: now
           };
 
         } catch (error) {
@@ -426,9 +423,8 @@ export const useVehicleStore = create<VehicleStore>()(
           
           return {
             data: null,
-            isLoading: false,
             error: errorState,
-            lastUpdated: null
+            lastUpdate: null
           };
         }
       },
@@ -467,9 +463,8 @@ export const useVehicleStore = create<VehicleStore>()(
 
           return {
             data: routes,
-            isLoading: false,
             error: null,
-            lastUpdated: new Date()
+            lastUpdate: new Date()
           };
 
         } catch (error) {
@@ -478,9 +473,8 @@ export const useVehicleStore = create<VehicleStore>()(
           
           return {
             data: null,
-            isLoading: false,
             error: errorState,
-            lastUpdated: null
+            lastUpdate: null
           };
         }
       },
@@ -531,9 +525,8 @@ export const useVehicleStore = create<VehicleStore>()(
 
           return {
             data: stopTimes,
-            isLoading: false,
             error: null,
-            lastUpdated: new Date()
+            lastUpdate: new Date()
           };
 
         } catch (error) {
@@ -542,9 +535,8 @@ export const useVehicleStore = create<VehicleStore>()(
           
           return {
             data: null,
-            isLoading: false,
             error: errorState,
-            lastUpdated: null
+            lastUpdate: null
           };
         }
       },
@@ -631,8 +623,7 @@ export const useVehicleStore = create<VehicleStore>()(
           lastUpdate: null,
           lastApiUpdate: null,
           lastCacheUpdate: null,
-          isUsingCachedData: false,
-          cacheStats: {
+                    cacheStats: {
             totalEntries: 0,
             totalSize: 0,
             entriesByType: {},
@@ -663,6 +654,16 @@ export const useVehicleStore = create<VehicleStore>()(
 
         return R * c;
       },
+
+      // Refresh all data types
+      refreshAll: async () => {
+        await Promise.allSettled([
+          get().refreshVehicles({ forceRefresh: true }),
+          get().refreshStations(true),
+          get().refreshScheduleData(),
+          get().refreshLiveData()
+        ]);
+      },
     }),
     {
       name: 'vehicle-store',
@@ -683,9 +684,7 @@ export const useVehicleStore = create<VehicleStore>()(
 if (typeof window !== 'undefined') {
   // Monitor online/offline status
   const updateConnectionStatus = () => {
-    useVehicleStore.setState({ isOnline: navigator.onLine });
-    
-    if (navigator.onLine) {
+        if (navigator.onLine) {
       logger.info('Network connection restored');
       // Optionally trigger a refresh when coming back online
       const store = useVehicleStore.getState();

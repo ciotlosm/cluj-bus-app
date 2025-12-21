@@ -6,7 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import { getTheme } from './theme/materialTheme'
 import { useConfigStore } from './stores/configStore'
-import { logger } from './utils/logger'
+import { logger } from './utils/shared/logger'
 
 // Initialize logging
 logger.info('Application starting', { 
@@ -19,7 +19,7 @@ logger.info('Application starting', {
 // Theme wrapper component to use the theme store
 const ThemedApp = () => {
   const { theme: mode } = useConfigStore();
-  const theme = getTheme(mode);
+  const theme = getTheme(mode === 'auto' ? 'dark' : mode);
   
   // Apply theme to document root for PWA consistency
   React.useEffect(() => {

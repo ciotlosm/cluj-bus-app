@@ -205,7 +205,7 @@ export const useUnifiedCacheManager = (): UnifiedCacheManagerResult => {
       logger.info('Starting unified force refresh all operation', {}, 'CACHE_MANAGER');
 
       // Force refresh all store data
-      await vehicleStore.forceRefreshAll();
+      await vehicleStore.refreshAll();
 
       // Update cache statistics
       vehicleStore.getCacheStats();

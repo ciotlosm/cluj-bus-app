@@ -6,7 +6,7 @@ import type {
   Station, 
   CoreVehicle
 } from '../../../types';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 
 /**
  * Default configuration for safe defaults

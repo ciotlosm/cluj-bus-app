@@ -62,10 +62,17 @@ export function useErrorHandler(): UseErrorHandlerReturn {
 
       // Override error type if specified
       if (options.errorType) {
-        errorState.type = options.errorType;
+        (errorState as any).type = options.errorType;
       }
 
-      setError(errorState);
+      // Ensure all required properties are set
+      const completeErrorState = {
+        ...errorState,
+        hasError: true,
+        isRecoverable: true,
+      };
+
+      setError(completeErrorState);
       setIsLoading(false);
       return null;
     }

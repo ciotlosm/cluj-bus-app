@@ -9,8 +9,8 @@ import {
 } from '@mui/material';
 import { useConfigStore } from '../../../stores/configStore';
 import { withPerformanceMonitoring } from '../../../utils/performance';
-import { logger } from '../../../utils/logger';
-import { calculateDistance } from '../../../utils/distanceUtils';
+import { logger } from '../../../utils/shared/logger';
+import { calculateDistance } from '../../../utils/data-processing/distanceUtils';
 import { MapPinIcon } from '../../ui/base/Icons/Icons';
 import { EmptyState } from '../../ui';
 import { BusRouteMapModal } from '../shared/BusRouteMapModal';
@@ -259,7 +259,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
 
   // Build a detailed message about which stations were checked using StationSelectionResult
   const checkedStationsInfo = React.useMemo(() => {
-    // Don't process if still loading
+    // Don't process if still isLoading
     if (isLoading || !stationSelectionResult) {
       return null;
     }
@@ -295,7 +295,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
         
         return {
           name: rejected.station.name,
-          routeCount: rejected.station.routes?.length || 0,
+          routeCount: rejected.station.routeIds?.length || 0,
           distance: distance
         };
       });
@@ -621,7 +621,7 @@ const StationDisplayComponent: React.FC<StationDisplayProps> = () => {
           station={{
             ...selectedStationForMap.station,
             isFavorite: false // Station display doesn't track favorites
-          }}
+          , routeIds: [], accessibility: { wheelchairAccessible: false, bikeAccessible: false, bikeRacks: false, audioAnnouncements: false }}}
           vehicles={selectedStationForMap.allVehicles.map(vehicle => ({
             id: vehicle.coreVehicle.id,
             routeId: vehicle.coreVehicle.routeId,

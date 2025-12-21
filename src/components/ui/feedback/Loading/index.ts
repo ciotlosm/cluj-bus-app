@@ -1,1 +1,2 @@
-export { LoadingSpinner, LoadingState } from './LoadingSpinner';
+export * from './LoadingSpinner';
+export * from './LoadingState.example';

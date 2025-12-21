@@ -42,7 +42,7 @@ export const ErrorStateExample: React.FC = () => {
           </Typography>
           <ErrorState
             title="Data Loading Error"
-            message="We encountered an error while loading your data. This might be due to a temporary server issue."
+            message="We encountered an error while isLoading your data. This might be due to a temporary server issue."
             action={{
               label: 'Try Again',
               onClick: handleRetry,

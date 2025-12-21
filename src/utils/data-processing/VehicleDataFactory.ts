@@ -13,7 +13,7 @@
 import type {
   CoreVehicle,
   Coordinates
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import {
   DirectionStatus,
   ConfidenceLevel,
@@ -21,16 +21,16 @@ import {
   createCoreVehicle,
   createCoordinates,
   DEFAULT_COORDINATES
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import type {
   VehicleSchedule,
   VehicleDirection,
   RouteInfo,
   EnhancedVehicleWithBusinessLogic
-} from '../types/businessLogic';
+} from '../../types/businessLogic';
 import {
   BUSINESS_LOGIC_DEFAULTS
-} from '../types/businessLogic';
+} from '../../types/businessLogic';
 import type {
   VehicleDisplayData,
   TransformationContext,
@@ -38,7 +38,7 @@ import type {
   TransformationStation,
   UserPreferences,
   TransformationMetadata
-} from '../types/presentationLayer';
+} from '../../types/presentationLayer';
 import {
   createDefaultUserPreferences,
   createDefaultTransformationContext,
@@ -46,17 +46,17 @@ import {
   PRESENTATION_LAYER_DEFAULTS,
   VEHICLE_STATUS_COLORS,
   VEHICLE_ICONS
-} from '../types/presentationLayer';
+} from '../../types/presentationLayer';
 import type {
   TransformationValidationResult
-} from '../types/transformationPipeline';
+} from '../../types/transformationPipeline';
 import {
   TransformationError,
   createSuccessValidation,
   createFailureValidation,
   createValidationError,
   createValidationWarning
-} from '../types/transformationPipeline';
+} from '../../types/transformationPipeline';
 
 // ============================================================================
 // FACTORY CONFIGURATION

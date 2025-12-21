@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Coordinates, Station } from '../types';
+import type { Coordinates, Station } from '../../types';
 import type { Route, StopTime, Trip } from '../types/tranzyApi';
 import {
   StationSelector,

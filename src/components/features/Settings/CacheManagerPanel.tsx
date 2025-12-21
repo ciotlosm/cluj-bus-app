@@ -31,7 +31,7 @@ import {
 
 import { useUnifiedCacheManager } from '../../../hooks/shared/useUnifiedCacheManager';
 import { StoreErrorHandler, ErrorUtils } from '../../../stores/shared/errorHandler';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 import { Button, InfoCard } from '../../ui';
 
 type CacheOperationState = 'idle' | 'refreshing' | 'clearing' | 'error';
@@ -537,7 +537,7 @@ export const CacheManagerPanel: React.FC = () => {
               <Button
                 variant="outlined"
                 onClick={handleRefreshCache}
-                disabled={isOperationInProgress || !isOnline}
+                isDisabled={isOperationInProgress || !isOnline}
                 startIcon={<RefreshIcon />}
               >
                 {operationStatus.state === 'refreshing' ? 'Refreshing...' : 'Refresh'}
@@ -607,7 +607,7 @@ export const CacheManagerPanel: React.FC = () => {
                 variant="outlined"
                 color="error"
                 onClick={handleResetAllSettings}
-                disabled={isResettingSettings || getAppSettingsEntries().length === 0}
+                isDisabled={isResettingSettings || getAppSettingsEntries().length === 0}
                 startIcon={<DeleteIcon />}
               >
                 {isResettingSettings ? 'Resetting...' : 'Reset All'}
@@ -683,7 +683,7 @@ export const CacheManagerPanel: React.FC = () => {
                 variant="outlined"
                 color="error"
                 onClick={handleClearCache}
-                disabled={isOperationInProgress || !hasData || !isOnline}
+                isDisabled={isOperationInProgress || !hasData || !isOnline}
                 startIcon={<DeleteIcon />}
                 size="small"
               >

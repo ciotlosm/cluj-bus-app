@@ -16,43 +16,43 @@ import type {
   DirectionStatus,
   ConfidenceLevel,
   RouteType
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import {
   isCoordinates,
   isCoreVehicle,
   isDirectionStatus,
   isConfidenceLevel,
   isRouteType
-} from '../types/coreVehicle';
+} from '../../types/coreVehicle';
 import type {
   VehicleSchedule,
   VehicleDirection,
   RouteInfo,
   EnhancedVehicleWithBusinessLogic
-} from '../types/businessLogic';
+} from '../../types/businessLogic';
 import type {
   VehicleDisplayData,
   TransformationContext,
   TransformedVehicleData,
   TransformationStation,
   UserPreferences
-} from '../types/presentationLayer';
+} from '../../types/presentationLayer';
 import {
   isTransformationContext,
   isVehicleDisplayData,
   isTransformedVehicleData
-} from '../types/presentationLayer';
+} from '../../types/presentationLayer';
 import type {
   TransformationValidationResult,
   ValidationError,
   ValidationWarning
-} from '../types/transformationPipeline';
+} from '../../types/transformationPipeline';
 import {
   TransformationError,
   isTransformationError,
   isValidationFailure,
   isValidationSuccess
-} from '../types/transformationPipeline';
+} from '../../types/transformationPipeline';
 
 // ============================================================================
 // VALIDATION RESULT TYPES

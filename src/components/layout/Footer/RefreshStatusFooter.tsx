@@ -9,7 +9,7 @@ import {
 } from '@mui/icons-material';
 
 import { useRefreshSystem } from '../../../hooks/shared/useRefreshSystem';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 import { useThemeUtils } from '../../../hooks';
 
 export const RefreshStatusFooter: React.FC = () => {

@@ -207,7 +207,7 @@ describe('Store Usage Verification Tests', () => {
     it('should verify VehicleStore manages vehicle data correctly', () => {
       const vehicleStore = useVehicleStore.getState();
 
-      // Test loading state
+      // Test isLoading state
       useVehicleStore.setState({ isLoading: true });
       expect(useVehicleStore.getState().isLoading).toBe(true);
 

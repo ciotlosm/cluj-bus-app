@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { VehicleTransformationService } from '../../services/data-processing/VehicleTransformationService';
-import { TransformationContext, TranzyVehicleResponse, CoreVehicle, RouteType, ConfidenceLevel } from '../../types';
+import { TransformationContext, TranzyVehicleResponse, CoreVehicle, RouteType, ConfidenceLevel } from '@/types';
 import { logger } from '../../utils/shared/logger';
 
 // Mock logger to avoid console noise during benchmarks

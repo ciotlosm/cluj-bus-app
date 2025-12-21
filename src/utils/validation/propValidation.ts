@@ -9,13 +9,13 @@ import type {
   StandardStylingProps,
   StandardStateProps,
   StandardConfigProps
-} from '../types/componentProps';
+} from '../../types/componentProps';
 import type {
   ButtonVariant,
   SizeVariant,
   ColorVariant,
   SeverityVariant
-} from '../types/componentTypeUtils';
+} from '../../types/componentTypeUtils';
 
 // ============================================================================
 // PROP VALIDATION FUNCTIONS

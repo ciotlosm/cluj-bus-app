@@ -189,8 +189,7 @@ describe('VehicleStore Unit Tests', () => {
         lastCacheUpdate: 0,
       },
       isOnline: true,
-      isUsingCachedData: false,
-      isAutoRefreshEnabled: false,
+            isAutoRefreshEnabled: false,
     });
     
     // Clear all event listeners
@@ -392,7 +391,7 @@ describe('VehicleStore Unit Tests', () => {
       vi.mocked(enhancedTranzyApi.getStops).mockResolvedValue([]);
 
       const store = useVehicleStore.getState();
-      await store.forceRefreshAll();
+      await store.refreshAll();
 
       expect(enhancedTranzyApi.forceRefreshAll).toHaveBeenCalledWith(123);
       expect(enhancedTranzyApi.getVehicles).toHaveBeenCalled();

@@ -223,7 +223,7 @@ describe('Component Store Integration Tests', () => {
     it('should handle vehicle store state changes', async () => {
       const vehicleStore = useVehicleStore.getState();
       
-      // Test loading state
+      // Test isLoading state
       await act(async () => {
         useVehicleStore.setState({ isLoading: true });
       });

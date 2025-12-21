@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Station, Coordinates } from '../../types';
 import type { CoreVehicle } from '../../types/coreVehicle';
-import { calculateDistance } from '../../utils/distanceUtils';
+import { calculateDistance } from '../../utils/data-processing/distanceUtils';
 import { logger } from '../../utils/shared/logger';
 import { validateVehicleArray, validateStationArray } from '../shared/validation/arrayValidators';
 import { validateCoordinates } from '../shared/validation/coordinateValidators';
