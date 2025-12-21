@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import type { FC } from 'react';
 import { Box, TextField, Button, Typography, Alert, CircularProgress } from '@mui/material';
-import { handleLocationError } from '../../services/errorHandler';
+import { handleLocationError } from '../../../services/error';
 
 interface LocationPickerProps {
   label: string;

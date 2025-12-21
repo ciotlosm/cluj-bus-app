@@ -3,7 +3,7 @@
 
 import axios from 'axios';
 import type { TranzyStopTimeResponse } from '../types/rawTranzyApi.ts';
-import { handleApiError, validateApiKey, validateAgencyId } from './errorHandler';
+import { handleApiError, validateApiKey, validateAgencyId } from './error';
 
 const API_BASE = '/api/tranzy/v1/opendata';
 

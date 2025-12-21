@@ -5,9 +5,9 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppLayout } from './components/layout/AppLayout';
 import { Navigation } from './components/layout/Navigation';
-import { StationView } from './components/features/StationView';
-import { VehicleView } from './components/features/VehicleView';
-import { SettingsView } from './components/features/SettingsView';
+import { StationView } from './components/features/views/StationView';
+import { VehicleView } from './components/features/views/VehicleView';
+import { SettingsView } from './components/features/views/SettingsView';
 import { ThemeProvider } from './components/theme/ThemeProvider';
 import { useAutoLocation } from './hooks/useAutoLocation';
 
@@ -32,7 +32,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <AppLayout>
+      <AppLayout onNavigateToSettings={() => setCurrentView(2)}>
         {renderContent()}
         <Navigation 
           value={currentView} 

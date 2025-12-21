@@ -4,7 +4,7 @@
 
 import axios from 'axios';
 import type { TranzyAgencyResponse } from '../types/rawTranzyApi.ts';
-import { handleApiError, validateApiKey, apiStatusTracker } from './errorHandler';
+import { handleApiError, validateApiKey, apiStatusTracker } from './error';
 
 const API_BASE = '/api/tranzy/v1/opendata';
 

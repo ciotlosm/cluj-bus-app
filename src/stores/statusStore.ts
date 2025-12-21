@@ -2,7 +2,7 @@
 // Enhanced with network event handling for real-time updates
 
 import { create } from 'zustand';
-import { apiStatusTracker } from '../services/errorHandler';
+import { apiStatusTracker } from '../services/error';
 
 type ApiStatus = 'online' | 'offline' | 'error';
 

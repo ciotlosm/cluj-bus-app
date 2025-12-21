@@ -151,3 +151,51 @@ Instead of silently removing code, I must say:
 - Combining or splitting services
 
 **Remember: User maintains full control over what gets changed or removed. Never make assumptions about what should be deleted or restructured.**
+
+## 7. MANDATORY CODE CHANGE REPORTING
+
+### 📊 Always Report Code Changes with Line Counts
+
+**EVERY time you modify code files, you MUST report the changes with precise metrics**
+
+#### **Required Reporting Format:**
+
+After making any code changes, always include:
+
+```
+📝 **Code Changes:** +[number]/-[number] lines
+```
+
+#### **For Large Changes (>10 lines net change):**
+
+Add a brief one-line explanation:
+```
+📝 **Code Changes:** +8/-15 lines (Refactored store to eliminate parameter passing)
+```
+
+#### **Examples:**
+
+**Small Change:**
+```
+📝 **Code Changes:** +3/-1 lines
+```
+
+**Large Change:**
+```
+📝 **Code Changes:** +25/-18 lines (Implemented new caching layer for performance)
+```
+
+#### **When to Report:**
+- ✅ **ALWAYS** after using `strReplace`, `fsWrite`, `fsAppend`
+- ✅ **ALWAYS** after any file modifications
+- ✅ **ALWAYS** include in your response summary
+- ❌ **NEVER** skip this reporting, even for "small" changes
+
+#### **Counting Guidelines:**
+- Count actual code lines (exclude empty lines and comments when reasonable)
+- **EXCLUDE test files** (*.test.*, *.spec.*, test directories) from line counts
+- For `strReplace`: count lines in `oldStr` as deleted, lines in `newStr` as added
+- For `fsWrite`: count all lines as added (unless replacing existing file)
+- For `fsAppend`: count appended lines as added
+
+**Remember: Transparency in code changes builds trust and helps track the impact of modifications.**

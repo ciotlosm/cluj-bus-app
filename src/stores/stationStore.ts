@@ -13,7 +13,7 @@ interface StationStore {
   error: string | null;
   
   // Actions
-  loadStops: (apiKey: string, agency_id: number) => Promise<void>;
+  loadStops: () => Promise<void>;
   clearStops: () => void;
   clearError: () => void;
 }
@@ -27,7 +27,16 @@ export const useStationStore = create<StationStore>((set, get) => ({
   error: null,
   
   // Actions
-  loadStops: async (apiKey: string, agency_id: number) => {
+  loadStops: async () => {
+    // Access config directly from configStore
+    const { useConfigStore } = await import('./configStore');
+    const { apiKey, agency_id } = useConfigStore.getState();
+    
+    if (!apiKey || !agency_id) {
+      set({ error: 'API key and agency must be configured' });
+      return;
+    }
+    
     set({ loading: true, error: null });
     
     try {

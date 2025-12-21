@@ -4,18 +4,14 @@
 import type { FC } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
-import { StatusIndicator } from '../features/StatusIndicator';
+import { StatusIndicator } from '../features/status/StatusIndicator';
 
 interface HeaderProps {
   onSettingsClick?: () => void;
-  onGpsStatusClick?: () => void;
-  onApiStatusClick?: () => void;
 }
 
 export const Header: FC<HeaderProps> = ({ 
-  onSettingsClick, 
-  onGpsStatusClick, 
-  onApiStatusClick 
+  onSettingsClick
 }) => {
   return (
     <AppBar position="static">
@@ -30,10 +26,7 @@ export const Header: FC<HeaderProps> = ({
           alignItems: 'center',
           mr: onSettingsClick ? 1 : 0 // Add margin if settings button is present
         }}>
-          <StatusIndicator
-            onGpsClick={onGpsStatusClick}
-            onApiClick={onApiStatusClick}
-          />
+          <StatusIndicator />
         </Box>
         
         {onSettingsClick && (

@@ -3,7 +3,7 @@
 
 import type { LocationServiceOptions, PermissionState } from '../types/location';
 import { DEFAULT_LOCATION_ACCURACY } from '../types/location';
-import { handleLocationError, retryWithBackoff, DEFAULT_RETRY_CONFIG, type RetryConfig } from './errorHandler';
+import { handleLocationError, retryWithBackoff, DEFAULT_RETRY_CONFIG, type RetryConfig } from './error';
 
 export const locationService = {
   /**

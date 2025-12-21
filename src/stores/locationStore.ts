@@ -5,7 +5,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { LocationPreferences, PermissionState, LocationAccuracy } from '../types/location';
 import { DEFAULT_LOCATION_PREFERENCES, DEFAULT_LOCATION_ACCURACY } from '../types/location';
-import { handleLocationError } from '../services/errorHandler';
+import { handleLocationError } from '../services/error';
 
 interface LocationStore {
   // Raw GPS data - no transformations

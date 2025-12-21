@@ -10,8 +10,8 @@ import {
   Alert,
   Button
 } from '@mui/material';
-import { useVehicleStore } from '../../stores/vehicleStore';
-import { useConfigStore } from '../../stores/configStore';
+import { useVehicleStore } from '../../../stores/vehicleStore';
+import { useConfigStore } from '../../../stores/configStore';
 import { VehicleList } from './VehicleList';
 
 export const VehicleView: FC = () => {

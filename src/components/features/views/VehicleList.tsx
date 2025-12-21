@@ -10,7 +10,7 @@ import {
   Chip, 
   Box 
 } from '@mui/material';
-import type { TranzyVehicleResponse } from '../../types/rawTranzyApi';
+import type { TranzyVehicleResponse } from '../../../types/rawTranzyApi';
 
 interface VehicleListProps {
   vehicles: TranzyVehicleResponse[];

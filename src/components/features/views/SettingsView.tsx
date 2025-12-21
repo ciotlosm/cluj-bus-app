@@ -14,8 +14,8 @@ import {
   CardContent,
   Divider
 } from '@mui/material';
-import { useConfigStore } from '../../stores/configStore';
-import { ThemeToggle } from '../theme/ThemeToggle';
+import { useConfigStore } from '../../../stores/configStore';
+import { ThemeToggle } from '../../theme/ThemeToggle';
 
 export const SettingsView: FC = () => {
   const { apiKey, agency_id, theme, setApiKey, setAgency, error, loading, clearError } = useConfigStore();

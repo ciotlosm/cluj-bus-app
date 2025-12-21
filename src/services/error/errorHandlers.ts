@@ -1,52 +1,8 @@
-// Shared error handling utility for services
-// Eliminates duplication and keeps services focused
-// Includes API status tracking for aggregated health monitoring
+// Core error processing and handling logic
+// Processes different types of errors and converts them to user-friendly messages
 
 import axios from 'axios';
-
-/**
- * API call result tracking for status aggregation
- */
-interface ApiCallResult {
-  success: boolean;
-  responseTime: number;
-  timestamp: number;
-  operation: string;
-}
-
-/**
- * Lightweight API status tracker - aggregates status from actual API calls
- */
-export const apiStatusTracker = {
-  lastCall: null as ApiCallResult | null,
-  consecutiveFailures: 0,
-  
-  recordSuccess(operation: string, responseTime: number) {
-    this.lastCall = { success: true, responseTime, timestamp: Date.now(), operation };
-    this.consecutiveFailures = 0;
-  },
-  
-  recordFailure(operation: string) {
-    this.lastCall = { success: false, responseTime: 0, timestamp: Date.now(), operation };
-    this.consecutiveFailures++;
-  },
-  
-  getStatus(): 'online' | 'offline' | 'error' {
-    // Check current network status
-    if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline';
-    if (!this.lastCall) return 'offline';
-    if (this.consecutiveFailures >= 3) return 'error';
-    return this.lastCall.success ? 'online' : 'error';
-  },
-  
-  getLastResponseTime(): number | null {
-    return this.lastCall?.success ? this.lastCall.responseTime : null;
-  },
-  
-  getLastCheckTime(): number | null {
-    return this.lastCall?.timestamp || null;
-  }
-};
+import { LocationErrorTypes, type LocationError, type RetryConfig, DEFAULT_RETRY_CONFIG } from './errorTypes';
 
 /**
  * Maps HTTP status codes to user-friendly error messages
@@ -81,13 +37,17 @@ function processAxiosError(errorObj: any): string {
 export function handleApiError(error: unknown, operation: string): never {
   console.error(`Failed to ${operation}:`, error);
   
-  // Record failure for status tracking
-  apiStatusTracker.recordFailure(operation);
+  // Record failure for status tracking (imported dynamically to avoid circular deps)
+  import('./errorReporting').then(({ apiStatusTracker }) => {
+    apiStatusTracker.recordFailure(operation);
+  }).catch(() => {
+    // Ignore import errors - status tracker may not be available
+  });
   
   // Update status store if available
   if (typeof window !== 'undefined') {
     // Use dynamic import to avoid circular dependencies
-    import('../stores/statusStore').then(({ useStatusStore }) => {
+    import('../../stores/statusStore').then(({ useStatusStore }) => {
       useStatusStore.getState().updateFromApiCall(false, undefined, operation);
     }).catch(() => {
       // Ignore import errors - status store may not be available
@@ -123,27 +83,6 @@ export function validateAgencyId(agency_id: number): void {
   if (!agency_id || agency_id <= 0) {
     throw new Error('Valid agency ID is required');
   }
-}
-
-/**
- * Location-specific error types and messages
- */
-export const LocationErrorTypes = {
-  PERMISSION_DENIED: 'permission_denied',
-  POSITION_UNAVAILABLE: 'position_unavailable', 
-  TIMEOUT: 'timeout',
-  NOT_SUPPORTED: 'not_supported',
-  NETWORK_ERROR: 'network_error',
-  RETRY_EXHAUSTED: 'retry_exhausted'
-} as const;
-
-export type LocationErrorType = typeof LocationErrorTypes[keyof typeof LocationErrorTypes];
-
-export interface LocationError {
-  code: number;
-  message: string;
-  type: LocationErrorType;
-  retryable: boolean;
 }
 
 /**
@@ -188,23 +127,6 @@ export function handleLocationError(error: GeolocationPositionError | Error | un
   // Fallback for unknown errors
   return { code: 0, message: `Failed to ${operation}. Please try again or use manual location entry.`, type: LocationErrorTypes.NETWORK_ERROR, retryable: true };
 }
-
-/**
- * Retry configuration for location requests
- */
-export interface RetryConfig {
-  maxAttempts: number;
-  baseDelay: number; // milliseconds
-  maxDelay: number; // milliseconds
-  backoffMultiplier: number;
-}
-
-export const DEFAULT_RETRY_CONFIG: RetryConfig = {
-  maxAttempts: 3,
-  baseDelay: 1000, // 1 second
-  maxDelay: 10000, // 10 seconds
-  backoffMultiplier: 2
-};
 
 /**
  * Implements exponential backoff retry logic for location requests
