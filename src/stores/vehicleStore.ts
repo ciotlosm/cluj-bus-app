@@ -20,7 +20,7 @@ import { StoreErrorHandler } from './shared/errorHandler';
 import { unifiedCache } from '../hooks/shared/cache/instance';
 import { enhancedTranzyApi } from '../services/api/tranzyApiService';
 import { logger } from '../utils/shared/logger';
-import { locationWarningTracker } from '../utils/locationWarningTracker';
+import { locationWarningTracker } from '../utils/shared/locationWarningTracker';
 
 /**
  * Unified Vehicle Store Implementation

@@ -1,7 +1,7 @@
 import type { Coordinates, Station, CoreVehicle } from '../../types';
 import type { VehicleDisplayData } from '../../types/presentationLayer';
 import { enhancedTranzyApi } from '../api/tranzyApiService';
-import { agencyService } from '../agencyService';
+import { agencyService } from '../api/agencyService';
 import { logger } from '../../utils/shared/logger';
 
 export interface RouteConnection {

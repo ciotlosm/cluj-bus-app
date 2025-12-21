@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   DebugMonitoringService,
   DebugLogLevel
-} from '../DebugMonitoringService';
+} from './DebugMonitoringService';
 import type {
   FilteringDecision,
   RouteClassificationDebug,

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RouteFilteringConfigurationManager } from './RouteFilteringConfigurationManager';
-import type { RouteFilteringConfig } from '../types/routeFiltering';
+import type { RouteFilteringConfig } from '../../types/routeFiltering';
 import { DEFAULT_ROUTE_FILTERING_CONFIG } from '../types/routeFiltering';
 
 // Mock the config store

@@ -13,7 +13,7 @@ import { Close } from '@mui/icons-material';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { enhancedTranzyApi } from '../../../services/api/tranzyApiService';
-import { agencyService } from '../../../services/agencyService';
+import { agencyService } from '../../../services/api/agencyService';
 import { logger } from '../../../utils/shared/logger';
 import { calculateDistance } from '../../../utils/data-processing/distanceUtils';
 import { arePointsOverlapping, calculateOverlapBounds, logOverlapDetection } from '../../../utils/formatting/mapUtils';

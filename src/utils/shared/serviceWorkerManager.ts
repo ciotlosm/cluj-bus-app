@@ -1,5 +1,5 @@
 // Service Worker Manager for handling updates and cache busting
-import { logger } from './shared/logger';
+import { logger } from './logger';
 
 export interface ServiceWorkerManager {
   register: () => Promise<ServiceWorkerRegistration | null>;

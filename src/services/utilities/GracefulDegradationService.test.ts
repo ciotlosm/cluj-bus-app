@@ -14,7 +14,7 @@ import {
   DegradationLevel,
   FallbackStrategy,
   CircuitBreakerState
-} from '../GracefulDegradationService';
+} from './GracefulDegradationService';
 import type {
   DegradationContext,
   PerformanceIssue,

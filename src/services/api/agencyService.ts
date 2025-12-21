@@ -1,6 +1,6 @@
-import { enhancedTranzyApi } from './api/tranzyApiService';
-import { logger } from '../utils/shared/logger';
-import type { Agency } from '../types';
+import { enhancedTranzyApi } from './tranzyApiService';
+import { logger } from '../../utils/shared/logger';
+import type { Agency } from '../../types';
 
 /**
  * Centralized agency management service

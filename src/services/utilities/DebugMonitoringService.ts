@@ -7,11 +7,11 @@
  * Requirements: 4.4, 6.4
  */
 
-import type { CoreVehicle } from '../types/coreVehicle';
-import type { RouteActivityInfo } from './business-logic/RouteActivityAnalyzer';
-import type { FilteringResult, FilteringDecision } from './data-processing/IntelligentVehicleFilter';
-import type { RouteFilteringConfig } from '../types/routeFiltering';
-import { logger } from '../utils/shared/logger';
+import type { CoreVehicle } from '../../types/coreVehicle';
+import type { RouteActivityInfo } from '../business-logic/RouteActivityAnalyzer';
+import type { FilteringResult, FilteringDecision } from '../data-processing/IntelligentVehicleFilter';
+import type { RouteFilteringConfig } from '../../types/routeFiltering';
+import { logger } from '../../utils/shared/logger';
 
 // ============================================================================
 // INTERFACES AND TYPES

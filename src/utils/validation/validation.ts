@@ -1,4 +1,4 @@
-import type { Coordinates, Station, BusInfo, UserConfig, Favorites, ErrorState } from '../types';
+import type { Coordinates, Station, BusInfo, UserConfig, Favorites, ErrorState } from '../../types';
 
 // Validation functions for core data types
 

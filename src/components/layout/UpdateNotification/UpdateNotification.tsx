@@ -12,7 +12,7 @@ import {
   CloudDownload as UpdateIcon,
 } from '@mui/icons-material';
 
-import { serviceWorkerManager } from '../../../utils/serviceWorkerManager';
+import { serviceWorkerManager } from '../../../utils/shared/serviceWorkerManager';
 import { logger } from '../../../utils/shared/logger';
 
 export const UpdateNotification: React.FC = () => {

@@ -12,7 +12,7 @@ import {
   type AutocompleteProps,
 } from '@mui/material';
 import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
-import { useDebounceCallback } from '../../../../utils/debounce';
+import { useDebounceCallback } from '../../../../utils/shared/debounce';
 import { useFormFieldStyles } from '../../../../hooks/shared/useMuiUtils';
 import { useAsyncOperation } from '../../../../hooks/shared/useAsyncOperation';
 import { ErrorHandler, ErrorType } from '../../../../hooks/shared/errors';

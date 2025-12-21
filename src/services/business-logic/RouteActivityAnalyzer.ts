@@ -10,10 +10,10 @@
 
 import type { CoreVehicle } from '../../types/coreVehicle';
 import { logger } from '../../utils/shared/logger';
-import { gracefulDegradationService, DegradationLevel, FallbackStrategy } from '../GracefulDegradationService';
-import type { DegradationContext } from '../GracefulDegradationService';
-import { debugMonitoringService } from '../DebugMonitoringService';
-import type { RouteClassificationDebug } from '../DebugMonitoringService';
+import { gracefulDegradationService, DegradationLevel, FallbackStrategy } from '../utilities/GracefulDegradationService';
+import type { DegradationContext } from '../utilities/GracefulDegradationService';
+import { debugMonitoringService } from '../utilities/DebugMonitoringService';
+import type { RouteClassificationDebug } from '../utilities/DebugMonitoringService';
 
 // ============================================================================
 // INTERFACES AND TYPES

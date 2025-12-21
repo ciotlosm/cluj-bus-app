@@ -14,8 +14,8 @@ import type { TransformationStation, TransformationContext } from '../../types/p
 import type { RouteActivityInfo, RouteClassification } from '../business-logic/RouteActivityAnalyzer';
 import { RouteClassification as RouteClass } from '../business-logic/RouteActivityAnalyzer';
 import { logger } from '../../utils/shared/logger';
-import { debugMonitoringService } from '../DebugMonitoringService';
-import type { RouteClassificationDebug } from '../DebugMonitoringService';
+import { debugMonitoringService } from '../utilities/DebugMonitoringService';
+import type { RouteClassificationDebug } from '../utilities/DebugMonitoringService';
 
 // ============================================================================
 // INTERFACES AND TYPES

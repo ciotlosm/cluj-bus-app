@@ -5,7 +5,7 @@
  */
 
 import { logger } from '../../utils/shared/logger';
-import { gracefulDegradationService } from '../GracefulDegradationService';
+import { gracefulDegradationService } from '../utilities/GracefulDegradationService';
 import type {
   RouteFilteringConfig,
   IConfigurationManager,

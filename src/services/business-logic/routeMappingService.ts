@@ -1,5 +1,5 @@
 import { enhancedTranzyApi } from '../api/tranzyApiService';
-import { agencyService } from '../agencyService';
+import { agencyService } from '../api/agencyService';
 import { useConfigStore } from '../../stores/configStore';
 import { logger } from '../../utils/shared/logger';
 import { RouteType } from '../../types';

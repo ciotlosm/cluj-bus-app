@@ -54,7 +54,7 @@ import { logger } from './utils/shared/logger';
 import { StationDisplay } from './components/features/StationDisplay';
 import UpdateNotification from './components/layout/UpdateNotification';
 
-import { initializeServiceWorker } from './utils/serviceWorkerManager';
+import { initializeServiceWorker } from './utils/shared/serviceWorkerManager';
 
 
 
