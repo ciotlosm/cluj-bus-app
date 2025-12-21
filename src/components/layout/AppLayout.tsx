@@ -1,23 +1,37 @@
-// AppLayout - Basic layout component (< 50 lines)
+// AppLayout - Basic layout component with integrated Header
 // Uses Material-UI directly without wrappers
 
 import type { FC, ReactNode } from 'react';
-import { Box, AppBar, Toolbar, Typography, Container } from '@mui/material';
+import { Box, Container } from '@mui/material';
+import { Header } from './Header';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
+  const handleSettingsClick = () => {
+    // TODO: Implement settings navigation
+    console.log('Settings clicked');
+  };
+
+  const handleGpsStatusClick = () => {
+    // TODO: Implement GPS status details
+    console.log('GPS status clicked');
+  };
+
+  const handleApiStatusClick = () => {
+    // TODO: Implement API status details
+    console.log('API status clicked');
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static" color="primary">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Bus Tracker
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <Header 
+        onSettingsClick={handleSettingsClick}
+        onGpsStatusClick={handleGpsStatusClick}
+        onApiStatusClick={handleApiStatusClick}
+      />
       
       <Container 
         component="main" 
