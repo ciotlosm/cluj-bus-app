@@ -22,7 +22,8 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
     currentPosition,
     permissionState,
     locationAccuracy,
-    lastUpdated
+    lastUpdated,
+    requestLocation
   } = useLocationStore();
 
   // Connect to StatusStore for API status
@@ -33,6 +34,16 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
     responseTime,
     setNetworkStatus
   } = useStatusStore();
+
+  // Handle GPS icon click - request location
+  const handleGpsClick = () => {
+    requestLocation().catch((error) => {
+      console.warn('Failed to request location:', error);
+    });
+    
+    // Call the optional onGpsClick prop if provided
+    onGpsClick?.();
+  };
 
   // Listen to browser online/offline events for immediate network status updates
   useEffect(() => {
@@ -67,7 +78,7 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
         accuracy={locationAccuracy}
         permissionState={permissionState}
         lastUpdated={lastUpdated}
-        onClick={onGpsClick}
+        onClick={handleGpsClick}
       />
       <ApiStatusIcon
         status={apiStatus}
