@@ -7,10 +7,10 @@
  * Requirements: 5.5 - Performance optimization and validation
  */
 
-import { logger } from './logger';
-import { performanceMonitor } from './performance';
-import type { Coordinates, Station } from '../types';
-import type { Route, StopTime, Trip } from '../types/tranzyApi';
+import { logger } from '../shared/logger';
+import { performanceMonitor } from '../performance/performance';
+import type { Coordinates, Station } from '../../types';
+import type { Route, StopTime, Trip } from '../../types/tranzyApi';
 
 // ============================================================================
 // PERFORMANCE CONSTANTS AND THRESHOLDS

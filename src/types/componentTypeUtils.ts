@@ -28,7 +28,7 @@ export type PolymorphicComponentPropsWithRef<C extends ElementType, Props = {}> 
 
 export type VariantUnion<T extends string> = T;
 
-export type ButtonVariant = 'text' | 'outlined' | 'contained' | 'tonal';
+export type ButtonVariant = 'text' | 'outlined' | 'contained' | 'tonal' | 'filled';
 export type CardVariant = 'elevated' | 'outlined' | 'filled';
 export type InputVariant = 'outlined' | 'filled' | 'standard';
 export type LoadingVariant = 'circular' | 'linear' | 'skeleton';

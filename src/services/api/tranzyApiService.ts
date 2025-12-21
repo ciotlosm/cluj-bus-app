@@ -10,16 +10,16 @@ import type {
   Route,
   Trip,
   StopTime
-} from '../types/tranzyApi';
-import { RouteType } from '../types';
-import type { Agency, Station, TranzyApiService as ITranzyApiService } from '../types';
-import type { CoreVehicle } from '../types/coreVehicle';
-import { unifiedCache } from '../hooks/shared/cache/instance';
-import { CACHE_CONFIGS } from '../hooks/shared/cache/utils';
-import { logger } from '../utils/shared/logger';
-import { vehicleTransformationService } from './VehicleTransformationService';
-import { createDefaultTransformationContext } from '../types/presentationLayer';
-import type { TransformationContext, VehicleDisplayData } from '../types/presentationLayer';
+} from '../../types/tranzyApi';
+import { RouteType } from '../../types';
+import type { Agency, Station } from '../../types';
+import type { CoreVehicle } from '../../types/coreVehicle';
+import { unifiedCache } from '../../hooks/shared/cache/instance';
+import { CACHE_CONFIGS } from '../../hooks/shared/cache/utils';
+import { logger } from '../../utils/shared/logger';
+import { vehicleTransformationService } from '../data-processing/VehicleTransformationService';
+import { createDefaultTransformationContext } from '../../types/presentationLayer';
+import type { TransformationContext, VehicleDisplayData } from '../../types/presentationLayer';
 
 export class TranzyApiService {
   private axiosInstance: AxiosInstance;
@@ -104,7 +104,7 @@ export class TranzyApiService {
 
   private updateApiStatus(isOnline: boolean, error?: any): void {
     // Dynamically import to avoid circular dependency
-    import('../stores/vehicleStore').then(({ useVehicleStore }) => {
+    import('../../stores/vehicleStore').then(({ useVehicleStore }) => {
       // Offline functionality is now integrated into vehicleStore
       // The vehicleStore handles API status through its error handling
       if (!isOnline && error) {
@@ -412,7 +412,13 @@ export class TranzyApiService {
         latitude: stop.stop_lat,
         longitude: stop.stop_lon,
       },
+      routeIds: [], // Will be populated by route data
       isFavorite: false,
+      accessibility: {
+        wheelchairAccessible: false,
+        bikeRacks: false,
+        audioAnnouncements: false,
+      },
     }));
   }
 
@@ -709,7 +715,7 @@ export class TranzyApiService {
   private async getConfiguredAgencyId(): Promise<number> {
     try {
       // Dynamic import to avoid circular dependencies
-      const { useConfigStore } = await import('../stores/configStore');
+      const { useConfigStore } = await import('../../stores/configStore');
       const config = useConfigStore.getState().config;
       
       if (config?.agencyId) {

@@ -1,4 +1,4 @@
-import type { Coordinates } from '../types';
+import type { Coordinates } from '../../types';
 
 /**
  * Calculate the distance between two coordinates using the Haversine formula

@@ -1,1 +1,2 @@
-export { ErrorState } from './ErrorState';
+export * from './ErrorState.example';
+export * from './ErrorState';

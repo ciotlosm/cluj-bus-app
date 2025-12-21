@@ -15,7 +15,7 @@ export interface AsyncOperationOptions {
 }
 
 /**
- * Reusable hook for handling async operations with loading states and error management
+ * Reusable hook for handling async operations with isLoading states and error management
  * Eliminates duplication of try-catch-finally patterns across the app
  */
 export const useAsyncOperation = <T = any>() => {

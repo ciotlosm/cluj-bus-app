@@ -67,7 +67,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   size = 'medium',
   color = 'primary',
   isLoading = false,
-  isDisabled = false,
+  disabled = false,
   isFullWidth = false,
   icon,
   startIcon,
@@ -130,7 +130,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
 
   // Handle generic click events with data support
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (onClick && !isDisabled && !isLoading) {
+    if (onClick && !disabled && !isLoading) {
       onClick(event, data);
     }
   };
@@ -211,7 +211,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         break;
     }
 
-    // Add loading styles
+    // Add isLoading styles
     if (isLoading) {
       styles.pointerEvents = 'none';
     }
@@ -225,10 +225,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     return styles;
   };
 
-  // Determine loading indicator size based on actual size
+  // Determine isLoading indicator size based on actual size
   const loadingSize = actualSize === 'small' ? 14 : actualSize === 'large' ? 20 : 16;
 
-  // Handle icon positioning with loading state
+  // Handle icon positioning with isLoading state
   const getStartIcon = () => {
     if (isLoading && iconPosition === 'start') {
       return <CircularProgress size={loadingSize} />;
@@ -251,7 +251,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     return endIcon;
   };
 
-  // Handle button content with loading text
+  // Handle button content with isLoading text
   const getButtonContent = () => {
     if (isLoading && loadingText) {
       return loadingText;
@@ -263,7 +263,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     <MuiButton
       ref={ref}
       variant={muiVariant}
-      disabled={isDisabled || isLoading}
+      disabled={disabled || isLoading}
       startIcon={getStartIcon()}
       endIcon={getEndIcon()}
       fullWidth={isFullWidth}

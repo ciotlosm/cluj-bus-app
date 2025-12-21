@@ -13,17 +13,17 @@
  * This ensures we only display data that is complete and validated.
  */
 
-import type { Coordinates, Station } from '../types';
-import type { Route, StopTime, Trip } from '../types/tranzyApi';
-import type { CoreVehicle } from '../types/coreVehicle';
+import type { Coordinates, Station } from '../../types';
+import type { Route, StopTime, Trip } from '../../types/tranzyApi';
+import type { CoreVehicle } from '../../types/coreVehicle';
 import { enhancedTranzyApi } from '../api/tranzyApiService';
-import { calculateDistance } from '../utils/distanceUtils';
-import { logger } from '../utils/shared/logger';
+import { calculateDistance } from '../../utils/data-processing/distanceUtils';
+import { logger } from '../../utils/shared/logger';
 // Legacy enhanceVehicleWithRoute import removed - using VehicleTransformationService instead
-import { vehicleTransformationService } from './VehicleTransformationService';
-import { createDefaultTransformationContext } from '../types/presentationLayer';
-import type { TransformationContext, TransformedVehicleData } from '../types/presentationLayer';
-import type { TranzyVehicleResponse } from '../types/tranzyApi';
+import { vehicleTransformationService } from '../data-processing/VehicleTransformationService';
+import { createDefaultTransformationContext } from '../../types/presentationLayer';
+import type { TransformationContext, TransformedVehicleData } from '../../types/presentationLayer';
+import type { TranzyVehicleResponse } from '../../types/tranzyApi';
 
 // ============================================================================
 // INTERFACES
@@ -81,7 +81,7 @@ export class GpsFirstDataLoader {
   private readonly DEFAULT_SECOND_STOP_RADIUS = 200; // 200m
 
   /**
-   * Main GPS-first data loading method
+   * Main GPS-first data isLoading method
    * Implements the complete validation pipeline
    */
   async loadValidatedData(options: GpsFirstDataOptions): Promise<GpsFirstDataResult> {
@@ -247,7 +247,7 @@ export class GpsFirstDataLoader {
         }
       };
 
-      logger.info('GPS-first data loading completed successfully', {
+      logger.info('GPS-first data isLoading completed successfully', {
         primaryStopId: primaryStop.stop.id,
         primaryStopName: primaryStop.stop.name,
         secondaryStopId: secondaryStop?.stop.id,
@@ -265,8 +265,8 @@ export class GpsFirstDataLoader {
     } catch (error) {
       const processingTime = performance.now() - startTime;
       const errorToLog = error instanceof Error ? error : new Error(String(error));
-      logger.error('GPS-first data loading failed', errorToLog, 'GPS_FIRST');
-      logger.info('GPS-first loading context', {
+      logger.error('GPS-first data isLoading failed', errorToLog, 'GPS_FIRST');
+      logger.info('GPS-first isLoading context', {
         userLocation,
         agencyId,
         processingTime: `${processingTime.toFixed(2)}ms`

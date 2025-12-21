@@ -185,7 +185,7 @@ export const ComposableCard: React.FC<ComposableCardProps> = ({
     active: !!onClick,
   }) : {};
 
-  // Handle loading state
+  // Handle isLoading state
   if (isLoading) {
     return (
       <MuiCard
@@ -227,7 +227,7 @@ export const ComposableCard: React.FC<ComposableCardProps> = ({
             Error
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Something went wrong loading this content.
+            Something went wrong isLoading this content.
           </Typography>
         </CardContent>
       </MuiCard>

@@ -1,4 +1,4 @@
-import { enhancedTranzyApi } from '../api/tranzyApiService';
+import { enhancedTranzyApi } from './api/tranzyApiService';
 import { logger } from '../utils/shared/logger';
 import type { Agency } from '../types';
 

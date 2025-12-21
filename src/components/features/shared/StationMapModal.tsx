@@ -14,9 +14,9 @@ import {
 import { Close } from '@mui/icons-material';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
-import { enhancedTranzyApi } from '../../../services/tranzyApiService';
-import { logger } from '../../../utils/logger';
-import { calculateDistance } from '../../../utils/distanceUtils';
+import { enhancedTranzyApi } from '../../../services/api/tranzyApiService';
+import { logger } from '../../../utils/shared/logger';
+import { calculateDistance } from '../../../utils/data-processing/distanceUtils';
 import { useAsyncOperation } from '../../../hooks/shared/useAsyncOperation';
 import type { Station, Coordinates } from '../../../types';
 
@@ -214,8 +214,8 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
           routesWithShapes: Array.from(shapes.keys())
         }, 'STATION_MAP');
         
-        // TODO: Implement proper route-specific station loading
-        // For now, disable station loading to prevent performance issues
+        // TODO: Implement proper route-specific station isLoading
+        // For now, disable station isLoading to prevent performance issues
         
         return { shapes, stations: new Map() };
       }, {
@@ -473,7 +473,7 @@ export const StationMapModal: React.FC<StationMapModalProps> = ({
               );
             })}
             
-            {/* Route stations - DISABLED: Feature temporarily disabled due to performance issues */}
+            {/* Route stations - DISABLED: Feature temporarily isDisabled due to performance issues */}
             
             {/* Vehicle markers */}
             {vehicles.map((vehicle) => {

@@ -141,7 +141,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             
             <Button
               variant="outlined"
-              fullWidth
+              isFullWidth
               onClick={() => setShowMap(!showMap)}
               startIcon={<MapIcon />}
               sx={{ py: 1.5, mb: 2 }}
@@ -196,7 +196,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
               handleConfirm();
             }
           }}
-          disabled={!selectedLocation}
+          isDisabled={!selectedLocation}
         >
           Set {type === 'home' ? 'Home' : type === 'work' ? 'Work' : 'Offline'} Location
         </Button>

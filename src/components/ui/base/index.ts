@@ -1,10 +1,9 @@
-// Base UI Components
-export * from './Button';
-export * from './Card';
-export * from './Input';
-export * from './Icons';
-export * from './VersionControl';
-export * from './Modal';
-export { ThemeToggle } from './ThemeToggle';
-export { MapPicker } from './MapPicker';
 export * from './GenericComponents';
+export * from './MapPicker';
+export * from './ThemeToggle';
+export * from './Card';
+export * from './VersionControl';
+
+// Re-export commonly used components with simple names
+export { GenericButton as Button } from './GenericComponents';
+export { GenericFormField as Input } from './GenericComponents';

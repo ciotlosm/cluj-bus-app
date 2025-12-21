@@ -93,7 +93,7 @@ export interface ListItemConfig<T = any> {
   onClick?: (item: T, index: number) => void;
   /** Item selection state */
   selected?: boolean;
-  /** Item disabled state */
+  /** Item isDisabled state */
   disabled?: boolean;
   /** Item icon */
   icon?: React.ReactNode;
@@ -180,7 +180,7 @@ export const ComposableList = <T extends any = any>({
   items = [],
   isLoading = false,
   hasError = false,
-  errorMessage = 'An error occurred while loading the list.',
+  errorMessage = 'An error occurred while isLoading the list.',
   emptyMessage = 'No items to display.',
   getItemKey = (item, index) => index,
   onItemClick,
@@ -234,7 +234,7 @@ export const ComposableList = <T extends any = any>({
     ...sx,
   };
 
-  // Render loading state
+  // Render isLoading state
   if (isLoading) {
     return (
       <MuiList

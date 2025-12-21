@@ -22,9 +22,9 @@ import {
   ClearAll as ClearCacheIcon,
 } from '@mui/icons-material';
 
-import { appVersionService, type VersionInfo } from '../../../../services/appVersionService';
+import { appVersionService, type VersionInfo } from '../../../../services/api/appVersionService';
 import { useConfigStore } from '../../../../stores/configStore';
-import { logger } from '../../../../utils/logger';
+import { logger } from '../../../../utils/shared/logger';
 
 export interface VersionControlProps {
   size?: 'small' | 'medium';

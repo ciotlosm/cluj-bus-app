@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Station, Coordinates } from '../types';
+import type { Station, Coordinates } from '../../types';
 import {
   NEARBY_STATION_DISTANCE_THRESHOLD,
   MAX_NEARBY_SEARCH_RADIUS,

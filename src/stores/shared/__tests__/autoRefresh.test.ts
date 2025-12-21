@@ -184,7 +184,7 @@ describe('AutoRefreshManager', () => {
   });
 
   describe('setEnabled', () => {
-    it('should enable disabled refresh', () => {
+    it('should enable isDisabled refresh', () => {
       manager.start({
         key: 'test',
         callback: mockCallback,

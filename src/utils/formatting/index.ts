@@ -1,1 +1,1 @@
-export * from './locationUtils';
+export * from '../formatting/locationUtils';

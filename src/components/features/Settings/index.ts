@@ -1,2 +1,4 @@
-export { Settings } from './Settings';
-export { CacheManagerPanel } from './CacheManagerPanel';
+export * from './ApiConfigurationPanel';
+export * from './CacheManagerPanel';
+export * from './Settings';
+export * from './SettingsRoute';

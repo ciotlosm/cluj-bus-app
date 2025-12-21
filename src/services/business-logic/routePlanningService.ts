@@ -1,8 +1,8 @@
-import type { Coordinates, Station, CoreVehicle } from '../types';
-import type { VehicleDisplayData } from '../types/presentationLayer';
+import type { Coordinates, Station, CoreVehicle } from '../../types';
+import type { VehicleDisplayData } from '../../types/presentationLayer';
 import { enhancedTranzyApi } from '../api/tranzyApiService';
-import { agencyService } from './agencyService';
-import { logger } from '../utils/shared/logger';
+import { agencyService } from '../agencyService';
+import { logger } from '../../utils/shared/logger';
 
 export interface RouteConnection {
   firstVehicle: CoreVehicle;

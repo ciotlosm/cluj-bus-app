@@ -102,14 +102,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     form.clearSubmitError();
     
     try {
-      const isValid = await validateAndFetchAgencies(key.trim());
-      setApiKeyValid(isValid);
+      await validateAndFetchAgencies(key.trim());
+      setApiKeyValid(true);
       
-      if (!isValid) {
-        throw new Error('Invalid API key. Please check your key and try again.');
-      }
-      
-      return isValid;
+      return true;
     } catch (error) {
       setApiKeyValid(false);
       throw error;
@@ -122,8 +118,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     if (activeStep === 0) {
       // Validate API key before proceeding
       try {
-        const isValid = await validateApiKey(form.values.apiKey);
-        if (!isValid) return;
+        await validateApiKey(form.values.apiKey);
       } catch (error) {
         return; // Error already handled in validateApiKey
       }
@@ -245,7 +240,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                 variant="outlined"
                 size="small"
                 onClick={() => validateApiKey(form.values.apiKey)}
-                loading={isValidatingApiKey}
+                isLoading={isValidatingApiKey}
                 sx={{ mb: 2 }}
               >
                 Test API Key
@@ -325,7 +320,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
           <Button
             variant="outlined"
             onClick={handleBack}
-            disabled={activeStep === 0}
+            isDisabled={activeStep === 0}
             startIcon={<BackIcon />}
           >
             Back
@@ -334,8 +329,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
           <Button
             variant="filled"
             onClick={handleNext}
-            disabled={!canProceed() || isValidatingApiKey}
-            loading={form.isSubmitting}
+            isDisabled={!canProceed() || isValidatingApiKey}
+            isLoading={form.isSubmitting}
             startIcon={activeStep === steps.length - 1 ? <CheckIcon /> : <ForwardIcon />}
           >
             {activeStep === steps.length - 1 ? 'Complete Setup' : 'Next'}

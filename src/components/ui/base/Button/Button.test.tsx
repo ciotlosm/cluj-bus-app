@@ -101,7 +101,7 @@ describe('Button Component', () => {
     expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument();
   });
 
-  it('shows loading state', () => {
+  it('shows isLoading state', () => {
     render(
       <TestWrapper>
         <Button loading>Loading Button</Button>
@@ -112,7 +112,7 @@ describe('Button Component', () => {
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
     
-    // Check for loading spinner
+    // Check for isLoading spinner
     const spinner = screen.getByRole('progressbar');
     expect(spinner).toBeInTheDocument();
   });
@@ -141,7 +141,7 @@ describe('Button Component', () => {
     expect(button).toBeInTheDocument();
   });
 
-  it('handles disabled state', () => {
+  it('handles isDisabled state', () => {
     render(
       <TestWrapper>
         <Button disabled>Disabled Button</Button>

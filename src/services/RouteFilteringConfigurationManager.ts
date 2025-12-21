@@ -178,18 +178,9 @@ export class RouteFilteringConfigurationManager implements IConfigurationManager
    */
   async persistConfig(config: RouteFilteringConfig): Promise<void> {
     try {
-      // Use a safer approach to access the store
-      const { useConfigStore } = await import('../stores/configStore');
-      const configStore = useConfigStore.getState();
-      const currentUserConfig = configStore.config || {};
-      
-      // Add route filtering config to user config
-      const updatedUserConfig = {
-        ...currentUserConfig,
-        routeFilteringConfig: config,
-      };
-
-      configStore.updateConfig(updatedUserConfig);
+      // Store route filtering config separately in localStorage
+      // This config is managed independently from UserConfig
+      localStorage.setItem('routeFilteringConfig', JSON.stringify(config));
       
       logger.debug('Configuration persisted successfully', { config });
     } catch (error) {

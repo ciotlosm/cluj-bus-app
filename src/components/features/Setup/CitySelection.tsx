@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useConfigStore } from '../../../stores/configStore';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 
 interface CitySelectionProps {
   onCitySelected: (city: string, agencyId: string) => void;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography, Stack, Chip } from '@mui/material';
-import { CLUJ_POPULAR_LOCATIONS } from '../../../../utils/locationUtils';
+import { CLUJ_POPULAR_LOCATIONS } from '../../../../utils/formatting/locationUtils';
 import { useThemeUtils, useMuiUtils } from '../../../../hooks';
 
 interface PopularLocationsProps {

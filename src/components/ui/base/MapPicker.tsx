@@ -12,7 +12,7 @@ import {
 import { Close as CloseIcon, MyLocation as MyLocationIcon } from '@mui/icons-material';
 import type { Coordinates } from '../../../types';
 import { useLocationStore } from '../../../stores/locationStore';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 import { useThemeUtils, useMuiUtils } from '../../../hooks';
 
 interface MapPickerProps {

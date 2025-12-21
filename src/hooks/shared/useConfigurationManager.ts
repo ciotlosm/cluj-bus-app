@@ -179,15 +179,11 @@ export const useConfigurationManager = (
     setIsValidatingApiKey(true);
     try {
       // Use the validateApiKey method from configStore which caches agencies
-      const isValid = await validateApiKey(apiKey.trim());
-      setApiKeyValid(isValid);
+      await validateApiKey(apiKey.trim());
+      setApiKeyValid(true);
       
-      if (!isValid) {
-        setErrors(prev => ({ ...prev, apiKey: 'Invalid API key' }));
-      } else {
-        setErrors(prev => ({ ...prev, apiKey: undefined }));
-        // Agencies are now cached automatically by validateAndFetchAgencies
-      }
+      setErrors(prev => ({ ...prev, apiKey: undefined }));
+      // Agencies are now cached automatically by validateAndFetchAgencies
     } catch (error) {
       setApiKeyValid(false);
       setErrors(prev => ({ ...prev, apiKey: 'Failed to validate API key' }));
@@ -206,9 +202,9 @@ export const useConfigurationManager = (
   };
 
   const handleLogLevelChange = (level: number): void => {
-    setFormData(prev => ({ ...prev, logLevel: level }));
+    setFormData(prev => ({ ...prev, logLevel: level.toString() }));
     // Immediately update the logger and persist to config
-    updateConfig({ ...config, logLevel: level });
+    updateConfig({ ...config, logLevel: level.toString() });
   };
 
   const handleLocationPicker = (type: 'home' | 'work' | 'offline'): void => {
@@ -243,12 +239,6 @@ export const useConfigurationManager = (
       // Validate API key before saving
       if (formData.apiKey?.trim()) {
         await validateApiKey(formData.apiKey.trim());
-        
-        // Check if API key validation failed
-        if (apiKeyValid === false) {
-          setIsSubmitting(false);
-          return;
-        }
       }
       
       await updateConfig(formData);

@@ -114,7 +114,7 @@ describe('SearchInput', () => {
     expect(mockOnClear).toHaveBeenCalled();
   });
 
-  it('shows loading spinner when loading is true', () => {
+  it('shows isLoading spinner when isLoading is true', () => {
     render(
       <TestWrapper>
         <SearchInput onSearch={mockOnSearch} isLoading />
@@ -204,10 +204,10 @@ describe('SearchInput', () => {
     expect(screen.getByText('Custom error message')).toBeInTheDocument();
   });
 
-  it('is disabled when disabled prop is true', () => {
+  it('is isDisabled when isDisabled prop is true', () => {
     render(
       <TestWrapper>
-        <SearchInput onSearch={mockOnSearch} disabled />
+        <SearchInput onSearch={mockOnSearch} isDisabled />
       </TestWrapper>
     );
 

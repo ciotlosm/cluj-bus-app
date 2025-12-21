@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import LocationPicker from '../LocationPicker/LocationPicker';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 import type { Coordinates } from '../../../types';
 
 interface LocationSetupProps {

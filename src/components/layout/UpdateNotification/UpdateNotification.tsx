@@ -13,7 +13,7 @@ import {
 } from '@mui/icons-material';
 
 import { serviceWorkerManager } from '../../../utils/serviceWorkerManager';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 
 export const UpdateNotification: React.FC = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);

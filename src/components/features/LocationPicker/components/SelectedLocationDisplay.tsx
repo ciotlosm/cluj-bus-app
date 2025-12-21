@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Typography, Chip } from '@mui/material';
 import { LocationOn as LocationIcon } from '@mui/icons-material';
-import { formatCoordinates } from '../../../../utils/locationUtils';
-import { logger } from '../../../../utils/logger';
+import { formatCoordinates } from '../../../../utils/formatting/locationUtils';
+import { logger } from '../../../../utils/shared/logger';
 import { useThemeUtils, useMuiUtils } from '../../../../hooks';
 import type { Coordinates } from '../../../../types';
 

@@ -69,7 +69,7 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
   const statusColors = getStatusColors();
 
   const getLocationStatus = () => {
-    // GPS denied - red GPS disabled icon
+    // GPS denied - red GPS isDisabled icon
     if (locationState.locationPermission === 'denied') {
       return {
         icon: <GpsDisabledIcon sx={{ fontSize: 16 }} />,
@@ -116,7 +116,7 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({ compact = fa
       };
     }
     
-    // No GPS location - red GPS disabled
+    // No GPS location - red GPS isDisabled
     return {
       icon: <GpsDisabledIcon sx={{ fontSize: 16 }} />,
       label: 'OFF',

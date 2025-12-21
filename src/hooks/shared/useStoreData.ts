@@ -211,7 +211,8 @@ export function useStoreData<T extends keyof DataTypeMap>(
       stopTimes: 'getStopTimesData'
     };
     
-    return vehicleStore[methodMap[dataType]];
+    const methodName = methodMap[dataType];
+    return vehicleStore[methodName] as any;
   }, [vehicleStore, dataType]);
 
   /**
@@ -404,7 +405,7 @@ export function useStoreData<T extends keyof DataTypeMap>(
   }, [storeVehicles, storeStations, vehicleStore.lastUpdate, routeId, dataType, filters, storeVehicles?.length]);
 
   /**
-   * Sync store error and loading state
+   * Sync store error and isLoading state
    */
   useEffect(() => {
     // Sync store error state
@@ -416,7 +417,7 @@ export function useStoreData<T extends keyof DataTypeMap>(
       setError(standardError);
     }
 
-    // Sync store loading state
+    // Sync store isLoading state
     if (storeIsLoading !== isLoading) {
       setIsLoading(storeIsLoading);
     }

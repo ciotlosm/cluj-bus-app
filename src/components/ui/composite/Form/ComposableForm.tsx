@@ -123,7 +123,7 @@ export interface ComposableFormProps<T = any> {
   onReset?: () => void;
   /** Form change handler */
   onChange?: (data: T) => void;
-  /** Form disabled state */
+  /** Form isDisabled state */
   isDisabled?: boolean;
   /** Form read-only state */
   isReadOnly?: boolean;

@@ -1,4 +1,4 @@
 export * from './DataValidator';
-export * from './IntelligentVehicleFilter';
+export * from '../data-processing/IntelligentVehicleFilter';
 export * from './TransformationRetryManager';
-export * from './VehicleTransformationService';
+export * from '../data-processing/VehicleTransformationService';

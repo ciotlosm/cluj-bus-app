@@ -26,7 +26,7 @@ describe('Card Components', () => {
       expect(screen.getByText('Test content')).toBeInTheDocument();
     });
 
-    it('should render loading state when loading prop is true', () => {
+    it('should render isLoading state when isLoading prop is true', () => {
       render(
         <TestWrapper>
           <Card loading>
@@ -35,7 +35,7 @@ describe('Card Components', () => {
         </TestWrapper>
       );
       
-      // Should show skeleton loading instead of content
+      // Should show skeleton isLoading instead of content
       expect(screen.queryByText('Test content')).not.toBeInTheDocument();
     });
 

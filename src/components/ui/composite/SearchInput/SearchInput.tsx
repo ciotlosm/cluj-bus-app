@@ -35,6 +35,7 @@ interface SearchInputProps extends Omit<TextFieldProps, 'variant' | 'size' | 'on
   isFullWidth?: boolean;
   /** Loading state */
   isLoading?: boolean;
+  loading?: boolean;
   /** Disabled state */
   isDisabled?: boolean;
   /** Error message */
@@ -48,7 +49,7 @@ interface SearchInputProps extends Omit<TextFieldProps, 'variant' | 'size' | 'on
   /** Callback fired when input is cleared */
   onClear?: () => void;
   /** Callback fired when input value changes */
-  onChange?: (value: string, event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (value: string) => void;
   /** Array of suggestion strings */
   suggestions?: string[];
   /** Debounce delay in milliseconds */
@@ -73,12 +74,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   onClear,
   onChange,
   suggestions = [],
-  isLoading = false,
+  loading = false,
   debounceMs = 300,
   variant = 'outlined',
   size = 'medium',
   isClearable = true,
-  isFullWidth = true,
+  fullWidth = true,
   showSuggestions = true,
   errorMessage,
   minSearchLength = 1,
@@ -220,12 +221,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   const formFieldStyles = getFormFieldStyles(variant, state);
 
   // Show clear button when there's input and clearable is true
-  const showClearButton = isClearable && inputValue && !isLoading;
+  const showClearButton = isClearable && inputValue && !!loading;
 
   // Prepare end adornment with loading spinner and clear button
   const endAdornment = (
     <InputAdornment position="end">
-      {isLoading && (
+      {loading && (
         <CircularProgress 
           size={size === 'small' ? 16 : 20} 
           color="primary"
@@ -252,14 +253,14 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     </InputAdornment>
   );
 
-  // If suggestions are disabled or empty, render as regular TextField
+  // If suggestions are isDisabled or empty, render as regular TextField
   if (!showSuggestions || suggestions.length === 0) {
     return (
       <TextField
         ref={inputRef}
         variant={variant}
         size={size}
-        fullWidth={isFullWidth}
+        fullWidth={fullWidth}
         placeholder={placeholder}
         disabled={isDisabled}
         error={hasErrorState}
@@ -268,7 +269,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         onChange={(event) => {
           handleInputChange(event, event.target.value, 'input');
           if (onChange) {
-            onChange(event.target.value, event as React.ChangeEvent<HTMLInputElement>);
+            onChange(event.target.value);
           }
         }}
         onKeyDown={handleKeyDown}
@@ -303,7 +304,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       onInputChange={handleInputChange}
       onChange={handleSelectionChange}
       disabled={isDisabled}
-      loading={isLoading}
+      loading={loading}
       loadingText="Searching..."
       noOptionsText="No suggestions found"
       clearOnBlur={false}
@@ -330,7 +331,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           ref={inputRef}
           variant={variant}
           size={size}
-          fullWidth={isFullWidth}
+          fullWidth={fullWidth}
           placeholder={placeholder}
           error={hasErrorState}
           helperText={displayErrorMessage}

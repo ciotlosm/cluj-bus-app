@@ -122,7 +122,7 @@ export const useAppInitialization = () => {
         logger.info('Agency data loaded successfully', {}, 'INIT');
       } catch (agencyError) {
         logger.warn('Failed to load agency data, continuing with cached data', { error: agencyError }, 'INIT');
-        // Continue even if agency loading fails (might have cached data)
+        // Continue even if agency isLoading fails (might have cached data)
       }
 
       // Step 3: Initialize modern data system with fresh data (50%)

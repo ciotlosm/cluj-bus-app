@@ -1,5 +1,5 @@
 // Service Worker registration and management
-import { logger } from '../utils/shared/logger';
+import { logger } from '../../utils/shared/logger';
 
 export interface ServiceWorkerStatus {
   isSupported: boolean;

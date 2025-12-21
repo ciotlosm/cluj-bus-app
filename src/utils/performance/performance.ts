@@ -1,5 +1,5 @@
 import React from 'react';
-import { logger } from './logger';
+import { logger } from '../shared/logger';
 
 /**
  * Performance monitoring and metrics utilities

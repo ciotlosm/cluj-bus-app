@@ -133,7 +133,7 @@ export const SearchInputExample: React.FC = () => {
         <SearchInput
           onSearch={handleSearch}
           onClear={handleClear}
-          disabled
+          isDisabled
           placeholder="Disabled search input..."
         />
       </Box>

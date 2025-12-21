@@ -1,7 +1,7 @@
 /**
  * GPS-First Data Loading Hook
  * 
- * React hook that implements the GPS-first data loading approach
+ * React hook that implements the GPS-first data isLoading approach
  * for reliable first-screen data display.
  * 
  * This hook ensures that:
@@ -93,7 +93,7 @@ export const useGpsFirstData = (options: UseGpsFirstDataOptions = {}): UseGpsFir
   const isConfigured = !!(config?.agencyId && effectiveLocation);
   const agencyId = config?.agencyId ? parseInt(config.agencyId) : null;
 
-  // Main data loading function
+  // Main data isLoading function
   const loadData = useCallback(async (force = false): Promise<void> => {
     if (!isConfigured || !agencyId || !effectiveLocation) {
       const missingConfig = [];
@@ -144,7 +144,7 @@ export const useGpsFirstData = (options: UseGpsFirstDataOptions = {}): UseGpsFir
       setIsLoading(false);
 
       // Log success metrics
-      logger.info('GPS-first data loading completed', {
+      logger.info('GPS-first data isLoading completed', {
         hasPrimaryStop: !!result.primaryStop,
         hasSecondaryStop: !!result.secondaryStop,
         tripsFound: result.availableTrips.length,
@@ -159,7 +159,7 @@ export const useGpsFirstData = (options: UseGpsFirstDataOptions = {}): UseGpsFir
       }
 
       const errorMessage = err instanceof Error ? err.message : String(err);
-      logger.error('GPS-first data loading failed', {
+      logger.error('GPS-first data isLoading failed', {
         error: errorMessage,
         location: effectiveLocation,
         agencyId
@@ -256,7 +256,7 @@ export const useGpsFirstData = (options: UseGpsFirstDataOptions = {}): UseGpsFir
 // ============================================================================
 
 /**
- * Simplified hook for basic GPS-first data loading
+ * Simplified hook for basic GPS-first data isLoading
  */
 export const useValidatedNearbyData = () => {
   return useGpsFirstData({

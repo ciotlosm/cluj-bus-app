@@ -18,7 +18,7 @@ export const useLayoutPatterns = () => {
       align?: 'start' | 'center' | 'end' | 'stretch' | 'baseline';
       justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
       wrap?: boolean;
-      fullWidth?: boolean;
+      isFullWidth?: boolean;
       fullHeight?: boolean;
     } = {}
   ): SxProps<Theme> => {
@@ -27,7 +27,7 @@ export const useLayoutPatterns = () => {
       align = 'start',
       justify = 'start',
       wrap = false,
-      fullWidth = false,
+      isFullWidth = false,
       fullHeight = false,
     } = options;
 
@@ -57,7 +57,7 @@ export const useLayoutPatterns = () => {
       alignItems: alignMap[align],
       justifyContent: justifyMap[justify],
       flexWrap: wrap ? 'wrap' : 'nowrap',
-      width: fullWidth ? '100%' : 'auto',
+      width: isFullWidth ? '100%' : 'auto',
       height: fullHeight ? '100%' : 'auto',
     };
   }, [getSpacing]);
@@ -107,17 +107,17 @@ export const useLayoutPatterns = () => {
     gap: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md',
     options: {
       align?: 'start' | 'center' | 'end' | 'stretch';
-      fullWidth?: boolean;
+      isFullWidth?: boolean;
       dividers?: boolean;
     } = {}
   ): SxProps<Theme> => {
-    const { align = 'stretch', fullWidth = true, dividers = false } = options;
+    const { align = 'stretch', isFullWidth = true, dividers = false } = options;
     const spacing = getSpacing();
 
     const baseStyles = getFlexLayoutStyles('column', {
       gap,
       align,
-      fullWidth,
+      isFullWidth,
     });
 
     if (dividers) {

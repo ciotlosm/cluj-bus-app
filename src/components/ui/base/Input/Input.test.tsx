@@ -77,7 +77,7 @@ describe('Input Component', () => {
         <Input 
           label="Test Input" 
           error 
-          helperText="This field is required" 
+          helpText="This field is required" 
         />
       </TestWrapper>
     );
@@ -90,7 +90,7 @@ describe('Input Component', () => {
       <TestWrapper>
         <Input 
           label="Test Input" 
-          helperText="Enter your name" 
+          helpText="Enter your name" 
         />
       </TestWrapper>
     );

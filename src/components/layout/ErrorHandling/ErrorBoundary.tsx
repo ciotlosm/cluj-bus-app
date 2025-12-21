@@ -9,7 +9,7 @@ import {
 import { ErrorDisplay } from './ErrorDisplay';
 import type { ErrorState } from '../../../types';
 import { StoreErrorHandler } from '../../../stores/shared/errorHandler';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     return {
       hasError: true,
-      error: errorState,
+      error: { ...errorState, hasError: true, isRecoverable: true },
     };
   }
 

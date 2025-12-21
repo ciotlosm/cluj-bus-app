@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Coordinates } from '../../types';
-import { calculateDistance } from '../../utils/distanceUtils';
+import { calculateDistance } from '../../utils/data-processing/distanceUtils';
 import { logger } from '../../utils/shared/logger';
 import { validateCoordinates } from '../shared/validation/coordinateValidators';
 import { ErrorHandler } from '../shared/errors/ErrorHandler';

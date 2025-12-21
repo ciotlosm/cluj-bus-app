@@ -1,20 +1,10 @@
-/**
- * Utility functions index
- * Exports commonly used utility functions for clean imports
- */
-
-// Distance and location utilities
-export * from './distanceUtils';
-export * from './locationUtils';
-
-// Nearby view constants and utilities
-export * from './nearbyViewConstants';
-
-// Developer experience utilities
-export * from './developerExperience';
-
-// Other utilities
-export * from './logger';
+export * from './cacheUtils';
+export * from './debounce';
+export * from './data-processing/distanceUtils';
+export * from './locationWarningTracker';
+export * from './mapUtils';
 export * from './retryUtils';
+export * from './routeUtils';
+export * from './serviceWorkerManager';
 export * from './timeFormat';
 export * from './validation';

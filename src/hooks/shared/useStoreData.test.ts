@@ -332,15 +332,15 @@ describe('useStoreData', () => {
     });
   });
 
-  // Auto-refresh Functionality tests disabled due to timing issues
+  // Auto-refresh Functionality tests isDisabled due to timing issues
   // Auto-refresh functionality is tested in useStoreData.minimal.test.ts
 
-  // Filter Functionality tests disabled due to memory issues
+  // Filter Functionality tests isDisabled due to memory issues
   // Use useStoreData.minimal.test.ts for basic functionality testing
 
-  // Type-safe Helper Functions tests disabled due to memory issues
+  // Type-safe Helper Functions tests isDisabled due to memory issues
   // Use useStoreData.minimal.test.ts for basic functionality testing
 
-  // Refetch Functionality tests disabled due to timing issues
+  // Refetch Functionality tests isDisabled due to timing issues
   // Refetch functionality is tested in useStoreData.minimal.test.ts
 });

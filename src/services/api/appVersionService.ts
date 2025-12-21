@@ -1,4 +1,4 @@
-import { logger } from '../utils/shared/logger';
+import { logger } from '../../utils/shared/logger';
 
 export interface VersionInfo {
   current: string;

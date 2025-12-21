@@ -195,7 +195,7 @@ export const useRefreshSystem = (): RefreshSystemResult => {
 
   const stopAutoRefresh = useCallback(() => {
     if (!state.isAutoRefreshEnabled) {
-      logger.debug('Auto-refresh already disabled via unified system', {}, 'useRefreshSystem');
+      logger.debug('Auto-refresh already isDisabled via unified system', {}, 'useRefreshSystem');
       return;
     }
 

@@ -10,12 +10,9 @@
  * @module TransformationRetryManager
  */
 
-import { TransformationError } from '../types/transformationPipeline';
-import type { StandardError } from '../hooks/shared/errors/types';
-import { ErrorHandler } from '../hooks/shared/errors/ErrorHandler';
-import { withRetry, RetryManager } from '../hooks/shared/errors/retryUtils';
-import { errorReporter, ErrorCategory, ErrorSeverity } from './ErrorReporter';
-import { logger } from '../utils/shared/logger';
+import { TransformationError } from '../../types/transformationPipeline';
+import { RetryManager } from '../../hooks/shared/errors/retryUtils';
+import { logger } from '../../utils/shared/logger';
 
 // ============================================================================
 // RETRY CONFIGURATION TYPES
@@ -255,7 +252,6 @@ export class TransformationRetryManager {
   private retryConfigs: Map<string, RetryConfig> = new Map();
   private circuitBreakers: Map<string, CircuitBreaker> = new Map();
   private retryStats: RetryStats;
-  private activeRetries: Map<string, RetryManager> = new Map();
 
   constructor() {
     this.retryStats = {
@@ -309,7 +305,11 @@ export class TransformationRetryManager {
         }
       );
 
-      await errorReporter.reportTransformationError(error);
+      logger.error('Transformation retry failed', {
+        error: error.message,
+        context,
+        attempt: attempts
+      });
       
       return {
         success: false,
@@ -389,16 +389,13 @@ export class TransformationRetryManager {
 
     // Report the final error
     if (lastError) {
-      if (lastError instanceof TransformationError) {
-        await errorReporter.reportTransformationError(lastError);
-      } else {
-        await errorReporter.reportError(lastError, { 
-          ...context, 
-          operationType, 
-          attempts, 
-          totalTime 
-        });
-      }
+      logger.error('Transformation error in retry manager', {
+        error: lastError.message,
+        context,
+        operationType,
+        attempts,
+        totalTime
+      });
     }
 
     logger.error('Operation failed after all retries', {
@@ -501,7 +498,11 @@ export class TransformationRetryManager {
       }
     );
 
-    await errorReporter.reportTransformationError(combinedError);
+    logger.error('Combined transformation error', {
+      error: combinedError.message,
+      primaryError: primaryResult.error?.message,
+      fallbackError: fallbackResult.error?.message
+    });
     throw combinedError;
   }
 

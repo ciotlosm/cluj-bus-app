@@ -48,6 +48,12 @@ interface BaseCardProps extends StandardCardProps {
   error?: boolean;
 }
 
+interface VehicleCardProps extends BaseCardProps {
+  isLoading?: boolean;
+  loading?: boolean;
+  children: React.ReactNode;
+}
+
 // Loading State Component Props
 interface LoadingStateProps {
   variant?: 'spinner' | 'skeleton';
@@ -79,6 +85,7 @@ interface DataCardProps {
   variant?: 'elevated' | 'outlined' | 'filled';
   padding?: 'none' | 'small' | 'medium' | 'large';
   children: React.ReactNode;
+  isLoading?: boolean;
 }
 
 // Vehicle Card Component Props (specialized variant)
@@ -103,7 +110,6 @@ interface VehicleCardProps {
   };
   loading?: boolean;
   error?: boolean;
-  children?: React.ReactNode;
   cacheKeys?: string | string[];
 }
 
@@ -118,6 +124,7 @@ interface InfoCardProps {
   padding?: 'none' | 'small' | 'medium' | 'large';
   loading?: boolean;
   error?: boolean;
+  isLoading?: boolean;
 }
 
 // Base Card Component - Foundation for all card variants
@@ -141,7 +148,7 @@ export const Card: React.FC<BaseCardProps> = ({
 
   // Handle legacy prop names for backward compatibility
   const actualInteractive = isInteractive || interactive || false;
-  const actualLoading = isLoading || loading || false;
+  const actualLoading = isLoading || isLoading || false;
   const actualError = hasError || error || false;
 
   const cardStyles = getCardVariantStyles(variant, padding);
@@ -316,7 +323,7 @@ export const DataCard: React.FC<DataCardProps> = ({
   icon,
   actions,
   status,
-  loading = false,
+  isLoading = false,
   error = false,
   variant = 'elevated',
   padding = 'medium',
@@ -329,7 +336,7 @@ export const DataCard: React.FC<DataCardProps> = ({
   const statusColor = status ? statusColors[status] : null;
 
   return (
-    <Card variant={variant} padding={padding} loading={loading} error={error}>
+    <Card variant={variant} padding={padding} isLoading={isLoading} error={error}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           {icon && (
@@ -390,7 +397,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
   location,
   customContent,
   arrivalStatus,
-  loading = false,
+  isLoading = false,
   error = false,
   children,
   cacheKeys,
@@ -399,7 +406,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
   const { getAvatarStyles } = useMuiUtils();
 
   const cardContent = (
-    <Card variant="elevated" loading={loading} error={error} sx={{ mb: 1.5 }}>
+    <Card variant="elevated" isLoading={isLoading} error={error} sx={{ mb: 1.5 }}>
       <CardContent sx={{ pb: 0.25, pt: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
           <Box sx={{ position: 'relative', mr: 2 }}>
@@ -654,13 +661,13 @@ export const InfoCard: React.FC<InfoCardProps> = ({
   actions,
   variant = 'elevated',
   padding = 'medium',
-  loading = false,
+  isLoading = false,
   error = false,
 }) => {
   const { alpha, theme } = useThemeUtils();
   
   return (
-    <Card variant={variant} padding={padding} loading={loading} error={error} sx={{ mb: 2 }}>
+    <Card variant={variant} padding={padding} isLoading={isLoading} error={error} sx={{ mb: 2 }}>
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           {icon && (

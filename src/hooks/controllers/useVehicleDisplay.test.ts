@@ -143,7 +143,7 @@ describe('useVehicleDisplay', () => {
     unmount();
   });
 
-  it('should handle loading states correctly', () => {
+  it('should handle isLoading states correctly', () => {
     const { result, unmount } = renderHook(() => useVehicleDisplay());
 
     expect(result.current.isLoading).toBe(false);

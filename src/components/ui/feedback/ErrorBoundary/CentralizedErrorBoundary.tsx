@@ -4,7 +4,7 @@ import { CentralizedErrorDisplay } from '../CentralizedErrorDisplay';
 import { ErrorHandler } from '../../../../hooks/shared/errors/ErrorHandler';
 import { ErrorType } from '../../../../hooks/shared/errors/types';
 import type { CentralizedErrorState } from '../../../../hooks/shared/useCentralizedErrorHandler';
-import { logger } from '../../../../utils/logger';
+import { logger } from '../../../../utils/shared/logger';
 
 /**
  * Error boundary props

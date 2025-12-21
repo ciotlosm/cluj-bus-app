@@ -10,7 +10,7 @@
 
 import type { CoreVehicle } from '../types/coreVehicle';
 import type { RouteActivityInfo } from './RouteActivityAnalyzer';
-import type { FilteringResult } from './IntelligentVehicleFilter';
+import type { FilteringResult } from './data-processing/IntelligentVehicleFilter';
 import type { RouteFilteringConfig } from '../types/routeFiltering';
 import { DEFAULT_ROUTE_FILTERING_CONFIG } from '../types/routeFiltering';
 import { logger } from '../utils/shared/logger';

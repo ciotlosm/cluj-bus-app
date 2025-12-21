@@ -36,10 +36,10 @@ export const CurrentLocationSection: React.FC<CurrentLocationSectionProps> = ({
       
       <Button
         variant="outlined"
-        fullWidth
+        isFullWidth
         onClick={onUseCurrentLocation}
-        loading={isGettingLocation}
-        disabled={locationPermission === 'denied'}
+        isLoading={isGettingLocation}
+        isDisabled={locationPermission === 'denied'}
         startIcon={<MyLocationIcon />}
         sx={{ py: 1.5 }}
       >

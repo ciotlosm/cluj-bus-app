@@ -1,3 +1,3 @@
-export * from './tranzyApiService';
-export * from './serviceWorkerService';
 export * from './appVersionService';
+export * from './serviceWorkerService';
+export * from './tranzyApiService';

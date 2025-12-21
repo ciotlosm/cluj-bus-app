@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { Map as MapIcon } from '@mui/icons-material';
-import { formatCoordinates } from '../../../../utils/locationUtils';
-import { logger } from '../../../../utils/logger';
+import { formatCoordinates } from '../../../../utils/formatting/locationUtils';
+import { logger } from '../../../../utils/shared/logger';
 import { useThemeUtils } from '../../../../hooks';
 import type { Coordinates } from '../../../../types';
 

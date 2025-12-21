@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Station } from '../types';
+import type { Station } from '../../types';
 import type { Route, StopTime, Trip } from '../types/tranzyApi';
 import {
   determineStationRouteAssociations,

@@ -10,7 +10,7 @@ import {
 
 import { useRefreshSystem } from '../../../hooks/shared/useRefreshSystem';
 import { useLocationStore } from '../../../stores/locationStore';
-import { logger } from '../../../utils/logger';
+import { logger } from '../../../utils/shared/logger';
 import { useThemeUtils } from '../../../hooks';
 
 export const RefreshControl: React.FC = () => {

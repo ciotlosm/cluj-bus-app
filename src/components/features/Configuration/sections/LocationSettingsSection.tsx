@@ -105,9 +105,9 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
               <Button
                 variant="outlined"
                 size="small"
-                fullWidth
+                isFullWidth
                 onClick={() => onLocationPicker('home')}
-                disabled={locationPermission === 'denied'}
+                isDisabled={locationPermission === 'denied'}
               >
                 {homeLocation ? 'Change' : 'Set Home'}
               </Button>
@@ -145,9 +145,9 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
               <Button
                 variant="outlined"
                 size="small"
-                fullWidth
+                isFullWidth
                 onClick={() => onLocationPicker('work')}
-                disabled={locationPermission === 'denied'}
+                isDisabled={locationPermission === 'denied'}
               >
                 {workLocation ? 'Change' : 'Set Work'}
               </Button>
@@ -195,7 +195,7 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
               <Button
                 variant="outlined"
                 size="small"
-                fullWidth
+                isFullWidth
                 onClick={() => onLocationPicker('offline')}
                 sx={{
                   color: isGpsAvailable ? 'text.disabled' : 'primary.main',
@@ -220,7 +220,7 @@ export const LocationSettingsSection: React.FC<LocationSettingsSectionProps> = (
           {/* GPS Disabled Warning */}
           {locationPermission === 'denied' && (
             <Typography variant="caption" color="warning.main" sx={{ fontSize: '0.75rem', fontStyle: 'italic' }}>
-              ⚠️ GPS disabled - "Use Current Location" features unavailable in location picker
+              ⚠️ GPS isDisabled - "Use Current Location" features unavailable in location picker
             </Typography>
           )}
         </Stack>

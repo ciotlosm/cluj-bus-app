@@ -7,8 +7,8 @@
  * Requirements: 1.1, 1.2, 2.2, 2.3, 2.4, 2.5
  */
 
-import type { Coordinates, Station } from '../types';
-import type { Route, StopTime, Trip } from '../types/tranzyApi';
+import type { Coordinates, Station } from '../../types';
+import type { Route, StopTime, Trip } from '../../types/tranzyApi';
 import {
   NEARBY_STATION_DISTANCE_THRESHOLD,
   MAX_NEARBY_SEARCH_RADIUS,
@@ -17,14 +17,14 @@ import {
   shouldDisplaySecondStation,
   createStationDistanceInfo,
   type StationDistanceInfo
-} from '../utils/shared/nearbyViewConstants';
-import { calculateDistance } from '../utils/distanceUtils';
-import { logger } from '../utils/shared/logger';
+} from '../../utils/shared/nearbyViewConstants';
+import { calculateDistance } from '../../utils/data-processing/distanceUtils';
+import { logger } from '../../utils/shared/logger';
 import {
   optimizedDistanceCalculation,
   optimizedRouteAssociationFiltering,
   type NearbyViewPerformanceMonitor
-} from '../utils/performance/nearbyViewPerformance';
+} from '../../utils/performance/nearbyViewPerformance';
 
 // ============================================================================
 // INTERFACES

@@ -89,7 +89,7 @@ export const useAnimationPatterns = () => {
     };
   }, [getAnimationStyles, theme]);
 
-  // Common loading animation pattern
+  // Common isLoading animation pattern
   const getLoadingAnimationStyles = useCallback((
     type: 'pulse' | 'spin' | 'bounce' | 'wave' = 'pulse'
   ): SxProps<Theme> => {
