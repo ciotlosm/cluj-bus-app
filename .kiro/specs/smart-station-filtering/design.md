@@ -2,16 +2,16 @@
 
 ## Overview
 
-The Smart Station Filtering system enhances the existing StationView component with intelligent location-based filtering and trip validation. The system finds the closest station with active bus service, then optionally includes a second nearby station if it meets proximity and service criteria. The design leverages existing location services, distance utilities, and trip data while maintaining the application's clean architecture patterns.
+The Smart Station Filtering system enhances the existing StationView component with intelligent location-based filtering, trip validation, and favorites-based filtering. The system finds the closest station with active bus service, then optionally includes a second nearby station if it meets proximity and service criteria. Additionally, when users have configured favorite routes, the system can filter stations to show only those serving the user's preferred routes. The design leverages existing location services, distance utilities, trip data, and the favorites store while maintaining the application's clean architecture patterns.
 
 ## Architecture
 
 The system follows a layered architecture with clear separation of concerns:
 
-1. **Presentation Layer**: Enhanced StationView component with filtering UI
+1. **Presentation Layer**: Enhanced StationView component with filtering UI and favorites controls
 2. **Hook Layer**: Custom `useSmartStationFilter` hook encapsulating filtering logic
 3. **Service Layer**: Existing location, station, and trip services
-4. **Data Layer**: Existing stores (location, station, trip) with no modifications needed
+4. **Data Layer**: Existing stores (location, station, trip, favorites) with no modifications needed
 
 The design maintains the existing clean architecture by extending rather than modifying current services and stores.
 
@@ -28,6 +28,10 @@ interface SmartStationFilterResult {
   totalStations: number;
   toggleFiltering: () => void;
   retryFiltering: () => void;
+  // Favorites filtering
+  favoritesFilterEnabled: boolean;
+  toggleFavoritesFilter: () => void;
+  hasFavoriteRoutes: boolean;
 }
 
 interface FilteredStation {
@@ -35,11 +39,14 @@ interface FilteredStation {
   distance: number;
   hasActiveTrips: boolean;
   stationType: 'primary' | 'secondary' | 'other';
+  matchesFavorites: boolean; // NEW: indicates if station serves favorite routes
+  favoriteRouteCount: number; // NEW: number of favorite routes served
 }
 
 interface FilteringOptions {
   enableCaching?: boolean;
   requireTrips?: boolean;
+  enableFavoritesFilter?: boolean; // NEW: control favorites filtering
 }
 ```
 
@@ -50,14 +57,17 @@ The StationView component will be enhanced to:
 - Display filtering status and controls
 - Show distance and trip information
 - Provide fallback to unfiltered view
+- Display favorites filter toggle when user has favorite routes
+- Show indicators for stations serving favorite routes
 
 ### Smart Station Filter Hook
 
 The `useSmartStationFilter` hook will:
-- Integrate with existing location, station, and trip stores
-- Implement the core filtering algorithm
+- Integrate with existing location, station, trip, and favorites stores
+- Implement the core filtering algorithm including favorites filtering
 - Manage caching for performance
 - Handle error states and fallbacks
+- Provide favorites filter controls when applicable
 
 ## Data Models
 
@@ -65,8 +75,9 @@ The filtering system will work with existing data models from the current stores
 - `TranzyStopResponse` from the station store
 - `TranzyStopTimeResponse` from the trip store  
 - `GeolocationPosition` from the location store
+- `FavoritesStore` state from the favorites store (route IDs)
 
-The hook will process this existing data without requiring new data models or caching layers.
+The hook will process this existing data without requiring new data models or caching layers. The favorites integration will use the existing route matching logic to determine if a station's active trips include any favorite routes.
 
 ## Correctness Properties
 
@@ -160,6 +171,34 @@ The hook will process this existing data without requiring new data models or ca
 *For any* station that has been validated for trips, the UI should indicate the verification status
 **Validates: Requirements 8.5**
 
+### Property 23: Favorites filter control visibility with favorites
+*For any* user configuration with favorite routes, the favorites filter control should be displayed and enabled by default
+**Validates: Requirements 9.1**
+
+### Property 24: Favorites filter station inclusion
+*For any* set of stations and favorite routes, when favorites filter is active, only stations whose active trips contain at least one favorite route should be included
+**Validates: Requirements 9.2**
+
+### Property 25: Complete trip evaluation for favorites
+*For any* station being evaluated for favorites filtering, all active trips at that station should be checked against the user's favorite route list
+**Validates: Requirements 9.3**
+
+### Property 26: Non-matching station exclusion
+*For any* station with active trips that don't match any favorite routes, that station should be excluded from results when favorites filter is active
+**Validates: Requirements 9.4**
+
+### Property 27: Favorites filter control visibility without favorites
+*For any* user configuration with no favorite routes, the favorites filter control should not be displayed
+**Validates: Requirements 9.5**
+
+### Property 28: Favorites filter disabled behavior
+*For any* filtering operation when favorites filter is disabled, only location and trip validation filters should be applied
+**Validates: Requirements 9.6**
+
+### Property 29: Combined filter logic with favorites
+*For any* combination of active filters including favorites, all filters should be applied using logical AND operation
+**Validates: Requirements 9.7**
+
 ## Error Handling
 
 The system implements comprehensive error handling at multiple levels:
@@ -183,6 +222,12 @@ The system implements comprehensive error handling at multiple levels:
 - Loading states: Show progress indicators during filtering operations
 - Error messages: Provide clear, actionable feedback to users
 - Recovery options: Offer retry mechanisms and fallback to unfiltered view
+
+### Favorites Integration Errors
+- Favorites store unavailable: Disable favorites filtering gracefully, continue with other filters
+- Route matching failures: Log errors but continue processing other stations
+- Invalid favorite route data: Filter out invalid entries, continue with valid favorites
+- Favorites filter toggle errors: Maintain current filter state, provide user feedback
 
 ## Testing Strategy
 

@@ -18,7 +18,8 @@ import {
 import { 
   LocationOn as LocationIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  Favorite as FavoriteIcon
 } from '@mui/icons-material';
 import type { FilteredStation, StationUtilities } from '../../../types/stationFilter';
 import { StationVehicleList } from './StationVehicleList';
@@ -77,7 +78,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
   return (
     <List>
       {stations.map((filteredStation) => {
-        const { station, distance, stationType } = filteredStation;
+        const { station, distance, stationType, matchesFavorites, favoriteRouteCount } = filteredStation;
         const isExpanded = expandedStations.has(station.stop_id);
         
         return (
@@ -101,6 +102,17 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                           size="small"
                           color={getStationTypeColor(stationType)}
                           variant="filled"
+                        />
+                      )}
+                      
+                      {/* Favorite route indicator - show when station matches favorites */}
+                      {matchesFavorites && (
+                        <Chip
+                          icon={<FavoriteIcon />}
+                          label={`${favoriteRouteCount} favorite route${favoriteRouteCount !== 1 ? 's' : ''}`}
+                          size="small"
+                          color="error"
+                          variant="outlined"
                         />
                       )}
                     </Stack>
@@ -139,7 +151,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
             {/* Expandable vehicle list section */}
             <Collapse in={isExpanded} timeout="auto" unmountOnExit>
               <StationVehicleList 
-                station={station} 
+                vehicles={filteredStation.vehicles}
                 expanded={isExpanded}
               />
             </Collapse>

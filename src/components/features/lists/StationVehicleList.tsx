@@ -1,52 +1,28 @@
 // StationVehicleList - Display vehicles serving routes that pass through a specific station
-// Follows Material-UI patterns and responsive design, keeps under 150 lines
+// Receives vehicle data as props for better performance and simpler architecture
 // Includes performance optimizations with memoization to prevent unnecessary re-renders
 
 import type { FC } from 'react';
 import { memo } from 'react';
 import { 
   List, ListItem, ListItemText, Typography, Chip, Stack, Box,
-  CircularProgress, Alert, Button, Divider
+  Divider
 } from '@mui/material';
 import { 
   DirectionsBus as BusIcon, AccessibleForward as WheelchairIcon,
   DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon
 } from '@mui/icons-material';
-import { useStationVehicles } from '../../../hooks/useStationVehicles';
 import { formatTimestamp, formatSpeed, getAccessibilityFeatures } from '../../../utils/vehicle/vehicleFormatUtils';
-import type { TranzyStopResponse } from '../../../types/rawTranzyApi';
+import type { StationVehicle } from '../../../types/stationFilter';
 
 interface StationVehicleListProps {
-  station: TranzyStopResponse;
+  vehicles: StationVehicle[];
   expanded: boolean;
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ station, expanded }) => {
-  const { vehicles, loading, error, refresh } = useStationVehicles(station);
-
-  // Don't load data when collapsed (performance optimization)
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded }) => {
+  // Don't render when collapsed (performance optimization)
   if (!expanded) return null;
-
-  // Loading state
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" py={2}>
-        <CircularProgress size={24} />
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-          Loading vehicles...
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Error state with retry option
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 1 }} action={<Button size="small" onClick={refresh}>Retry</Button>}>
-        Unable to load vehicles: {error}
-      </Alert>
-    );
-  }
 
   // Empty state - no vehicles found
   if (vehicles.length === 0) {

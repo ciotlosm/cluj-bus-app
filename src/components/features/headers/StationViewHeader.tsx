@@ -16,13 +16,19 @@ interface StationViewHeaderProps {
   toggleFiltering: () => void;
   filteredCount: number;
   totalCount: number;
+  favoritesFilterEnabled: boolean;
+  toggleFavoritesFilter: () => void;
+  hasFavoriteRoutes: boolean;
 }
 
 export const StationViewHeader: FC<StationViewHeaderProps> = ({
   isFiltering,
   toggleFiltering,
   filteredCount,
-  totalCount
+  totalCount,
+  favoritesFilterEnabled,
+  toggleFavoritesFilter,
+  hasFavoriteRoutes
 }) => {
   return (
     <Box sx={{ p: 2, pb: 1 }}>
@@ -31,17 +37,34 @@ export const StationViewHeader: FC<StationViewHeaderProps> = ({
           Stations
         </Typography>
         
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isFiltering}
-              onChange={toggleFiltering}
-              size="small"
+        <Stack direction="row" spacing={2} alignItems="center">
+          {/* Favorites filter toggle - only show when user has favorite routes */}
+          {hasFavoriteRoutes && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={favoritesFilterEnabled}
+                  onChange={toggleFavoritesFilter}
+                  size="small"
+                />
+              }
+              label="Favorites only"
+              sx={{ ml: 1 }}
             />
-          }
-          label="Nearby only"
-          sx={{ ml: 1 }}
-        />
+          )}
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isFiltering}
+                onChange={toggleFiltering}
+                size="small"
+              />
+            }
+            label="Nearby only"
+            sx={{ ml: 1 }}
+          />
+        </Stack>
       </Stack>
 
       {/* Filtering status indicators */}

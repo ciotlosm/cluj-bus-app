@@ -1,69 +1,98 @@
 /**
  * Station Filtering Hook
- * Minimal implementation for location-based station filtering
+ * Main hook for location-based station filtering with favorites integration and vehicle data
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useStationStore } from '../stores/stationStore';
 import { useTripStore } from '../stores/tripStore';
-import { calculateDistance, sortByDistance } from '../utils/location/distanceUtils';
-import { hasActiveTrips } from '../utils/station/tripValidationUtils';
+import { useVehicleStore } from '../stores/vehicleStore';
+import { useRouteStore } from '../stores/routeStore';
+import { useFavoritesStore } from '../stores/favoritesStore';
+import { 
+  formatDistance,
+  getStationTypeColor,
+  getStationTypeLabel,
+  useAllStationsStrategy,
+  useSmartFilteringStrategy
+} from '../utils/station/stationFilterUtils';
+import { CACHE_DURATIONS } from '../utils/core/constants';
 import type { StationFilterResult, FilteredStation } from '../types/stationFilter';
-import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
-
-// Utility functions moved from StationView
-const formatDistance = (distance: number): string => {
-  if (distance < 1000) {
-    return `${Math.round(distance)}m`;
-  }
-  return `${(distance / 1000).toFixed(1)}km`;
-};
-
-const getStationTypeColor = (stationType: 'primary' | 'secondary' | 'all'): 'primary' | 'secondary' | 'default' => {
-  if (stationType === 'primary') return 'primary';
-  if (stationType === 'secondary') return 'secondary';
-  return 'default';
-};
-
-const getStationTypeLabel = (stationType: 'primary' | 'secondary' | 'all'): string => {
-  if (stationType === 'primary') return 'Closest';
-  if (stationType === 'secondary') return 'Nearby';
-  return ''; // No label for filtered view
-};
-
-// Safe distance calculation with error handling
-const safeCalculateDistance = (from: { lat: number; lon: number }, to: { lat: number; lon: number }): number => {
-  try {
-    return calculateDistance(from, to);
-  } catch (error) {
-    console.warn('Distance calculation failed:', error);
-    return 0; // Return 0 distance on error
-  }
-};
 
 export function useStationFilter(): StationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
   const { stopTimes, loading: tripLoading, error: tripError, loadStopTimes } = useTripStore();
+  const { vehicles, loading: vehicleLoading, error: vehicleError, loadVehicles } = useVehicleStore();
+  const { 
+    routes: allRoutes, 
+    loading: routeLoading, 
+    error: routeError,
+    loadRoutes 
+  } = useRouteStore();
+  
+  // Safely access favorites store with error handling
+  let favoriteRouteIds: Set<string>;
+  let getFavoriteCount: () => number;
+  let favoritesStoreAvailable = true;
+  
+  try {
+    const favoritesStore = useFavoritesStore();
+    favoriteRouteIds = favoritesStore.favoriteRouteIds;
+    getFavoriteCount = favoritesStore.getFavoriteCount;
+  } catch (error) {
+    console.warn('Favorites store unavailable, disabling favorites filtering:', error);
+    favoriteRouteIds = new Set<string>();
+    getFavoriteCount = () => 0;
+    favoritesStoreAvailable = false;
+  }
   
   const [isFiltering, setIsFiltering] = useState(true);
+  const [favoritesFilterEnabled, setFavoritesFilterEnabled] = useState(true);
   
-  // Auto-load stop times when hook is used
+  // Check if user has favorite routes configured
+  const hasFavoriteRoutes = useMemo(() => {
+    try {
+      return getFavoriteCount() > 0;
+    } catch (error) {
+      console.warn('Error checking favorite routes count:', error);
+      return false;
+    }
+  }, [getFavoriteCount]);
+  
+  // Auto-load stop times, vehicles, and routes when hook is used
   useEffect(() => {
-    const loadTripData = async () => {
-      if (stopTimes.length === 0 && !tripLoading && !tripError) {
-        const { useConfigStore } = await import('../stores/configStore');
-        const { apiKey, agency_id } = useConfigStore.getState();
-        
-        if (apiKey && agency_id) {
+    const loadData = async () => {
+      const { useConfigStore } = await import('../stores/configStore');
+      const { apiKey, agency_id } = useConfigStore.getState();
+      
+      if (apiKey && agency_id) {
+        // Load stop times if not already loaded
+        if (stopTimes.length === 0 && !tripLoading && !tripError) {
           loadStopTimes(apiKey, agency_id);
+        }
+        
+        // Load vehicles if not already loaded (needed for route mapping)
+        if (vehicles.length === 0 && !vehicleLoading && !vehicleError) {
+          loadVehicles(apiKey, agency_id);
+        } else if (vehicles.length > 0) {
+          // Check if vehicle data is fresh and refresh if needed
+          const vehicleStore = useVehicleStore.getState();
+          if (!vehicleStore.isDataFresh(CACHE_DURATIONS.VEHICLES)) {
+            loadVehicles(apiKey, agency_id);
+          }
+        }
+        
+        // Load routes if not already loaded (needed for vehicle display)
+        if (allRoutes.length === 0 && !routeLoading && !routeError) {
+          loadRoutes(apiKey, agency_id);
         }
       }
     };
     
-    loadTripData();
-  }, [stopTimes.length, tripLoading, tripError, loadStopTimes]);
+    loadData();
+  }, [stopTimes.length, tripLoading, tripError, loadStopTimes, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
   
   const filteredStations = useMemo((): FilteredStation[] => {
     // Early return if no stations available
@@ -71,29 +100,20 @@ export function useStationFilter(): StationFilterResult {
       return [];
     }
 
-    // When filtering is disabled, return all stations sorted by distance (if location available)
+    // Choose filtering strategy based on isFiltering flag
     if (!isFiltering) {
-      const allStations = stops.map((station, index) => ({
-        station,
-        distance: currentPosition ? safeCalculateDistance(
-          { lat: currentPosition.coords.latitude, lon: currentPosition.coords.longitude },
-          { lat: station.stop_lat, lon: station.stop_lon }
-        ) : 0,
-        hasActiveTrips: hasActiveTrips(station, stopTimes),
-        stationType: 'all' as const // Will be updated after sorting
-      }));
-
-      // Sort by distance if location is available
-      if (currentPosition) {
-        const sorted = allStations.sort((a, b) => a.distance - b.distance);
-        // First station gets "Closest", others get no label
-        return sorted.map((station, index) => ({
-          ...station,
-          stationType: index === 0 ? 'primary' : 'all' as const
-        }));
-      }
-      
-      return allStations;
+      // Show all stations sorted by distance
+      return useAllStationsStrategy(
+        stops,
+        currentPosition,
+        stopTimes,
+        vehicles,
+        allRoutes,
+        favoriteRouteIds,
+        favoritesStoreAvailable,
+        favoritesFilterEnabled,
+        hasFavoriteRoutes
+      );
     }
     
     // Smart filtering is enabled - need location
@@ -101,72 +121,43 @@ export function useStationFilter(): StationFilterResult {
       return []; // No location available for smart filtering
     }
     
-    // Sort stations by distance
-    const userLocation = { lat: currentPosition.coords.latitude, lon: currentPosition.coords.longitude };
-    const stationsWithCoords = stops.map(station => ({ ...station, lat: station.stop_lat, lon: station.stop_lon }));
-    const sortedStations = sortByDistance(stationsWithCoords, userLocation);
-    
-    // Find primary station by evaluating stations in distance order
-    // Skip stations without trips and continue to next closest
-    let primaryStation: typeof sortedStations[0] | undefined;
-    
-    for (const station of sortedStations) {
-      // Check if station has associated stop times and active trips
-      if (hasActiveTrips(station, stopTimes)) {
-        primaryStation = station;
-        break; // First station with valid trips becomes primary
-      }
-      // Skip stations without trips and continue to next closest
-    }
-    
-    // If no stations have valid trips, return empty array
-    if (!primaryStation) return [];
-    
-    // Create result with primary station (first station with valid trips)
-    const result: FilteredStation[] = [{
-      station: primaryStation,
-      distance: safeCalculateDistance(userLocation, { lat: primaryStation.stop_lat, lon: primaryStation.stop_lon }),
-      hasActiveTrips: true,
-      stationType: 'all' // No labels in filtered view - position indicates priority
-    }];
-    
-    // Find secondary station within 100m of primary that also has active trips
-    // Select the closest one if multiple secondary stations are available
-    const potentialSecondaryStations = sortedStations.filter(station => 
-      station.stop_id !== primaryStation.stop_id &&
-      hasActiveTrips(station, stopTimes) &&
-      safeCalculateDistance(
-        { lat: primaryStation.stop_lat, lon: primaryStation.stop_lon },
-        { lat: station.stop_lat, lon: station.stop_lon }
-      ) <= SECONDARY_STATION_THRESHOLD
+    // Show only nearby relevant stations
+    return useSmartFilteringStrategy(
+      stops,
+      currentPosition,
+      stopTimes,
+      vehicles,
+      allRoutes,
+      favoriteRouteIds,
+      favoritesStoreAvailable,
+      favoritesFilterEnabled,
+      hasFavoriteRoutes
     );
-    
-    // Select closest secondary station (first in distance-sorted array)
-    const secondaryStation = potentialSecondaryStations[0];
-    
-    if (secondaryStation) {
-      result.push({
-        station: secondaryStation,
-        distance: safeCalculateDistance(userLocation, { lat: secondaryStation.stop_lat, lon: secondaryStation.stop_lon }),
-        hasActiveTrips: true,
-        stationType: 'all' // No labels in filtered view
-      });
-    }
-    
-    return result;
-  }, [stops, stopTimes, currentPosition, isFiltering]);
+  }, [stops, stopTimes, vehicles, allRoutes, currentPosition, isFiltering, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
   
   const toggleFiltering = useCallback(() => setIsFiltering(prev => !prev), []);
+  const toggleFavoritesFilter = useCallback(() => {
+    // Only allow toggling if favorites store is available
+    if (favoritesStoreAvailable) {
+      setFavoritesFilterEnabled(prev => !prev);
+    } else {
+      console.warn('Cannot toggle favorites filter: favorites store unavailable');
+    }
+  }, [favoritesStoreAvailable]);
   const retryFiltering = useCallback(() => {}, []); // No-op for simple implementation
   
   return {
     filteredStations,
-    loading: locationLoading || stationLoading || tripLoading,
-    error: locationError || stationError || tripError,
+    loading: locationLoading || stationLoading || tripLoading || vehicleLoading || routeLoading,
+    error: locationError || stationError || tripError || vehicleError || routeError,
     isFiltering,
     totalStations: stops.length,
     toggleFiltering,
     retryFiltering,
+    // Favorites filtering
+    favoritesFilterEnabled: favoritesStoreAvailable ? favoritesFilterEnabled : false,
+    toggleFavoritesFilter,
+    hasFavoriteRoutes: favoritesStoreAvailable ? hasFavoriteRoutes : false,
     // Utility functions for UI formatting
     utilities: {
       formatDistance,

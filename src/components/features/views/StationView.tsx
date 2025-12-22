@@ -26,7 +26,10 @@ export const StationView: FC = () => {
     totalStations, 
     toggleFiltering, 
     retryFiltering,
-    utilities
+    utilities,
+    favoritesFilterEnabled,
+    toggleFavoritesFilter,
+    hasFavoriteRoutes
   } = useStationFilter();
 
   useEffect(() => {
@@ -68,6 +71,9 @@ export const StationView: FC = () => {
         toggleFiltering={toggleFiltering}
         filteredCount={filteredStations.length}
         totalCount={totalStations}
+        favoritesFilterEnabled={favoritesFilterEnabled}
+        toggleFavoritesFilter={toggleFavoritesFilter}
+        hasFavoriteRoutes={hasFavoriteRoutes}
       />
       
       <Divider />

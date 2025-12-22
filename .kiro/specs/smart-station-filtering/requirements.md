@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Smart Station Filtering provides intelligent location-based station selection that finds the closest stations with active trips, then optionally displays a second nearby station if it meets proximity and trip availability criteria. This feature enhances the user experience by automatically filtering stations based on location and ensuring only stations with actual bus service are displayed.
+Smart Station Filtering provides intelligent location-based station selection that finds the closest stations with active trips, then optionally displays a second nearby station if it meets proximity and trip availability criteria. The system can also filter stations based on user's favorite routes, ensuring only stations serving preferred routes are displayed. This feature enhances the user experience by automatically filtering stations based on location, trip availability, and user preferences.
 
 ## Glossary
 
@@ -15,6 +15,9 @@ Smart Station Filtering provides intelligent location-based station selection th
 - **Location_Priority**: Sorting stations by proximity to user's current GPS location
 - **Stop_Times**: Schedule data that indicates when buses arrive at specific stations
 - **Active_Trips**: Trips that have valid stop times and are currently operational
+- **Favorites_Filter**: Optional filtering condition that requires stations to have at least one favorite route
+- **Favorite_Routes**: User-selected routes marked as favorites in the favorites store
+- **Route_Matching**: Process of checking if a station's active trips include any favorite routes
 
 ## Requirements
 
@@ -113,3 +116,17 @@ Smart Station Filtering provides intelligent location-based station selection th
 3. WHEN displaying stations, THE StationView SHALL show distance from user location for transparency
 4. THE StationView SHALL provide a toggle to disable smart filtering and show all stations
 5. WHEN trip validation is used, THE StationView SHALL indicate which stations have verified service
+
+### Requirement 9: Favorites-Based Station Filtering
+
+**User Story:** As a user, I want stations to be filtered based on my favorite routes, so that I only see stations that serve the routes I care about most.
+
+#### Acceptance Criteria
+
+1. WHEN the user has favorite routes configured, THE Smart_Station_Filter SHALL provide a favorites filter control that is enabled by default
+2. WHEN the favorites filter is active, THE Smart_Station_Filter SHALL only include stations whose active trips contain at least one favorite route
+3. WHEN evaluating a station for favorites filtering, THE Smart_Station_Filter SHALL check all active trips at that station against the user's favorite route list
+4. WHEN a station has active trips but none match favorite routes, THE Smart_Station_Filter SHALL exclude that station from results
+5. WHEN no favorite routes are configured, THE Smart_Station_Filter SHALL not display the favorites filter control
+6. WHEN the favorites filter is disabled by user action, THE Smart_Station_Filter SHALL apply only location and trip validation filters
+7. WHEN combining favorites filter with existing filters, THE Smart_Station_Filter SHALL apply all active filters using logical AND operation

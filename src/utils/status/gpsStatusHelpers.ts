@@ -5,7 +5,7 @@ import {
   GpsOff,
   LocationDisabled,
 } from '@mui/icons-material';
-import type { PermissionState, LocationAccuracy } from '../types/location';
+import type { PermissionState, LocationAccuracy } from '../../types/location';
 
 export const getGpsIcon = (
   status: 'available' | 'unavailable' | 'disabled',

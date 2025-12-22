@@ -3,7 +3,7 @@
  * Functions to validate station trip data using stop times
  */
 
-import type { TranzyStopTimeResponse, TranzyStopResponse } from '../types/rawTranzyApi';
+import type { TranzyStopTimeResponse, TranzyStopResponse, TranzyVehicleResponse } from '../../types/rawTranzyApi';
 
 /**
  * Check if a station has active trips using stop times data
@@ -64,4 +64,76 @@ export function getStationsWithTrips(
   return validatedStations
     .filter(item => item.hasTrips)
     .map(item => item.station);
+}
+
+/**
+ * Get route IDs for trips serving a specific station
+ * @param station - The station to check
+ * @param stopTimes - Array of stop times from trip store
+ * @param vehicles - Array of vehicles to get route mapping from trip_id
+ * @returns Array of unique route IDs serving this station
+ */
+export function getStationRouteIds(
+  station: TranzyStopResponse,
+  stopTimes: TranzyStopTimeResponse[],
+  vehicles: TranzyVehicleResponse[]
+): string[] {
+  // Handle edge cases
+  if (!station || !station.stop_id || !Array.isArray(stopTimes) || !Array.isArray(vehicles)) {
+    return [];
+  }
+
+  // Get all trip IDs for this station
+  const stationTripIds = stopTimes
+    .filter(stopTime => 
+      stopTime && 
+      stopTime.stop_id === station.stop_id && 
+      stopTime.trip_id && 
+      stopTime.trip_id.trim().length > 0
+    )
+    .map(stopTime => stopTime.trip_id);
+
+  // Map trip IDs to route IDs using vehicle data
+  const routeIds = new Set<string>();
+  
+  for (const vehicle of vehicles) {
+    if (vehicle && vehicle.trip_id && vehicle.route_id !== null) {
+      if (stationTripIds.includes(vehicle.trip_id)) {
+        routeIds.add(vehicle.route_id.toString());
+      }
+    }
+  }
+
+  return Array.from(routeIds);
+}
+
+/**
+ * Check if a station serves any of the favorite routes
+ * @param station - The station to check
+ * @param stopTimes - Array of stop times from trip store
+ * @param vehicles - Array of vehicles to get route mapping
+ * @param favoriteRouteIds - Set of favorite route IDs
+ * @returns Object with match status and count
+ */
+export function checkStationFavoritesMatch(
+  station: TranzyStopResponse,
+  stopTimes: TranzyStopTimeResponse[],
+  vehicles: TranzyVehicleResponse[],
+  favoriteRouteIds: Set<string>
+): { matchesFavorites: boolean; favoriteRouteCount: number } {
+  // Handle edge cases
+  if (!station || favoriteRouteIds.size === 0) {
+    return { matchesFavorites: false, favoriteRouteCount: 0 };
+  }
+
+  // Get route IDs for this station
+  const stationRouteIds = getStationRouteIds(station, stopTimes, vehicles);
+  
+  // Count how many favorite routes this station serves
+  const matchingRoutes = stationRouteIds.filter(routeId => favoriteRouteIds.has(routeId));
+  
+  return {
+    matchesFavorites: matchingRoutes.length > 0,
+    favoriteRouteCount: matchingRoutes.length
+  };
 }

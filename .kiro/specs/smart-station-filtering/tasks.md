@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan creates a location-aware station filtering system that finds the closest station with active trips, then optionally includes a nearby secondary station. The approach leverages existing services and stores while adding a custom hook for filtering logic and enhancing the StationView component.
+This implementation plan creates a location-aware station filtering system that finds the closest station with active trips, then optionally includes a nearby secondary station. The system also integrates with the favorites feature to allow filtering stations based on user's preferred routes. The approach leverages existing services and stores (location, station, trip, favorites) while adding a custom hook for filtering logic and enhancing the StationView component.
 
 ## Tasks
 
@@ -125,18 +125,71 @@ This implementation plan creates a location-aware station filtering system that 
   - Test that toggle switches between filtered and unfiltered views
   - _Requirements: 8.4_
 
-- [ ] 10. Integration testing and final validation
-  - Test complete integration with existing stores
-  - Verify hook works correctly with StationView
+- [x] 10. Implement favorites integration in filtering hook
+  - Update `useStationFilter` hook to integrate with favorites store
+  - Add favorites filter state and toggle functionality
+  - Implement route matching logic for station trip validation
+  - Add `matchesFavorites` and `favoriteRouteCount` to FilteredStation interface
+  - Handle case when no favorite routes are configured
+  - _Requirements: 9.1, 9.2, 9.3, 9.5_
+
+- [ ]* 10.1 Write property test for favorites filter control visibility
+  - **Property 23: Favorites filter control visibility with favorites**
+  - **Property 27: Favorites filter control visibility without favorites**
+  - **Validates: Requirements 9.1, 9.5**
+
+- [ ]* 10.2 Write property test for favorites station filtering
+  - **Property 24: Favorites filter station inclusion**
+  - **Validates: Requirements 9.2**
+
+- [ ]* 10.3 Write property test for complete trip evaluation
+  - **Property 25: Complete trip evaluation for favorites**
+  - **Validates: Requirements 9.3**
+
+- [x] 11. Implement favorites filter logic
+  - Add logic to exclude stations that don't match favorite routes
+  - Implement combined filter logic (location + trips + favorites) using AND operation
+  - Handle favorites filter disabled state (apply only location and trip filters)
+  - Add error handling for favorites store unavailability
+  - _Requirements: 9.4, 9.6, 9.7_
+
+- [ ]* 11.1 Write property test for non-matching station exclusion
+  - **Property 26: Non-matching station exclusion**
+  - **Validates: Requirements 9.4**
+
+- [ ]* 11.2 Write property test for favorites filter disabled behavior
+  - **Property 28: Favorites filter disabled behavior**
+  - **Validates: Requirements 9.6**
+
+- [ ]* 11.3 Write property test for combined filter logic
+  - **Property 29: Combined filter logic with favorites**
+  - **Validates: Requirements 9.7**
+
+- [x] 12. Enhance StationView with favorites filtering UI
+  - Add favorites filter toggle control to StationView
+  - Display favorites filter status in filtering indicators
+  - Show favorite route indicators on stations that match favorites
+  - Update station count display to reflect favorites filtering
+  - Handle favorites filter control visibility based on user's favorite routes
+  - _Requirements: 9.1, 9.5_
+
+- [ ]* 12.1 Write unit test for favorites filter UI integration
+  - Test favorites toggle appears when user has favorites
+  - Test favorites toggle hidden when user has no favorites
+  - _Requirements: 9.1, 9.5_
+
+- [ ] 13. Integration testing and final validation
+  - Test complete integration with existing stores including favorites store
+  - Verify hook works correctly with StationView and favorites functionality
   - Ensure no breaking changes to existing functionality
-  - Test performance with realistic station datasets
+  - Test performance with realistic station datasets and favorite route configurations
   - _Requirements: 4.5_
 
-- [ ]* 10.1 Write integration test for store integration
-  - Test hook integration with location, station, and trip stores
+- [ ]* 13.1 Write integration test for favorites store integration
+  - Test hook integration with location, station, trip, and favorites stores
   - _Requirements: 4.5_
 
-- [ ] 11. Final checkpoint - Ensure all tests pass
+- [ ] 14. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

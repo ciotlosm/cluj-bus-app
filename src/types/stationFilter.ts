@@ -3,7 +3,7 @@
  * Core interfaces for location-aware station filtering
  */
 
-import type { TranzyStopResponse } from './rawTranzyApi';
+import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse } from './rawTranzyApi';
 
 /**
  * Constants for filtering behavior
@@ -11,13 +11,25 @@ import type { TranzyStopResponse } from './rawTranzyApi';
 export const SECONDARY_STATION_THRESHOLD = 100; // meters
 
 /**
- * Station with filtering metadata
+ * Vehicle with route information for a station
+ */
+export interface StationVehicle {
+  vehicle: TranzyVehicleResponse;
+  route: TranzyRouteResponse | null;
+}
+
+/**
+ * Station with filtering metadata and associated vehicles
  */
 export interface FilteredStation {
   station: TranzyStopResponse;
   distance: number;
   hasActiveTrips: boolean;
   stationType: 'primary' | 'secondary' | 'all';
+  matchesFavorites: boolean; // NEW: indicates if station serves favorite routes
+  favoriteRouteCount: number; // NEW: number of favorite routes served
+  vehicles: StationVehicle[]; // NEW: vehicles serving this station
+  routeIds: number[]; // NEW: route IDs serving this station
 }
 
 /**
@@ -41,4 +53,8 @@ export interface StationFilterResult {
   toggleFiltering: () => void;
   retryFiltering: () => void;
   utilities: StationUtilities;
+  // Favorites filtering
+  favoritesFilterEnabled: boolean;
+  toggleFavoritesFilter: () => void;
+  hasFavoriteRoutes: boolean;
 }
