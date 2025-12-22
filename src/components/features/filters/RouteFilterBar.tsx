@@ -1,6 +1,7 @@
 // RouteFilterBar - Chip-based filtering interface for routes
-// Implements toggleable transport type selection and meta filter toggles
+// Implements toggleable transport type selection and favorites filter
 
+import { useEffect } from 'react';
 import type { FC } from 'react';
 import { 
   Box, 
@@ -13,12 +14,11 @@ import {
   DirectionsBus,
   Tram,
   ElectricBolt,
-  Star,
-  Public,
   Favorite
 } from '@mui/icons-material';
 import type { RouteFilterState, TransportTypeKey } from '../../../types/routeFilter';
 import { getTransportTypeOptions } from '../../../types/rawTranzyApi';
+import { useFavoritesStore } from '../../../stores/favoritesStore';
 
 interface RouteFilterBarProps {
   /** Current filter state */
@@ -38,15 +38,6 @@ const TRANSPORT_TYPE_ICONS = {
   trolleybus: ElectricBolt
 } as const;
 
-/**
- * Meta filter options for toggle selection with icons
- */
-const META_FILTER_OPTIONS = [
-  { key: 'elevi' as const, label: 'Elevi', icon: Star },
-  { key: 'external' as const, label: 'External', icon: Public },
-  { key: 'favorites' as const, label: 'Favorites', icon: Favorite }
-];
-
 export const RouteFilterBar: FC<RouteFilterBarProps> = ({
   filterState,
   onFilterChange,
@@ -54,6 +45,23 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
 }) => {
   // Get transport options dynamically from type definitions
   const transportOptions = getTransportTypeOptions();
+  
+  // Check if user has any favorite routes
+  const getFavoriteCount = useFavoritesStore((state) => state.getFavoriteCount);
+  const hasFavoriteRoutes = getFavoriteCount() > 0;
+  
+  // Auto-clear favorites filter when no favorite routes exist
+  useEffect(() => {
+    if (!hasFavoriteRoutes && filterState.metaFilters.favorites) {
+      onFilterChange({
+        ...filterState,
+        metaFilters: {
+          favorites: false
+        }
+      });
+    }
+  }, [hasFavoriteRoutes, filterState.metaFilters.favorites, filterState, onFilterChange]);
+
   /**
    * Handle transport type toggle
    * Only one transport type can be selected at a time (or none at all)
@@ -86,34 +94,15 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
   };
 
   /**
-   * Handle meta filter toggle
-   * Implements exclusivity: activating one meta filter deactivates the others
-   * Transport types remain unchanged when meta filters are toggled
+   * Handle favorites filter toggle
    */
-  const handleMetaFilterToggle = (filterKey: 'elevi' | 'external' | 'favorites') => {
-    const currentValue = filterState.metaFilters[filterKey];
-    const newValue = !currentValue;
-
-    // If activating a meta filter, deactivate the other ones
-    if (newValue) {
-      onFilterChange({
-        ...filterState,
-        metaFilters: {
-          elevi: filterKey === 'elevi',
-          external: filterKey === 'external',
-          favorites: filterKey === 'favorites'
-        }
-      });
-    } else {
-      // If deactivating a meta filter, just toggle it off
-      onFilterChange({
-        ...filterState,
-        metaFilters: {
-          ...filterState.metaFilters,
-          [filterKey]: false
-        }
-      });
-    }
+  const handleFavoritesToggle = () => {
+    onFilterChange({
+      ...filterState,
+      metaFilters: {
+        favorites: !filterState.metaFilters.favorites
+      }
+    });
   };
 
   return (
@@ -152,22 +141,21 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
           );
         })}
 
-        {/* Visual separator */}
-        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-
-        {/* Meta filter chips */}
-        {META_FILTER_OPTIONS.map(({ key, label, icon: IconComponent }) => (
-          <Chip
-            key={key}
-            icon={<IconComponent />}
-            label={label}
-            variant={filterState.metaFilters[key] ? 'filled' : 'outlined'}
-            color={filterState.metaFilters[key] ? 'secondary' : 'default'}
-            onClick={() => handleMetaFilterToggle(key)}
-            clickable
-            size="small"
-          />
-        ))}
+        {/* Favorites filter - only show if user has favorite routes */}
+        {hasFavoriteRoutes && (
+          <>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Chip
+              icon={<Favorite />}
+              label="Favorites"
+              variant={filterState.metaFilters.favorites ? 'filled' : 'outlined'}
+              color={filterState.metaFilters.favorites ? 'error' : 'default'}
+              onClick={handleFavoritesToggle}
+              clickable
+              size="small"
+            />
+          </>
+        )}
       </Paper>
     </Box>
   );

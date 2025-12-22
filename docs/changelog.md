@@ -2,6 +2,14 @@
 
 ## Recent Updates (December 2024)
 
+### December 22, 2024 - Elevi/External Filter Complexity Cleanup
+- **🧹 CLEANUP**: Removed all Elevi and External filtering complexity from codebase
+- **Simplified Architecture**: Eliminated isElevi/isExternal properties from EnhancedRoute interface
+- **UI Simplification**: Removed Elevi/External filter chips from RouteFilterBar component
+- **Code Reduction**: Deleted route enhancement functions for special route detection
+- **Test Cleanup**: Removed test files for eliminated functionality
+- **Documentation**: Updated specs to remove references to removed features
+
 ### December 21, 2024 - Theme Toggle Implementation
 - **✨ NEW FEATURE**: Added theme toggle functionality for light/dark mode switching
 - **UI Enhancement**: Theme toggle button now visible in Settings view with smooth transitions

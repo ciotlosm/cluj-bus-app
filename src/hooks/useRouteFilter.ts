@@ -9,7 +9,7 @@ import { useFavoritesStore } from '../stores/favoritesStore';
  * Return type for useRouteFilter hook
  */
 export interface UseRouteFilterReturn {
-  /** Routes enhanced with computed attributes (isElevi, isExternal) */
+  /** Routes enhanced with computed attributes (isFavorite) */
   enhancedRoutes: EnhancedRoute[];
   /** Routes filtered based on current filter state */
   filteredRoutes: EnhancedRoute[];

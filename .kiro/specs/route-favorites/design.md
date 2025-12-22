@@ -65,8 +65,6 @@ interface FavoritesStore {
 
 ```typescript
 export interface EnhancedRoute extends TranzyRouteResponse {
-  isElevi: boolean;
-  isExternal: boolean;
   isFavorite: boolean; // NEW: Added by favorites enhancement
 }
 ```
@@ -128,17 +126,11 @@ export function enhanceRoute(
   route: TranzyRouteResponse, 
   favoriteRouteIds: Set<string>
 ): EnhancedRoute {
-  // Existing logic for isElevi, isExternal
-  const isElevi = /* existing logic */;
-  const isExternal = /* existing logic */;
-  
   // NEW: Add favorite status
   const isFavorite = favoriteRouteIds.has(route.route_id);
   
   return {
     ...route,
-    isElevi,
-    isExternal,
     isFavorite
   };
 }
@@ -177,7 +169,7 @@ Property 4: Route enhancement with favorites
 **Validates: Requirements 2.1, 2.2**
 
 Property 5: Enhancement preservation
-*For any* route with existing isElevi and isExternal properties, adding favorite enhancement should preserve those properties unchanged
+*For any* route with existing properties, adding favorite enhancement should preserve those properties unchanged
 **Validates: Requirements 2.3**
 
 Property 6: Favorites filter isolation

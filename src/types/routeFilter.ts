@@ -5,13 +5,9 @@ export { TRANSPORT_TYPE_MAP, type TransportTypeKey, getTransportTypeOptions } fr
 
 /**
  * Enhanced route interface with computed attributes for filtering
- * Extends the raw API response with isElevi, isExternal, and isFavorite flags
+ * Extends the raw API response with isFavorite flag
  */
 export interface EnhancedRoute extends TranzyRouteResponse {
-  /** True if route is a Transport Elevi route (route_short_name or route_desc starts with "TE") */
-  isElevi: boolean;
-  /** True if route is an External route (route_short_name starts with "M") */
-  isExternal: boolean;
   /** True if route is marked as favorite by the user */
   isFavorite: boolean;
 }
@@ -33,10 +29,6 @@ export interface TransportTypeFilters {
  * Meta filter options for special route categories
  */
 export interface MetaFilters {
-  /** Filter for Transport Elevi routes */
-  elevi: boolean;
-  /** Filter for External routes */
-  external: boolean;
   /** Filter for favorite routes */
   favorites: boolean;
 }
@@ -53,7 +45,7 @@ export interface RouteFilterState {
 }
 
 /**
- * Default filter state - shows all regular routes (excludes special categories)
+ * Default filter state - shows all routes
  * All transport types inactive (shows all transport types), meta filters inactive
  */
 export const DEFAULT_FILTER_STATE: RouteFilterState = {
@@ -63,8 +55,6 @@ export const DEFAULT_FILTER_STATE: RouteFilterState = {
     trolleybus: false
   },
   metaFilters: {
-    elevi: false,
-    external: false,
     favorites: false
   }
 } as const;

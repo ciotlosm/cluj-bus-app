@@ -36,7 +36,6 @@ Implement a route favorites system that integrates with the existing route filte
   - Update `src/types/routeFilter.ts` to add `isFavorite` to EnhancedRoute interface
   - Modify `src/utils/route/routeEnhancementUtils.ts` enhanceRoute() to accept favorites set
   - Add `isFavorite` property based on route ID lookup in favorites set
-  - Ensure existing isElevi and isExternal properties are preserved
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
 - [ ]* 2.1 Write property test for route enhancement with favorites
