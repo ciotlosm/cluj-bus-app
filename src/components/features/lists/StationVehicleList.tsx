@@ -13,7 +13,7 @@ import {
   DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon
 } from '@mui/icons-material';
 import { useStationVehicles } from '../../../hooks/useStationVehicles';
-import { formatTimestamp, formatSpeed, getAccessibilityFeatures } from '../../../utils/vehicleFormatUtils';
+import { formatTimestamp, formatSpeed, getAccessibilityFeatures } from '../../../utils/vehicle/vehicleFormatUtils';
 import type { TranzyStopResponse } from '../../../types/rawTranzyApi';
 
 interface StationVehicleListProps {

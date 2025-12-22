@@ -23,6 +23,41 @@ export interface TranzyRouteResponse {
   route_desc: string;
 }
 
+// Route type mapping based on GTFS specification
+export const ROUTE_TYPE_LABELS = {
+  0: 'Tram',
+  3: 'Bus', 
+  11: 'Trolleybus'
+} as const;
+
+export type RouteType = keyof typeof ROUTE_TYPE_LABELS;
+
+export const getRouteTypeLabel = (routeType: number): string => {
+  return ROUTE_TYPE_LABELS[routeType as RouteType] || 'Unknown';
+};
+
+// Transport type mapping for filtering (inverse of ROUTE_TYPE_LABELS)
+export const TRANSPORT_TYPE_MAP = {
+  bus: 3,
+  tram: 0,
+  trolleybus: 11
+} as const;
+
+export type TransportTypeKey = keyof typeof TRANSPORT_TYPE_MAP;
+
+/**
+ * Get transport type options for UI components
+ * Dynamically generates options from TRANSPORT_TYPE_MAP and ROUTE_TYPE_LABELS
+ */
+export function getTransportTypeOptions(): { key: TransportTypeKey; label: string }[] {
+  return Object.keys(TRANSPORT_TYPE_MAP).map(key => {
+    const transportKey = key as TransportTypeKey;
+    const routeType = TRANSPORT_TYPE_MAP[transportKey];
+    const label = ROUTE_TYPE_LABELS[routeType as RouteType];
+    return { key: transportKey, label };
+  });
+}
+
 export interface TranzyStopResponse {
   stop_id: number;
   stop_name: string;

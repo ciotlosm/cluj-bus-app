@@ -7,8 +7,8 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useStationStore } from '../stores/stationStore';
 import { useTripStore } from '../stores/tripStore';
-import { calculateDistance, sortByDistance } from '../utils/distanceUtils';
-import { hasActiveTrips } from '../utils/tripValidationUtils';
+import { calculateDistance, sortByDistance } from '../utils/location/distanceUtils';
+import { hasActiveTrips } from '../utils/station/tripValidationUtils';
 import type { SmartStationFilterResult, FilteredStation } from '../types/smartStationFilter';
 import { SECONDARY_STATION_THRESHOLD } from '../types/smartStationFilter';
 

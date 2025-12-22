@@ -13,73 +13,15 @@
 - Every technical explanation or code block MUST end with a "Confidence Score: [X/10]".
 - If the score is lower than 9/10, you must list the "Primary Uncertainties" (e.g., "Unsure if this version of the library Xversion [X]").
 
-## 4. Verification Step
-- Before providing code, mentally simulate the execution. If a step relies on an assumption, explicitly state: "Assumption: I am assuming you are using [Library] version [X]."
+## 4. VERIFICATION STEP
 
-## 5. MANDATORY TRANSFORMATION SAFETY REQUIREMENTS
+Before providing code, state any assumptions explicitly: "Assumption: I am assuming you are using [Library] version [X]."
 
-### 🚨 CRITICAL: Code Transformation Safety Protocol
+## 5. TRANSFORMATION SAFETY
 
-**NEVER apply regex transformations to entire codebase without comprehensive testing**
-
-#### **Required Safety Steps (MANDATORY):**
-
-1. **Create realistic test samples** with various code patterns:
-   - Single line comments (`// comment`)
-   - Block comments (`/* comment */`)
-   - Inline comments (`code // comment`)
-   - Multi-line comments with slashes inside
-   - String literals with slashes (`"path//with//slashes"`)
-   - Regex patterns (`/test\\/\\/pattern/g`)
-   - Template literals with slashes
-   - JSX comments (`{/* comment */}`)
-
-2. **Test regex patterns in isolation** before applying to files:
-   - Verify patterns don't match comments when they shouldn't
-   - Test against realistic code samples
-   - Check for false positives and edge cases
-
-3. **Apply transformations to test samples first**:
-   - Create temporary test directory with realistic code
-   - Apply all transformations to test samples
-   - Validate TypeScript syntax before and after
-   - Check that comments are preserved correctly
-
-4. **Validate transformation results**:
-   - Ensure no comments are corrupted
-   - Verify TypeScript compilation succeeds
-   - Check that functionality is preserved
-   - Look for unintended pattern matches
-
-#### **FORBIDDEN Transformation Practices:**
-
-❌ **NEVER use regex patterns that can match comments**
-❌ **NEVER apply transformations without testing on realistic samples**
-❌ **NEVER assume regex patterns are safe without validation**
-❌ **NEVER skip syntax validation after transformations**
-❌ **NEVER apply transformations to entire codebase without incremental testing**
-
-#### **Example of DANGEROUS Pattern (NEVER USE):**
-```javascript
-// This pattern corrupted comments by matching // in any context
-/(['"`])([^'"`]*?)\/\/([^'"`]*?)(['"`])/g
-```
-
-#### **Safe Transformation Workflow:**
-1. Create `test-transformation-safety.mjs` script
-2. Generate realistic test samples with comments and edge cases
-3. Test regex patterns in isolation
-4. Apply transformations to test samples only
-5. Validate TypeScript syntax and comment preservation
-6. Only then apply to actual codebase if tests pass
-
-#### **Rollback Requirements:**
-- Always have git backup before transformations
-- Test rollback procedures before applying changes
-- Document exact steps to revert if issues occur
-- Never commit corrupted transformations
-
-**Remember: The cost of testing transformations is ALWAYS less than the cost of corrupting the entire codebase.**
+**Test regex transformations on sample files before applying to entire codebase**
+- Always validate TypeScript compilation after transformations
+- Have git backup before making large-scale changes
 
 ## 6. EXPLICIT CONFIRMATION PROTOCOL FOR DESTRUCTIVE OPERATIONS
 
@@ -103,6 +45,12 @@
 - Changing state management patterns (store structure changes)
 - Altering build configuration (vite.config.ts, tsconfig.json changes)
 - Service layer restructuring (combining or splitting services)
+
+**Git Operations:**
+- **NEVER commit or push without explicit user request**
+- **ALWAYS ask permission before git add, commit, or push**
+- Even if it seems like a good idea, request permission first
+- User must explicitly ask for commits/pushes
 
 #### **MANDATORY Confirmation Workflow:**
 
@@ -149,8 +97,43 @@ Instead of silently removing code, I must say:
 - Modifying store structures
 - Altering build configurations
 - Combining or splitting services
+- **Any git operations (add, commit, push)**
 
 **Remember: User maintains full control over what gets changed or removed. Never make assumptions about what should be deleted or restructured.**
+
+## 8. MANDATORY GIT OPERATION CONFIRMATION
+
+### 🚨 CRITICAL: Never Execute Git Operations Without Permission
+
+**NEVER commit, push, or perform git operations without explicit user request**
+
+#### **Git Operations That REQUIRE User Request:**
+- `git add` - Only when user explicitly asks to stage changes
+- `git commit` - Only when user explicitly asks to commit
+- `git push` - Only when user explicitly asks to push
+- Any combination of the above
+
+#### **Proper Protocol:**
+1. **Complete the requested work** (code changes, fixes, etc.)
+2. **Report what was accomplished** with code change metrics
+3. **Suggest** that changes could be committed if appropriate
+4. **Wait for explicit user request** before executing any git operations
+5. **Never assume** the user wants changes committed/pushed
+
+#### **Example of Proper Protocol:**
+
+✅ **CORRECT:**
+> "I've completed the performance optimizations. The changes are ready.
+> 
+> 📝 **Code Changes:** +25/-8 lines (Added caching and memoization)
+> 
+> Would you like me to commit and push these changes?"
+
+❌ **FORBIDDEN:**
+> "I've completed the changes. Let me commit and push them now."
+> *[proceeds to execute git commands without permission]*
+
+**Remember: Git operations are permanent and affect the repository. User must explicitly request them.**
 
 ## 7. MANDATORY CODE CHANGE REPORTING
 

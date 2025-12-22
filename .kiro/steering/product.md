@@ -1,17 +1,12 @@
 # Bus App - Product Overview
 
-A real-time bus tracking application for Romania, using Tranzy API as the single data source for both live vehicle tracking and schedule information. 
+A real-time bus tracking application , using Tranzy API as the single data source for both live vehicle tracking and schedule information. 
 
 ## Core Features
-- **Live Vehicle Tracking**: Real-time bus locations and ETAs via Tranzy API
+- **Live Vehicle Tracking**: Real-time bus locations via Tranzy API
 - **Smart Station Display**: Location-aware route tracking (work/home directions) to prioritize the right station on screen
 - **Mobile-First Design**: Responsive Material Design interface
-- **Offline Support**: Service worker for offline functionality
-
-## Data Sources Priority (Tranzy API Only)
-1. **🔴 LIVE Vehicle Data** (Highest Priority) - Real-time GPS positions with calculated ETAsendpoint
-
-**Architecture**: Single-source approach using only Tranzy API for reliability and consistency.
+- **Offline Support**: Service worker for offline functionality.
 
 ## Key User Flows
 - API key setup and validation

@@ -2,8 +2,8 @@
 // Creates efficient mappings between stations and routes using stop_times and vehicle data
 // Handles edge cases like missing data and provides fast lookup functions
 
-import type { TranzyStopTimeResponse, TranzyVehicleResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from './constants';
+import type { TranzyStopTimeResponse, TranzyVehicleResponse } from '../../types/rawTranzyApi';
+import { CACHE_DURATIONS } from '../core/constants';
 
 /**
  * Mapping of stop_id to array of route_ids serving that station

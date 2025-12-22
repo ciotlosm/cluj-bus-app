@@ -150,41 +150,15 @@ controlBashProcess({
 
 ## Git Commit Guidelines
 
-### 🚨 CRITICAL: Keep Commit Messages Short to Avoid Terminal Lockups
+### Commit Message Rules
+- Maximum 72 characters for first line
+- Use conventional commit format: feat/fix/docs/style/refactor/test/chore
+- Keep total message under 300 characters
 
-**NEVER create long commit messages that can cause terminal to get stuck in quote blocks**
-
-#### Commit Message Rules:
-- **Maximum length**: 72 characters for first line (subject)
-- **Total message**: Keep under 300 characters total
-- **Structure**: Use conventional commit format
-- **Avoid**: Multi-paragraph explanations, bullet lists, verbose descriptions
-
-#### ✅ CORRECT Commit Format:
+### Example
 ```bash
 git commit -m "feat: add performance testing script
 
 - Measure TypeScript compilation time
-- Measure production bundle size
 - Add npm script for easy execution"
 ```
-
-#### ❌ FORBIDDEN (Causes Terminal Lockups):
-```bash
-git commit -m "Very long commit message with extensive explanations that goes on and on with bullet points and detailed descriptions that can cause the terminal to get stuck in quote blocks and lock up the git process making it impossible to complete the commit operation..."
-```
-
-#### Conventional Commit Types:
-- **feat**: New feature
-- **fix**: Bug fix
-- **docs**: Documentation changes
-- **style**: Code style changes (formatting, etc.)
-- **refactor**: Code refactoring
-- **test**: Adding or updating tests
-- **chore**: Maintenance tasks
-
-#### Best Practices:
-- **First line**: Imperative mood, present tense ("add" not "added")
-- **Body**: Optional, keep to 2-3 short lines maximum
-- **Focus**: What changed, not why (save details for PR descriptions)
-- **Test first**: Always test commit message length before executing

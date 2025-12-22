@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import type { TranzyRouteResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../utils/constants';
+import { CACHE_DURATIONS } from '../utils/core/constants';
 
 interface RouteStore {
   // Raw API data - no transformations

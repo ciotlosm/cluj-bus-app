@@ -1,7 +1,7 @@
-// RouteView - Core view component for routes following VehicleView pattern
-// Displays raw API data directly with loading, error, and success states
+// RouteView - Core view component for routes with filtering capability
+// Displays filtered route data with loading, error, and success states
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { FC } from 'react';
 import { 
   Box, 
@@ -13,10 +13,33 @@ import {
 import { useRouteStore } from '../../../stores/routeStore';
 import { useConfigStore } from '../../../stores/configStore';
 import { RouteList } from '../lists/RouteList';
+import { RouteFilterBar } from '../filters/RouteFilterBar';
+import { useRouteFilter } from '../../../hooks/useRouteFilter';
+import { DEFAULT_FILTER_STATE } from '../../../types/routeFilter';
+import type { RouteFilterState } from '../../../types/routeFilter';
 
 export const RouteView: FC = () => {
   const { routes, loading, error, loadRoutes } = useRouteStore();
   const { apiKey, agency_id } = useConfigStore();
+  
+  // Local state for filter management
+  const [filterState, setFilterState] = useState<RouteFilterState>(DEFAULT_FILTER_STATE);
+  
+  // Use the custom hook for route enhancement and filtering
+  const { filteredRoutes } = useRouteFilter(routes, filterState);
+
+  useEffect(() => {
+    if (apiKey && agency_id) {
+      loadRoutes(apiKey, agency_id);
+    }
+  }, [apiKey, agency_id, loadRoutes]);
+
+  /**
+   * Handle filter state changes from RouteFilterBar
+   */
+  const handleFilterChange = (newFilterState: RouteFilterState) => {
+    setFilterState(newFilterState);
+  };
 
   useEffect(() => {
     if (apiKey && agency_id) {
@@ -70,7 +93,22 @@ export const RouteView: FC = () => {
         Routes
       </Typography>
       
-      <RouteList routes={routes} />
+      {/* Filter bar - only show when routes are loaded */}
+      {routes.length > 0 && (
+        <RouteFilterBar
+          filterState={filterState}
+          onFilterChange={handleFilterChange}
+          routeCount={filteredRoutes.length}
+        />
+      )}
+      
+      <RouteList routes={filteredRoutes} />
+      
+      {routes.length > 0 && filteredRoutes.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+          No routes match the current filters
+        </Typography>
+      )}
       
       {routes.length === 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>

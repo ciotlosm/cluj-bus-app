@@ -1,8 +1,8 @@
 import type { FC } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import type { PermissionState, LocationAccuracy } from '../../../types/location';
-import { getGpsIcon, getGpsColor, getGpsTooltip } from '../../../utils/gpsStatusHelpers';
-import { formatTimestamp } from '../../../utils/vehicleFormatUtils';
+import { getGpsIcon, getGpsColor, getGpsTooltip } from '../../../utils/status/gpsStatusHelpers';
+import { formatTimestamp } from '../../../utils/vehicle/vehicleFormatUtils';
 
 interface GpsStatusIconProps {
   status: 'available' | 'unavailable' | 'disabled';

@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
-import { getApiIcon, getApiColor, getApiTooltip } from '../../../utils/apiStatusHelpers';
-import { formatTimestamp } from '../../../utils/vehicleFormatUtils';
+import { getApiIcon, getApiColor, getApiTooltip } from '../../../utils/status/apiStatusHelpers';
+import { formatTimestamp } from '../../../utils/vehicle/vehicleFormatUtils';
 
 interface ApiStatusIconProps {
   status: 'online' | 'offline' | 'error';
