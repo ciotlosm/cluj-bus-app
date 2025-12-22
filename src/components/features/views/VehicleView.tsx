@@ -20,7 +20,7 @@ export const VehicleView: FC = () => {
 
   useEffect(() => {
     if (apiKey && agency_id) {
-      loadVehicles(apiKey, agency_id);
+      loadVehicles();
     }
   }, [apiKey, agency_id, loadVehicles]);
 
@@ -43,7 +43,7 @@ export const VehicleView: FC = () => {
             size="small" 
             onClick={() => {
               if (apiKey && agency_id) {
-                loadVehicles(apiKey, agency_id);
+                loadVehicles();
               }
             }}
           >

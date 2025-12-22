@@ -4,7 +4,8 @@
 
 import axios from 'axios';
 import type { TranzyRouteResponse } from '../types/rawTranzyApi.ts';
-import { handleApiError, validateApiKey, validateAgencyId, apiStatusTracker } from './error';
+import { handleApiError, apiStatusTracker } from './error';
+import { getApiConfig } from '../context/appContext';
 
 const API_BASE = '/api/tranzy/v1/opendata';
 
@@ -12,16 +13,16 @@ export const routeService = {
   /**
    * Get all routes for an agency
    */
-  async getRoutes(apiKey: string, agency_id: number): Promise<TranzyRouteResponse[]> {
-    validateApiKey(apiKey);
-    validateAgencyId(agency_id);
-    
+  async getRoutes(): Promise<TranzyRouteResponse[]> {
     const startTime = Date.now();
     try {
+      // Get API credentials from app context
+      const { apiKey, agencyId } = getApiConfig();
+
       const response = await axios.get<TranzyRouteResponse[]>(`${API_BASE}/routes`, {
         headers: {
           'X-API-Key': apiKey,
-          'X-Agency-Id': agency_id.toString()
+          'X-Agency-Id': agencyId.toString()
         }
       });
       

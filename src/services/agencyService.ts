@@ -4,7 +4,8 @@
 
 import axios from 'axios';
 import type { TranzyAgencyResponse } from '../types/rawTranzyApi.ts';
-import { handleApiError, validateApiKey, apiStatusTracker } from './error';
+import { handleApiError, apiStatusTracker } from './error';
+import { getApiConfig } from '../context/appContext';
 
 const API_BASE = '/api/tranzy/v1/opendata';
 
@@ -13,11 +14,12 @@ export const agencyService = {
    * Get all available agencies
    * Note: Agency endpoint doesn't require X-Agency-Id header
    */
-  async getAgencies(apiKey: string): Promise<TranzyAgencyResponse[]> {
-    validateApiKey(apiKey);
-
+  async getAgencies(): Promise<TranzyAgencyResponse[]> {
     const startTime = Date.now();
     try {
+      // Get API credentials from app context
+      const { apiKey } = getApiConfig();
+
       const response = await axios.get(`${API_BASE}/agency`, {
         headers: {
           'X-API-Key': apiKey

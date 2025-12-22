@@ -18,7 +18,7 @@ interface VehicleStore {
   lastUpdated: number | null;
   
   // Actions
-  loadVehicles: (apiKey: string, agency_id: number) => Promise<void>;
+  loadVehicles: () => Promise<void>;
   clearVehicles: () => void;
   clearError: () => void;
   
@@ -36,7 +36,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
   lastUpdated: null,
   
   // Actions
-  loadVehicles: async (apiKey: string, agency_id: number) => {
+  loadVehicles: async () => {
     // Performance optimization: avoid duplicate requests if already loading
     const currentState = get();
     if (currentState.loading) {
@@ -48,7 +48,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     try {
       // Import service dynamically to avoid circular dependencies
       const { vehicleService } = await import('../services/vehicleService');
-      const vehicles = await vehicleService.getVehicles(apiKey, agency_id);
+      const vehicles = await vehicleService.getVehicles();
       
       set({ 
         vehicles, 
