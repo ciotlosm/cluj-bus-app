@@ -4,7 +4,7 @@ import {
   validateStationsForTrips,
   getStationsWithTrips
 } from './tripValidationUtils';
-import type { TranzyStopResponse, TranzyStopTimeResponse } from '../types/rawTranzyApi';
+import type { TranzyStopResponse, TranzyStopTimeResponse } from '../../types/rawTranzyApi';
 
 describe('tripValidationUtils', () => {
   // Test data

@@ -13,10 +13,11 @@ import { useFavoritesStore } from '../stores/favoritesStore';
 import { 
   formatDistance,
   getStationTypeColor,
-  getStationTypeLabel,
-  useAllStationsStrategy,
-  useSmartFilteringStrategy
-} from '../utils/station/stationFilterUtils';
+  getStationTypeLabel
+} from '../utils/station/stationDisplayUtils';
+import {
+  filterStations
+} from '../utils/station/stationFilterStrategies';
 import { CACHE_DURATIONS } from '../utils/core/constants';
 import type { StationFilterResult, FilteredStation } from '../types/stationFilter';
 
@@ -103,7 +104,7 @@ export function useStationFilter(): StationFilterResult {
     // Choose filtering strategy based on isFiltering flag
     if (!isFiltering) {
       // Show all stations sorted by distance
-      return useAllStationsStrategy(
+      return filterStations(
         stops,
         currentPosition,
         stopTimes,
@@ -113,6 +114,7 @@ export function useStationFilter(): StationFilterResult {
         favoritesStoreAvailable,
         favoritesFilterEnabled,
         hasFavoriteRoutes
+        // maxResults undefined = all stations
       );
     }
     
@@ -121,8 +123,8 @@ export function useStationFilter(): StationFilterResult {
       return []; // No location available for smart filtering
     }
     
-    // Show only nearby relevant stations
-    return useSmartFilteringStrategy(
+    // Show only nearby relevant stations (max 2 results)
+    return filterStations(
       stops,
       currentPosition,
       stopTimes,
@@ -131,7 +133,8 @@ export function useStationFilter(): StationFilterResult {
       favoriteRouteIds,
       favoritesStoreAvailable,
       favoritesFilterEnabled,
-      hasFavoriteRoutes
+      hasFavoriteRoutes,
+      2 // maxResults = 2 for smart filtering
     );
   }, [stops, stopTimes, vehicles, allRoutes, currentPosition, isFiltering, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
   
