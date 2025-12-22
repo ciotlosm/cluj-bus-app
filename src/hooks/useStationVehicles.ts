@@ -11,8 +11,8 @@ import { useTripStore } from '../stores/tripStore';
 import { 
   getCachedStationRouteMapping, 
   getRouteIdsForStation 
-} from '../utils/routeStationMapping';
-import { CACHE_DURATIONS } from '../utils/constants';
+} from '../utils/route/routeStationMapping';
+import { CACHE_DURATIONS } from '../utils/core/constants';
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse } from '../types/rawTranzyApi';
 
 export interface StationVehicle {

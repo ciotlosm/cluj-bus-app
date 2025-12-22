@@ -10,7 +10,7 @@ import {
   Chip, 
   Box 
 } from '@mui/material';
-import { formatTimestamp, formatSpeed } from '../../../utils/vehicleFormatUtils';
+import { formatTimestamp, formatSpeed } from '../../../utils/vehicle/vehicleFormatUtils';
 import type { TranzyVehicleResponse } from '../../../types/rawTranzyApi';
 
 interface VehicleListProps {

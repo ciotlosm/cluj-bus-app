@@ -35,7 +35,8 @@ src/
 ## File Size Optimization
 
 ### Size Limit Enforcement
-- **Maximum file size**: 200 lines per file
+- **Maximum file size**: 200 lines per file (EXCLUDES test files)
+- **Test files exempt**: Files with `.test.`, `.spec.`, or in test directories are exempt from line limits
 - **Splitting strategy**: Split large files into logical, cohesive modules
 - **Single responsibility**: Each split module has one clear purpose
 - **Functionality preservation**: Original functionality remains intact
@@ -45,24 +46,9 @@ src/
 - **Cohesive modules**: Each new file contains related functionality
 - **Clear interfaces**: Well-defined exports and imports between split files
 - **Import path updates**: Automatically update all references during splitting
+- **Test files**: No splitting required regardless of size
 
 ## Folder Structure Optimization
-
-### Target Folder Structure
-```
-src/services/
-├── api/                 # API integration services (max 10 files)
-├── business-logic/      # Core business logic services (max 10 files)
-├── data-processing/     # Data transformation services (max 10 files)
-└── utilities/          # Service utilities and helpers (max 10 files)
-
-src/utils/
-├── validation/          # Input validation utilities (max 10 files)
-├── formatting/          # Date, string, number formatting (max 10 files)
-├── data-processing/     # Data transformation utilities (max 10 files)
-├── performance/         # Performance monitoring utilities (max 10 files)
-└── shared/             # Common utilities across domains (max 10 files)
-```
 
 ### Reorganization Strategy
 - **Logical subfolders**: Create subfolders based on functional grouping
@@ -73,7 +59,8 @@ src/utils/
 ## Performance Guidelines
 
 ### File and Folder Size Limits (ENFORCED)
-- **Files**: Maximum **200 lines**, split if larger
+- **Files**: Maximum **200 lines**, split if larger (EXCLUDES test files)
+- **Test files**: No line limits for `.test.`, `.spec.`, or test directory files
 - **Folders**: Maximum **10 files**, create subfolders if needed
 - **Services**: Consolidate similar functionality, organize into subfolders by domain
 - **Utils**: Group by functional domain with subfolders
@@ -82,8 +69,3 @@ src/utils/
 - **React.memo**: For expensive components
 - **useCallback**: For event handlers passed to children
 - **useMemo**: For expensive calculations
-
-### Bundle Optimization
-- **Code Splitting**: Lazy load non-critical features
-- **Tree Shaking**: Use named imports and avoid barrel exports
-- **Vendor Chunks**: Separate vendor code in build

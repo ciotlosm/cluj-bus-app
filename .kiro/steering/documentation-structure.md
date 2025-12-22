@@ -38,31 +38,8 @@ temporary/                # TEMPORARY FILES (git-ignored except structure)
 **API Documentation** → `docs/api/` folder
 **Performance Analysis** → `docs/performance/` folder
 **Temporary/Intermediate Files** → `temporary/` folder
-**Bug Fixes/Issues** → Appropriate `docs/troubleshooting/` file based on category
-
-### Troubleshooting Categories
-- **Common issues**: `common-issues.md` - Most frequent problems, React errors, configuration
-- **API/Auth problems**: `api-authentication.md` - Authentication, network, rate limiting
-- **Station/Route issues**: `station-route-issues.md` - Station display, route problems
-- **Mobile/PWA problems**: `mobile-pwa-issues.md` - Mobile browsers, PWA, GPS, themes
-- **Performance issues**: `performance-caching.md` - Storage, cache, service worker
-- **Test/Dev problems**: `testing-development.md` - Test failures, dev server, build issues
-- **Emergency procedures**: `emergency-recovery.md` - Complete reset, last resort fixes
+**Bug Fixes/Issues** → Appropriate `docs/troubleshooting/` file
 
 ## File Size Monitoring
 
-**Current Status**: 17 total files - Structure is good, monitor for size limits
-
-**Monitoring Commands:**
-```bash
-# Check file sizes (none should exceed 400 lines)
-wc -l docs/*.md docs/troubleshooting/*.md | sort -nr
-
-# Alert if any file over 400 lines
-find docs -name "*.md" -exec wc -l {} + | awk '$1 > 400 {print "CRITICAL: " $2 " - MUST SPLIT"}'
-```
-
-**When to Archive Content:**
-- **Changelog entries older than 3 months** → `docs/archive/changelog-YYYY-QX.md`
-- **Developer guide sections over 100 lines** → Split by logical topics
-- **Historical implementation details** → Move to archive with reference links
+Current structure is good - monitor for size limits with `wc -l docs/*.md`

@@ -1,5 +1,5 @@
-// RouteList - Simple display component following VehicleList pattern
-// Uses raw API field names directly
+// RouteList - Simple display component for enhanced routes
+// Uses raw API field names directly with enhanced route data
 
 import type { FC } from 'react';
 import { 
@@ -10,11 +10,11 @@ import {
   Chip, 
   Box 
 } from '@mui/material';
-import type { TranzyRouteResponse } from '../../../types/rawTranzyApi';
+import type { EnhancedRoute } from '../../../types/routeFilter';
 import { getRouteTypeLabel } from '../../../types/rawTranzyApi';
 
 interface RouteListProps {
-  routes: TranzyRouteResponse[];
+  routes: EnhancedRoute[];
 }
 
 const getRouteTypeColor = (routeType: number): 'primary' | 'secondary' | 'default' => {

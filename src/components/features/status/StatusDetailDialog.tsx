@@ -16,13 +16,13 @@ import {
   getGpsColor,
   getGpsStatusText,
   getGpsRecommendations
-} from '../../../utils/gpsStatusHelpers';
+} from '../../../utils/status/gpsStatusHelpers';
 import {
   getApiIcon,
   getApiColor,
   getApiStatusText,
   getApiRecommendations
-} from '../../../utils/apiStatusHelpers';
+} from '../../../utils/status/apiStatusHelpers';
 
 interface GpsState {
   status: 'available' | 'unavailable' | 'disabled';

@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import type { TranzyVehicleResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../utils/constants';
+import { CACHE_DURATIONS } from '../utils/core/constants';
 
 interface VehicleStore {
   // Raw API data - no transformations
