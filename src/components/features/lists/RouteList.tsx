@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 import type { EnhancedRoute } from '../../../types/routeFilter';
 import { getRouteTypeLabel } from '../../../types/rawTranzyApi';
+import { HeartToggle } from '../controls/HeartToggle';
+import { useFavoritesStore } from '../../../stores/favoritesStore';
 
 interface RouteListProps {
   routes: EnhancedRoute[];
@@ -27,6 +29,8 @@ const getRouteTypeColor = (routeType: number): 'primary' | 'secondary' | 'defaul
 };
 
 export const RouteList: FC<RouteListProps> = ({ routes }) => {
+  const { toggleFavorite } = useFavoritesStore();
+
   if (routes.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
@@ -81,6 +85,12 @@ export const RouteList: FC<RouteListProps> = ({ routes }) => {
               primary: { component: 'div' },
               secondary: { component: 'div' }
             }}
+          />
+          <HeartToggle
+            routeId={route.route_id.toString()}
+            isFavorite={route.isFavorite}
+            onToggle={toggleFavorite}
+            size="small"
           />
         </ListItem>
       ))}

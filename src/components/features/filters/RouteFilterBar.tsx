@@ -14,7 +14,8 @@ import {
   Tram,
   ElectricBolt,
   Star,
-  Public
+  Public,
+  Favorite
 } from '@mui/icons-material';
 import type { RouteFilterState, TransportTypeKey } from '../../../types/routeFilter';
 import { getTransportTypeOptions } from '../../../types/rawTranzyApi';
@@ -42,7 +43,8 @@ const TRANSPORT_TYPE_ICONS = {
  */
 const META_FILTER_OPTIONS = [
   { key: 'elevi' as const, label: 'Elevi', icon: Star },
-  { key: 'external' as const, label: 'External', icon: Public }
+  { key: 'external' as const, label: 'External', icon: Public },
+  { key: 'favorites' as const, label: 'Favorites', icon: Favorite }
 ];
 
 export const RouteFilterBar: FC<RouteFilterBarProps> = ({
@@ -69,20 +71,21 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
 
   /**
    * Handle meta filter toggle
-   * Implements exclusivity: activating one meta filter deactivates the other
+   * Implements exclusivity: activating one meta filter deactivates the others
    * Transport types remain unchanged when meta filters are toggled
    */
-  const handleMetaFilterToggle = (filterKey: 'elevi' | 'external') => {
+  const handleMetaFilterToggle = (filterKey: 'elevi' | 'external' | 'favorites') => {
     const currentValue = filterState.metaFilters[filterKey];
     const newValue = !currentValue;
 
-    // If activating a meta filter, deactivate the other one
+    // If activating a meta filter, deactivate the other ones
     if (newValue) {
       onFilterChange({
         ...filterState,
         metaFilters: {
           elevi: filterKey === 'elevi',
-          external: filterKey === 'external'
+          external: filterKey === 'external',
+          favorites: filterKey === 'favorites'
         }
       });
     } else {

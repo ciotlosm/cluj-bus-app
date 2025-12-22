@@ -3,6 +3,7 @@ import type { TranzyRouteResponse } from '../types/rawTranzyApi';
 import type { EnhancedRoute, RouteFilterState } from '../types/routeFilter';
 import { enhanceRoutes } from '../utils/route/routeEnhancementUtils';
 import { filterRoutes } from '../utils/route/routeFilterUtils';
+import { useFavoritesStore } from '../stores/favoritesStore';
 
 /**
  * Return type for useRouteFilter hook
@@ -34,10 +35,13 @@ export function useRouteFilter(
   routes: TranzyRouteResponse[],
   filterState: RouteFilterState
 ): UseRouteFilterReturn {
-  // Memoize route enhancement - only recompute when routes change
+  // Access favorites store for route enhancement
+  const favoriteRouteIds = useFavoritesStore((state) => state.favoriteRouteIds);
+
+  // Memoize route enhancement - recompute when routes or favorites change
   const enhancedRoutes = useMemo(() => {
-    return enhanceRoutes(routes);
-  }, [routes]);
+    return enhanceRoutes(routes, favoriteRouteIds);
+  }, [routes, favoriteRouteIds]);
 
   // Memoize filtering - only recompute when enhanced routes or filter state changes
   const filteredRoutes = useMemo(() => {

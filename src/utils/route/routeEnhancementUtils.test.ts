@@ -72,7 +72,8 @@ describe('routeEnhancementUtils', () => {
       expect(enhanced).toEqual({
         ...regularRoute,
         isElevi: false,
-        isExternal: false
+        isExternal: false,
+        isFavorite: false
       });
     });
 
@@ -82,7 +83,8 @@ describe('routeEnhancementUtils', () => {
       expect(enhanced).toEqual({
         ...eleviRouteShortName,
         isElevi: true,
-        isExternal: false
+        isExternal: false,
+        isFavorite: false
       });
     });
 
@@ -92,7 +94,8 @@ describe('routeEnhancementUtils', () => {
       expect(enhanced).toEqual({
         ...eleviRouteDesc,
         isElevi: true,
-        isExternal: false
+        isExternal: false,
+        isFavorite: false
       });
     });
 
@@ -102,7 +105,8 @@ describe('routeEnhancementUtils', () => {
       expect(enhanced).toEqual({
         ...externalRoute,
         isElevi: false,
-        isExternal: true
+        isExternal: true,
+        isFavorite: false
       });
     });
 
@@ -112,7 +116,8 @@ describe('routeEnhancementUtils', () => {
       expect(enhanced).toEqual({
         ...routeWithMissingFields,
         isElevi: false,
-        isExternal: false
+        isExternal: false,
+        isFavorite: false
       });
     });
 
@@ -127,6 +132,33 @@ describe('routeEnhancementUtils', () => {
       
       expect(enhanced.isElevi).toBe(false);
       expect(enhanced.isExternal).toBe(false);
+      expect(enhanced.isFavorite).toBe(false);
+    });
+
+    it('should detect favorite routes when favorites set is provided', () => {
+      const favoriteRouteIds = new Set(['101', '201']);
+      
+      const enhancedRegular = enhanceRoute(regularRoute, favoriteRouteIds);
+      const enhancedElevi = enhanceRoute(eleviRouteShortName, favoriteRouteIds);
+      const enhancedExternal = enhanceRoute(externalRoute, favoriteRouteIds);
+      
+      expect(enhancedRegular.isFavorite).toBe(true); // route_id: 101
+      expect(enhancedElevi.isFavorite).toBe(true);   // route_id: 201
+      expect(enhancedExternal.isFavorite).toBe(false); // route_id: 301
+    });
+
+    it('should handle empty favorites set', () => {
+      const favoriteRouteIds = new Set<string>();
+      const enhanced = enhanceRoute(regularRoute, favoriteRouteIds);
+      
+      expect(enhanced.isFavorite).toBe(false);
+    });
+
+    it('should handle string route IDs in favorites set', () => {
+      const favoriteRouteIds = new Set(['101']);
+      const enhanced = enhanceRoute(regularRoute, favoriteRouteIds);
+      
+      expect(enhanced.isFavorite).toBe(true);
     });
   });
 
@@ -138,10 +170,24 @@ describe('routeEnhancementUtils', () => {
       expect(enhanced).toHaveLength(3);
       expect(enhanced[0].isElevi).toBe(false);
       expect(enhanced[0].isExternal).toBe(false);
+      expect(enhanced[0].isFavorite).toBe(false);
       expect(enhanced[1].isElevi).toBe(true);
       expect(enhanced[1].isExternal).toBe(false);
+      expect(enhanced[1].isFavorite).toBe(false);
       expect(enhanced[2].isElevi).toBe(false);
       expect(enhanced[2].isExternal).toBe(true);
+      expect(enhanced[2].isFavorite).toBe(false);
+    });
+
+    it('should enhance array of routes with favorites', () => {
+      const routes = [regularRoute, eleviRouteShortName, externalRoute];
+      const favoriteRouteIds = new Set(['101', '301']); // regular and external routes
+      const enhanced = enhanceRoutes(routes, favoriteRouteIds);
+      
+      expect(enhanced).toHaveLength(3);
+      expect(enhanced[0].isFavorite).toBe(true);  // route_id: 101
+      expect(enhanced[1].isFavorite).toBe(false); // route_id: 201
+      expect(enhanced[2].isFavorite).toBe(true);  // route_id: 301
     });
 
     it('should handle empty array', () => {
@@ -152,6 +198,15 @@ describe('routeEnhancementUtils', () => {
     it('should handle invalid input', () => {
       const enhanced = enhanceRoutes(null as any);
       expect(enhanced).toEqual([]);
+    });
+
+    it('should handle empty favorites set', () => {
+      const routes = [regularRoute, eleviRouteShortName];
+      const enhanced = enhanceRoutes(routes, new Set());
+      
+      expect(enhanced).toHaveLength(2);
+      expect(enhanced[0].isFavorite).toBe(false);
+      expect(enhanced[1].isFavorite).toBe(false);
     });
   });
 
@@ -284,6 +339,7 @@ describe('routeEnhancementUtils', () => {
       const enhanced = enhanceRoute(bothRoute);
       expect(enhanced.isElevi).toBe(true);
       expect(enhanced.isExternal).toBe(true);
+      expect(enhanced.isFavorite).toBe(false);
       expect(isSpecialRoute(bothRoute)).toBe(true);
     });
   });

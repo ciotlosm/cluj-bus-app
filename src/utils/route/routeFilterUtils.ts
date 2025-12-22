@@ -13,6 +13,9 @@ import { TRANSPORT_TYPE_MAP } from '../../types/routeFilter';
  * - 5.1: Combined filter logic (AND constraints)
  * - 5.2: Default exclusion of special routes when no meta filters active
  * - 5.5: Exclude routes with isElevi=true OR isExternal=true by default
+ * - 3.1: Favorites filter isolation (show only favorites when active)
+ * - 3.2: Combined filter logic with favorites (AND operation)
+ * - 3.3: Empty favorites filter handling
  * 
  * @param routes - Array of enhanced routes to filter
  * @param filterState - Current filter state with transport types and meta filters
@@ -29,7 +32,12 @@ export function filterRoutes(
 
   return routes.filter(route => {
     // Step 1: Apply meta filter constraints
-    const { elevi, external } = filterState.metaFilters;
+    const { elevi, external, favorites } = filterState.metaFilters;
+    
+    // If Favorites meta filter is active, only show favorite routes
+    if (favorites && !route.isFavorite) {
+      return false;
+    }
     
     // If Elevi meta filter is active, only show Elevi routes
     if (elevi && !route.isElevi) {
@@ -43,6 +51,7 @@ export function filterRoutes(
     
     // Step 2: If no meta filters are active, exclude special routes by default
     // This implements the default exclusion behavior (Requirements 5.2, 5.5)
+    // Note: favorites filter doesn't affect default exclusion behavior
     if (!elevi && !external) {
       if (route.isElevi || route.isExternal) {
         return false;
@@ -112,18 +121,25 @@ export function filterRoutesByTransportType(
  * @param routes - Array of enhanced routes to filter
  * @param elevi - Whether to show only Elevi routes
  * @param external - Whether to show only External routes
+ * @param favorites - Whether to show only favorite routes
  * @returns Array of routes matching the meta filter criteria
  */
 export function filterRoutesByMetaFilters(
   routes: EnhancedRoute[], 
   elevi: boolean, 
-  external: boolean
+  external: boolean,
+  favorites: boolean = false
 ): EnhancedRoute[] {
   if (!Array.isArray(routes)) {
     return [];
   }
 
   return routes.filter(route => {
+    // If Favorites filter is active, only show favorite routes
+    if (favorites && !route.isFavorite) {
+      return false;
+    }
+    
     // If Elevi filter is active, only show Elevi routes
     if (elevi && !route.isElevi) {
       return false;
@@ -135,6 +151,7 @@ export function filterRoutesByMetaFilters(
     }
     
     // If no meta filters are active, exclude special routes by default
+    // Note: favorites filter doesn't affect default exclusion behavior
     if (!elevi && !external) {
       if (route.isElevi || route.isExternal) {
         return false;
@@ -165,7 +182,7 @@ export function hasActiveTransportFilters(filterState: RouteFilterState): boolea
  * @returns True if any meta filter is active, false otherwise
  */
 export function hasActiveMetaFilters(filterState: RouteFilterState): boolean {
-  return filterState.metaFilters.elevi || filterState.metaFilters.external;
+  return filterState.metaFilters.elevi || filterState.metaFilters.external || filterState.metaFilters.favorites;
 }
 
 /**
@@ -211,7 +228,8 @@ export function isValidFilterState(filterState: any): filterState is RouteFilter
   }
   
   if (typeof filterState.metaFilters.elevi !== 'boolean' || 
-      typeof filterState.metaFilters.external !== 'boolean') {
+      typeof filterState.metaFilters.external !== 'boolean' ||
+      typeof filterState.metaFilters.favorites !== 'boolean') {
     return false;
   }
   
