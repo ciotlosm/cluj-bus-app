@@ -18,7 +18,7 @@ interface StationStore {
   clearError: () => void;
 }
 
-export const useStationStore = create<StationStore>((set, get) => ({
+export const useStationStore = create<StationStore>((set) => ({
   // Raw API data
   stops: [],
   
@@ -28,21 +28,12 @@ export const useStationStore = create<StationStore>((set, get) => ({
   
   // Actions
   loadStops: async () => {
-    // Access config directly from configStore
-    const { useConfigStore } = await import('./configStore');
-    const { apiKey, agency_id } = useConfigStore.getState();
-    
-    if (!apiKey || !agency_id) {
-      set({ error: 'API key and agency must be configured' });
-      return;
-    }
-    
     set({ loading: true, error: null });
     
     try {
       // Import service dynamically to avoid circular dependencies
       const { stationService } = await import('../services/stationService');
-      const stops = await stationService.getStops(apiKey, agency_id);
+      const stops = await stationService.getStops();
       
       set({ stops, loading: false, error: null });
     } catch (error) {

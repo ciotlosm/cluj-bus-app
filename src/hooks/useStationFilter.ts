@@ -65,30 +65,35 @@ export function useStationFilter(): StationFilterResult {
   // Auto-load stop times, vehicles, and routes when hook is used
   useEffect(() => {
     const loadData = async () => {
-      const { useConfigStore } = await import('../stores/configStore');
-      const { apiKey, agency_id } = useConfigStore.getState();
+      // Get API credentials from app context for stores that haven't been updated yet
+      const { isContextReady, getApiConfig } = await import('../context/appContext');
       
-      if (apiKey && agency_id) {
-        // Load stop times if not already loaded
-        if (stopTimes.length === 0 && !tripLoading && !tripError) {
-          loadStopTimes(apiKey, agency_id);
+      if (!isContextReady()) {
+        // Context not ready yet, skip loading
+        return;
+      }
+      
+      const { apiKey, agencyId } = getApiConfig();
+      
+      // Load stop times if not already loaded (trip store still expects parameters)
+      if (stopTimes.length === 0 && !tripLoading && !tripError) {
+        loadStopTimes(apiKey, agencyId);
+      }
+      
+      // Load vehicles if not already loaded (vehicle store updated to use context)
+      if (vehicles.length === 0 && !vehicleLoading && !vehicleError) {
+        loadVehicles();
+      } else if (vehicles.length > 0) {
+        // Check if vehicle data is fresh and refresh if needed
+        const vehicleStore = useVehicleStore.getState();
+        if (!vehicleStore.isDataFresh(CACHE_DURATIONS.VEHICLES)) {
+          loadVehicles();
         }
-        
-        // Load vehicles if not already loaded (needed for route mapping)
-        if (vehicles.length === 0 && !vehicleLoading && !vehicleError) {
-          loadVehicles(apiKey, agency_id);
-        } else if (vehicles.length > 0) {
-          // Check if vehicle data is fresh and refresh if needed
-          const vehicleStore = useVehicleStore.getState();
-          if (!vehicleStore.isDataFresh(CACHE_DURATIONS.VEHICLES)) {
-            loadVehicles(apiKey, agency_id);
-          }
-        }
-        
-        // Load routes if not already loaded (needed for vehicle display)
-        if (allRoutes.length === 0 && !routeLoading && !routeError) {
-          loadRoutes(apiKey, agency_id);
-        }
+      }
+      
+      // Load routes if not already loaded (route store still expects parameters)
+      if (allRoutes.length === 0 && !routeLoading && !routeError) {
+        loadRoutes(apiKey, agencyId);
       }
     };
     

@@ -48,7 +48,7 @@ export const StationViewHeader: FC<StationViewHeaderProps> = ({
                   size="small"
                 />
               }
-              label="Favorites only"
+              label="Favorites"
               sx={{ ml: 1 }}
             />
           )}
@@ -61,7 +61,7 @@ export const StationViewHeader: FC<StationViewHeaderProps> = ({
                 size="small"
               />
             }
-            label="Nearby only"
+            label="Nearby"
             sx={{ ml: 1 }}
           />
         </Stack>

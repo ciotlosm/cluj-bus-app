@@ -56,17 +56,33 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
   const transportOptions = getTransportTypeOptions();
   /**
    * Handle transport type toggle
-   * Multiple transport types can be selected simultaneously
-   * When none are selected, assumes "all"
+   * Only one transport type can be selected at a time (or none at all)
+   * Clicking the same type again deselects it
    */
   const handleTransportTypeToggle = (transportKey: TransportTypeKey) => {
-    onFilterChange({
-      ...filterState,
-      transportTypes: {
-        ...filterState.transportTypes,
-        [transportKey]: !filterState.transportTypes[transportKey]
-      }
-    });
+    const isCurrentlySelected = filterState.transportTypes[transportKey];
+    
+    // If clicking the currently selected type, deselect it (set all to false)
+    if (isCurrentlySelected) {
+      onFilterChange({
+        ...filterState,
+        transportTypes: {
+          bus: false,
+          tram: false,
+          trolleybus: false
+        }
+      });
+    } else {
+      // If clicking a different type, select only that one
+      onFilterChange({
+        ...filterState,
+        transportTypes: {
+          bus: transportKey === 'bus',
+          tram: transportKey === 'tram',
+          trolleybus: transportKey === 'trolleybus'
+        }
+      });
+    }
   };
 
   /**

@@ -3,7 +3,8 @@
 
 import axios from 'axios';
 import type { TranzyStopTimeResponse } from '../types/rawTranzyApi.ts';
-import { handleApiError, validateApiKey, validateAgencyId } from './error';
+import { handleApiError } from './error';
+import { getApiConfig } from '../context/appContext';
 
 const API_BASE = '/api/tranzy/v1/opendata';
 
@@ -11,15 +12,15 @@ export const tripService = {
   /**
    * Get stop times for an agency
    */
-  async getStopTimes(apiKey: string, agency_id: number): Promise<TranzyStopTimeResponse[]> {
-    validateApiKey(apiKey);
-    validateAgencyId(agency_id);
-    
+  async getStopTimes(): Promise<TranzyStopTimeResponse[]> {
     try {
+      // Get API credentials from app context
+      const { apiKey, agencyId } = getApiConfig();
+
       const response = await axios.get<TranzyStopTimeResponse[]>(`${API_BASE}/stop_times`, {
         headers: {
           'X-API-Key': apiKey,
-          'X-Agency-Id': agency_id.toString()
+          'X-Agency-Id': agencyId.toString()
         }
       });
       
