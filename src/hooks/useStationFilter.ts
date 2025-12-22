@@ -19,12 +19,13 @@ import {
   filterStations
 } from '../utils/station/stationFilterStrategies';
 import { CACHE_DURATIONS } from '../utils/core/constants';
+import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
 import type { StationFilterResult, FilteredStation } from '../types/stationFilter';
 
 export function useStationFilter(): StationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
-  const { stopTimes, loading: tripLoading, error: tripError, loadStopTimes } = useTripStore();
+  const { stopTimes, trips, loading: tripLoading, error: tripError, loadStopTimes, loadTrips, getTripById } = useTripStore();
   const { vehicles, loading: vehicleLoading, error: vehicleError, loadVehicles } = useVehicleStore();
   const { 
     routes: allRoutes, 
@@ -75,9 +76,14 @@ export function useStationFilter(): StationFilterResult {
       
       const { apiKey, agencyId } = getApiConfig();
       
-      // Load stop times if not already loaded (trip store still expects parameters)
+      // Load stop times if not already loaded (trip store updated to use context)
       if (stopTimes.length === 0 && !tripLoading && !tripError) {
-        loadStopTimes(apiKey, agencyId);
+        loadStopTimes();
+      }
+      
+      // Load trips if not already loaded (for headsign data)
+      if (trips.length === 0 && !tripLoading && !tripError) {
+        loadTrips();
       }
       
       // Load vehicles if not already loaded (vehicle store updated to use context)
@@ -91,14 +97,14 @@ export function useStationFilter(): StationFilterResult {
         }
       }
       
-      // Load routes if not already loaded (route store still expects parameters)
+      // Load routes if not already loaded (route store updated to use context)
       if (allRoutes.length === 0 && !routeLoading && !routeError) {
-        loadRoutes(apiKey, agencyId);
+        loadRoutes();
       }
     };
     
     loadData();
-  }, [stopTimes.length, tripLoading, tripError, loadStopTimes, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
+  }, [stopTimes.length, trips.length, tripLoading, tripError, loadStopTimes, loadTrips, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
   
   const filteredStations = useMemo((): FilteredStation[] => {
     // Early return if no stations available
@@ -118,8 +124,10 @@ export function useStationFilter(): StationFilterResult {
         favoriteRouteIds,
         favoritesStoreAvailable,
         favoritesFilterEnabled,
-        hasFavoriteRoutes
-        // maxResults undefined = all stations
+        hasFavoriteRoutes,
+        undefined, // maxResults undefined = all stations
+        SECONDARY_STATION_THRESHOLD,
+        trips // NEW: trip data for headsign
       );
     }
     
@@ -139,9 +147,11 @@ export function useStationFilter(): StationFilterResult {
       favoritesStoreAvailable,
       favoritesFilterEnabled,
       hasFavoriteRoutes,
-      2 // maxResults = 2 for smart filtering
+      2, // maxResults = 2 for smart filtering
+      SECONDARY_STATION_THRESHOLD,
+      trips // NEW: trip data for headsign
     );
-  }, [stops, stopTimes, vehicles, allRoutes, currentPosition, isFiltering, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
+  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, isFiltering, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
   
   const toggleFiltering = useCallback(() => setIsFiltering(prev => !prev), []);
   const toggleFavoritesFilter = useCallback(() => {

@@ -2,6 +2,13 @@
 
 ## Recent Updates (December 2024)
 
+### December 22, 2024 - Vehicle Headsign Display
+- **✨ NEW FEATURE**: Added headsign information to vehicle list in stations view
+- **API Integration**: Implemented trips endpoint to fetch headsign data from Tranzy API
+- **Data Flow**: Extended StationVehicle interface to include trip information with headsign
+- **UI Enhancement**: Headsign now displays as "→ destination" next to route information
+- **Performance**: Optimized with trip data caching and efficient lookup maps
+
 ### December 22, 2024 - Elevi/External Filter Complexity Cleanup
 - **🧹 CLEANUP**: Removed all Elevi and External filtering complexity from codebase
 - **Simplified Architecture**: Eliminated isElevi/isExternal properties from EnhancedRoute interface

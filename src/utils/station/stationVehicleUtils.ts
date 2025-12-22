@@ -9,7 +9,7 @@ import {
 } from '../route/routeStationMapping';
 import { checkStationFavoritesMatch } from './tripValidationUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
-import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse } from '../../types/rawTranzyApi';
+import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from '../../types/rawTranzyApi';
 
 /**
  * Get vehicles serving a specific station
@@ -18,7 +18,8 @@ export const getStationVehicles = (
   stationId: number,
   stopTimes: TranzyStopTimeResponse[],
   vehicles: TranzyVehicleResponse[],
-  allRoutes: TranzyRouteResponse[]
+  allRoutes: TranzyRouteResponse[],
+  trips: TranzyTripResponse[] = [] // NEW: trip data for headsign
 ): StationVehicle[] => {
   // Return empty array if we don't have the required data
   if (stopTimes.length === 0 || vehicles.length === 0) {
@@ -36,8 +37,9 @@ export const getStationVehicles = (
       return [];
     }
 
-    // Performance optimization: create route lookup map for faster access
+    // Performance optimization: create lookup maps for faster access
     const routeMap = new Map(allRoutes.map(route => [route.route_id, route]));
+    const tripMap = new Map(trips.map(trip => [trip.trip_id, trip]));
     
     // Filter vehicles that match this station's route IDs
     const filteredVehicles = vehicles.filter(vehicle => 
@@ -46,14 +48,16 @@ export const getStationVehicles = (
       routeIds.includes(vehicle.route_id)
     );
 
-    // Combine vehicle data with route information using the lookup map
+    // Combine vehicle data with route and trip information using lookup maps
     return filteredVehicles.map(vehicle => {
-      // Use map lookup for O(1) route access instead of O(n) find
+      // Use map lookup for O(1) access instead of O(n) find
       const route = routeMap.get(vehicle.route_id) || null;
+      const trip = vehicle.trip_id ? tripMap.get(vehicle.trip_id) || null : null;
       
       return {
         vehicle,
-        route
+        route,
+        trip // NEW: include trip data for headsign
       };
     });
   } catch (error) {
@@ -71,12 +75,13 @@ export const addStationMetadata = (
   vehicles: TranzyVehicleResponse[],
   allRoutes: TranzyRouteResponse[],
   favoriteRouteIds: Set<string>,
-  favoritesStoreAvailable: boolean
+  favoritesStoreAvailable: boolean,
+  trips: TranzyTripResponse[] = [] // NEW: trip data for headsign
 ): FilteredStation => {
   const stationObj = station.station || station;
   
-  // Get vehicles for this station
-  const stationVehicles = getStationVehicles(stationObj.stop_id, stopTimes, vehicles, allRoutes);
+  // Get vehicles for this station (now includes trip data)
+  const stationVehicles = getStationVehicles(stationObj.stop_id, stopTimes, vehicles, allRoutes, trips);
   
   // Get route IDs for this station
   let routeIds: number[] = [];

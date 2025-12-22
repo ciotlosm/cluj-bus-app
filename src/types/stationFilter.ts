@@ -3,7 +3,7 @@
  * Core interfaces for location-aware station filtering
  */
 
-import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse } from './rawTranzyApi';
+import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from './rawTranzyApi';
 
 /**
  * Constants for filtering behavior
@@ -16,6 +16,7 @@ export const SECONDARY_STATION_THRESHOLD = 100; // meters
 export interface StationVehicle {
   vehicle: TranzyVehicleResponse;
   route: TranzyRouteResponse | null;
+  trip: TranzyTripResponse | null; // NEW: trip information for headsign
 }
 
 /**

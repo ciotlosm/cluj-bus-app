@@ -3,12 +3,13 @@
 // Includes performance optimizations for data sharing across components
 
 import { create } from 'zustand';
-import type { TranzyStopTimeResponse } from '../types/rawTranzyApi';
+import type { TranzyStopTimeResponse, TranzyTripResponse } from '../types/rawTranzyApi';
 import { CACHE_DURATIONS } from '../utils/core/constants';
 
 interface TripStore {
   // Raw API data - no transformations
   stopTimes: TranzyStopTimeResponse[];
+  trips: TranzyTripResponse[];
   
   // Simple loading and error states
   loading: boolean;
@@ -18,23 +19,29 @@ interface TripStore {
   lastUpdated: number | null;
   
   // Actions
-  loadStopTimes: (apiKey: string, agency_id: number) => Promise<void>;
+  loadStopTimes: () => Promise<void>;
+  loadTrips: () => Promise<void>;
   clearStopTimes: () => void;
+  clearTrips: () => void;
   clearError: () => void;
   
   // Performance helper: check if data is fresh
   isDataFresh: (maxAgeMs?: number) => boolean;
+  
+  // Helper to get trip by trip_id
+  getTripById: (tripId: string) => TranzyTripResponse | undefined;
 }
 
 export const useTripStore = create<TripStore>((set, get) => ({
   // Raw API data
   stopTimes: [],
+  trips: [],
   loading: false,
   error: null,
   lastUpdated: null,
   
   // Actions
-  async loadStopTimes(apiKey: string, agency_id: number) {
+  async loadStopTimes() {
     // Performance optimization: avoid duplicate requests if already loading
     const currentState = get();
     if (currentState.loading) {
@@ -46,7 +53,7 @@ export const useTripStore = create<TripStore>((set, get) => ({
     try {
       // Import service dynamically to avoid circular dependencies
       const { tripService } = await import('../services/tripService');
-      const stopTimes = await tripService.getStopTimes(apiKey, agency_id);
+      const stopTimes = await tripService.getStopTimes();
       
       set({ 
         stopTimes, 
@@ -61,9 +68,41 @@ export const useTripStore = create<TripStore>((set, get) => ({
       });
     }
   },
+
+  async loadTrips() {
+    // Performance optimization: avoid duplicate requests if already loading
+    const currentState = get();
+    if (currentState.loading) {
+      return;
+    }
+    
+    set({ loading: true, error: null });
+    
+    try {
+      // Import service dynamically to avoid circular dependencies
+      const { tripService } = await import('../services/tripService');
+      const trips = await tripService.getTrips();
+      
+      set({ 
+        trips, 
+        loading: false, 
+        error: null, 
+        lastUpdated: Date.now() 
+      });
+    } catch (error) {
+      set({ 
+        loading: false, 
+        error: error instanceof Error ? error.message : 'Failed to load trips'
+      });
+    }
+  },
   
   clearStopTimes() {
     set({ stopTimes: [], error: null, lastUpdated: null });
+  },
+
+  clearTrips() {
+    set({ trips: [], error: null, lastUpdated: null });
   },
   
   clearError() {
@@ -75,5 +114,11 @@ export const useTripStore = create<TripStore>((set, get) => ({
     const { lastUpdated } = get();
     if (!lastUpdated) return false;
     return (Date.now() - lastUpdated) < maxAgeMs;
+  },
+
+  // Helper to get trip by trip_id
+  getTripById: (tripId: string) => {
+    const { trips } = get();
+    return trips.find(trip => trip.trip_id === tripId);
   },
 }));

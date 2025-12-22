@@ -18,7 +18,7 @@ interface RouteStore {
   lastUpdated: number | null;
   
   // Actions
-  loadRoutes: (apiKey: string, agency_id: number) => Promise<void>;
+  loadRoutes: () => Promise<void>;
   clearRoutes: () => void;
   clearError: () => void;
   
@@ -34,7 +34,7 @@ export const useRouteStore = create<RouteStore>((set, get) => ({
   lastUpdated: null,
   
   // Actions
-  async loadRoutes(apiKey: string, agency_id: number) {
+  async loadRoutes() {
     // Performance optimization: avoid duplicate requests if already loading
     const currentState = get();
     if (currentState.loading) {
@@ -46,7 +46,7 @@ export const useRouteStore = create<RouteStore>((set, get) => ({
     try {
       // Import service dynamically to avoid circular dependencies
       const { routeService } = await import('../services/routeService');
-      const routes = await routeService.getRoutes(apiKey, agency_id);
+      const routes = await routeService.getRoutes();
       
       set({ 
         routes, 

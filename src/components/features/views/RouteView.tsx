@@ -30,7 +30,7 @@ export const RouteView: FC = () => {
 
   useEffect(() => {
     if (apiKey && agency_id) {
-      loadRoutes(apiKey, agency_id);
+      loadRoutes();
     }
   }, [apiKey, agency_id, loadRoutes]);
 
@@ -40,12 +40,6 @@ export const RouteView: FC = () => {
   const handleFilterChange = (newFilterState: RouteFilterState) => {
     setFilterState(newFilterState);
   };
-
-  useEffect(() => {
-    if (apiKey && agency_id) {
-      loadRoutes(apiKey, agency_id);
-    }
-  }, [apiKey, agency_id, loadRoutes]);
 
   if (loading) {
     return (
@@ -66,7 +60,7 @@ export const RouteView: FC = () => {
             size="small" 
             onClick={() => {
               if (apiKey && agency_id) {
-                loadRoutes(apiKey, agency_id);
+                loadRoutes();
               }
             }}
           >

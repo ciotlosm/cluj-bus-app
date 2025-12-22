@@ -88,3 +88,11 @@ export interface TranzyStopTimeResponse {
   // Note: arrival_time and departure_time are NOT included in the API response
   // The API only returns trip_id, stop_id, and stop_sequence
 }
+
+export interface TranzyTripResponse {
+  trip_id: string;
+  route_id: number;
+  service_id: string;
+  trip_headsign: string;
+  direction_id: number;
+}

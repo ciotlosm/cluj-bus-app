@@ -7,7 +7,7 @@ import { sortByDistance, calculateDistance } from '../location/distanceUtils';
 import { hasActiveTrips, checkStationFavoritesMatch } from './tripValidationUtils';
 import { addStationMetadata } from './stationVehicleUtils';
 import type { FilteredStation } from '../../types/stationFilter';
-import type { TranzyStopResponse, TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse } from '../../types/rawTranzyApi';
+import type { TranzyStopResponse, TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from '../../types/rawTranzyApi';
 import { SECONDARY_STATION_THRESHOLD } from '../../types/stationFilter';
 
 /**
@@ -26,7 +26,8 @@ export const filterStations = (
   favoritesFilterEnabled: boolean,
   hasFavoriteRoutes: boolean,
   maxResults?: number,
-  proximityThreshold: number = SECONDARY_STATION_THRESHOLD
+  proximityThreshold: number = SECONDARY_STATION_THRESHOLD,
+  trips: TranzyTripResponse[] = [] // NEW: trip data for headsign
 ): FilteredStation[] => {
   // Early return if no location and smart filtering requested
   if (!currentPosition && maxResults !== undefined) {
@@ -71,7 +72,7 @@ export const filterStations = (
       distance: userLocation ? calculateDistance(userLocation, { lat: station.stop_lat, lon: station.stop_lon }) : 0,
       hasActiveTrips: true,
       stationType: 'all' as const // Will be updated based on position
-    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable);
+    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable, trips);
 
     validStations.push(stationWithMetadata);
 

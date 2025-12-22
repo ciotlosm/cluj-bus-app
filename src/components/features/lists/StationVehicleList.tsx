@@ -41,7 +41,7 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
       </Typography>
       
       <List dense>
-        {vehicles.map(({ vehicle, route }) => (
+        {vehicles.map(({ vehicle, route, trip }) => (
           <ListItem key={vehicle.id} sx={{ py: 1 }}>
             <ListItemText
               primary={
@@ -54,6 +54,13 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
                     <Chip label={route.route_short_name} size="small" color="primary" variant="outlined" />
                   ) : vehicle.route_id && (
                     <Chip label={`Route ${vehicle.route_id}`} size="small" color="default" variant="outlined" />
+                  )}
+                  
+                  {/* Headsign information */}
+                  {trip?.trip_headsign && (
+                    <Typography variant="caption" color="text.secondary" component="span">
+                      → {trip.trip_headsign}
+                    </Typography>
                   )}
                 </Stack>
               }
