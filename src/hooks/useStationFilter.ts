@@ -1,5 +1,5 @@
 /**
- * Smart Station Filtering Hook
+ * Station Filtering Hook
  * Minimal implementation for location-based station filtering
  */
 
@@ -9,8 +9,8 @@ import { useStationStore } from '../stores/stationStore';
 import { useTripStore } from '../stores/tripStore';
 import { calculateDistance, sortByDistance } from '../utils/location/distanceUtils';
 import { hasActiveTrips } from '../utils/station/tripValidationUtils';
-import type { SmartStationFilterResult, FilteredStation } from '../types/smartStationFilter';
-import { SECONDARY_STATION_THRESHOLD } from '../types/smartStationFilter';
+import type { StationFilterResult, FilteredStation } from '../types/stationFilter';
+import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
 
 // Utility functions moved from StationView
 const formatDistance = (distance: number): string => {
@@ -42,7 +42,7 @@ const safeCalculateDistance = (from: { lat: number; lon: number }, to: { lat: nu
   }
 };
 
-export function useSmartStationFilter(): SmartStationFilterResult {
+export function useStationFilter(): StationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
   const { stopTimes, loading: tripLoading, error: tripError, loadStopTimes } = useTripStore();

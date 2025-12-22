@@ -1,5 +1,5 @@
 /**
- * Smart Station Filtering Types
+ * Station Filtering Types
  * Core interfaces for location-aware station filtering
  */
 
@@ -32,7 +32,7 @@ export interface StationUtilities {
 /**
  * Hook result interface
  */
-export interface SmartStationFilterResult {
+export interface StationFilterResult {
   filteredStations: FilteredStation[];
   loading: boolean;
   error: string | null;

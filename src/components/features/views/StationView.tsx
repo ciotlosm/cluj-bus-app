@@ -11,7 +11,7 @@ import {
   Divider
 } from '@mui/material';
 import { useStationStore } from '../../../stores/stationStore';
-import { useSmartStationFilter } from '../../../hooks/useSmartStationFilter';
+import { useStationFilter } from '../../../hooks/useStationFilter';
 import { StationViewHeader } from '../headers/StationViewHeader';
 import { StationList } from '../lists/StationList';
 import { StationEmptyState } from '../states/StationEmptyState';
@@ -27,7 +27,7 @@ export const StationView: FC = () => {
     toggleFiltering, 
     retryFiltering,
     utilities
-  } = useSmartStationFilter();
+  } = useStationFilter();
 
   useEffect(() => {
     loadStops();

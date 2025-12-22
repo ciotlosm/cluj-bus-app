@@ -20,7 +20,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
-import type { FilteredStation, StationUtilities } from '../../../types/smartStationFilter';
+import type { FilteredStation, StationUtilities } from '../../../types/stationFilter';
 import { StationVehicleList } from './StationVehicleList';
 
 interface StationListProps {
