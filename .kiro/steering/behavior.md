@@ -9,11 +9,41 @@
 - Prioritize technical correctness over being "polite" or "helpful."
 - If I suggest a pattern that is an anti-pattern (e.g., prop drilling instead of context, or unnecessary state), you must politely challenge it and explain why.
 
-## 3. Mandatory Confidence Scoring
-- Every technical explanation or code block MUST end with a "Confidence Score: [X/10]".
+## 3. Mandatory Confidence Scoring and Model Identification
+- Every technical explanation or code block MUST end with a "Confidence Score: [X/10]" and "Model: [model_name]".
 - If the score is lower than 9/10, you must list the "Primary Uncertainties" (e.g., "Unsure if this version of the library Xversion [X]").
+- Always include which model was used for the response (e.g., "Model: Claude 3.5 Sonnet").
 
-## 4. VERIFICATION STEP
+## 4. Anti-Complexity Rules (CRITICAL)
+
+### 🚨 Default to Simplicity - Fight Over-Engineering
+
+**NEVER create unnecessary abstractions or complexity**
+
+#### **Forbidden Patterns:**
+- ❌ **Don't create interfaces unless you have multiple implementations**
+- ❌ **Don't create services for pure calculations** - Use utility functions instead
+- ❌ **Don't create stores for static configuration** - Use constants instead
+- ❌ **Don't create classes when functions suffice**
+- ❌ **Don't add validation for edge cases that don't matter**
+- ❌ **Don't create abstractions for future needs that may never come**
+
+#### **Required Approach:**
+- ✅ **Start with the dumbest possible solution first**
+- ✅ **Use existing patterns from the codebase**
+- ✅ **Reuse existing functions before writing new ones**
+- ✅ **Write the minimum code needed to solve the actual problem**
+- ✅ **Question every line: "Is this actually needed?"**
+
+#### **Before Creating Any Abstraction, Ask:**
+1. Do I have multiple implementations that need this interface?
+2. Is this actually complex enough to warrant a class/service?
+3. Does this configuration actually need to change at runtime?
+4. Am I solving a real problem or an imaginary future problem?
+
+**Remember: The best code is no code. The second best code is simple, direct code that solves the actual problem.**
+
+## 5. VERIFICATION STEP
 
 Before providing code, state any assumptions explicitly: "Assumption: I am assuming you are using [Library] version [X]."
 
@@ -101,7 +131,7 @@ Instead of silently removing code, I must say:
 
 **Remember: User maintains full control over what gets changed or removed. Never make assumptions about what should be deleted or restructured.**
 
-## 8. MANDATORY GIT OPERATION CONFIRMATION
+## 7. MANDATORY GIT OPERATION CONFIRMATION
 
 ### 🚨 CRITICAL: Never Execute Git Operations Without Permission
 
@@ -135,7 +165,7 @@ Instead of silently removing code, I must say:
 
 **Remember: Git operations are permanent and affect the repository. User must explicitly request them.**
 
-## 7. MANDATORY CODE CHANGE REPORTING
+## 8. MANDATORY CODE CHANGE REPORTING
 
 ### 📊 Always Report Code Changes with Line Counts
 

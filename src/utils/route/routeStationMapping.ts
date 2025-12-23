@@ -4,6 +4,7 @@
 
 import type { TranzyStopTimeResponse, TranzyVehicleResponse } from '../../types/rawTranzyApi';
 import { CACHE_DURATIONS } from '../core/constants';
+import { createTripToRouteMap } from '../vehicle/vehicleMappingUtils';
 
 /**
  * Mapping of stop_id to array of route_ids serving that station
@@ -21,32 +22,17 @@ export interface TripRouteMap {
 
 /**
  * Create a mapping from trip_id to route_id using vehicle data
- * Vehicles contain both trip_id and route_id, allowing us to build this mapping
- * 
+ * @deprecated Use createTripToRouteMap from vehicleMappingUtils instead
  * @param vehicles - Array of vehicle responses from API
  * @returns Mapping of trip_id to route_id
  */
 export function createTripRouteMapping(vehicles: TranzyVehicleResponse[]): TripRouteMap {
+  const tripRouteMapFromUtil = createTripToRouteMap(vehicles);
   const tripRouteMap: TripRouteMap = {};
   
-  // Handle edge case: empty or invalid vehicles array
-  if (!Array.isArray(vehicles)) {
-    return tripRouteMap;
-  }
-  
-  for (const vehicle of vehicles) {
-    // Skip vehicles with missing or invalid data
-    if (!vehicle || 
-        vehicle.trip_id === null || 
-        vehicle.trip_id === undefined || 
-        vehicle.trip_id.trim() === '' ||
-        vehicle.route_id === null || 
-        vehicle.route_id === undefined) {
-      continue;
-    }
-    
-    // Map trip_id to route_id
-    tripRouteMap[vehicle.trip_id] = vehicle.route_id;
+  // Convert Map to object for backward compatibility
+  for (const [tripId, routeId] of tripRouteMapFromUtil) {
+    tripRouteMap[tripId] = routeId;
   }
   
   return tripRouteMap;
@@ -170,7 +156,6 @@ interface CacheEntry {
 }
 
 let globalMappingCache: CacheEntry | null = null;
-const CACHE_DURATION = CACHE_DURATIONS.ROUTE_MAPPING;
 
 /**
  * Create a simple hash of the input data for cache invalidation
@@ -201,7 +186,7 @@ function isCacheValid(stopTimes: TranzyStopTimeResponse[], vehicles: TranzyVehic
   if (!globalMappingCache) return false;
   
   const now = Date.now();
-  const isNotExpired = (now - globalMappingCache.timestamp) < CACHE_DURATION;
+  const isNotExpired = (now - globalMappingCache.timestamp) < CACHE_DURATIONS.ROUTE_MAPPING;
   const currentHash = createDataHash(stopTimes, vehicles);
   const isSameData = globalMappingCache.dataHash === currentHash;
   

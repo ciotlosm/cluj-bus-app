@@ -6,8 +6,7 @@ import axios from 'axios';
 import type { TranzyVehicleResponse } from '../types/rawTranzyApi.ts';
 import { handleApiError, apiStatusTracker } from './error';
 import { getApiConfig } from '../context/appContext';
-
-const API_BASE = '/api/tranzy/v1/opendata';
+import { API_CONFIG } from '../utils/core/constants';
 
 export const vehicleService = {
   /**
@@ -19,7 +18,7 @@ export const vehicleService = {
       // Get API credentials from app context
       const { apiKey, agencyId } = getApiConfig();
 
-      const response = await axios.get(`${API_BASE}/vehicles`, {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/vehicles`, {
         headers: {
           'X-API-Key': apiKey,
           'X-Agency-Id': agencyId.toString()

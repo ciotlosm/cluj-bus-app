@@ -4,6 +4,7 @@
  */
 
 import type { TranzyStopTimeResponse, TranzyStopResponse, TranzyVehicleResponse } from '../../types/rawTranzyApi';
+import { getRouteIdsForTrips } from '../vehicle/vehicleMappingUtils';
 
 /**
  * Check if a station has active trips using stop times data
@@ -93,16 +94,8 @@ export function getStationRouteIds(
     )
     .map(stopTime => stopTime.trip_id);
 
-  // Map trip IDs to route IDs using vehicle data
-  const routeIds = new Set<string>();
-  
-  for (const vehicle of vehicles) {
-    if (vehicle && vehicle.trip_id && vehicle.route_id !== null) {
-      if (stationTripIds.includes(vehicle.trip_id)) {
-        routeIds.add(vehicle.route_id.toString());
-      }
-    }
-  }
+  // Use consolidated utility to get route IDs for these trips
+  const routeIds = getRouteIdsForTrips(stationTripIds, vehicles);
 
   return Array.from(routeIds);
 }
