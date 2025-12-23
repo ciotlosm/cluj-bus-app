@@ -33,6 +33,9 @@ export {
   projectPointToShape
 } from './distanceUtils.ts';
 
+// Distance Calculator class
+export { DistanceCalculator, distanceCalculator } from './DistanceCalculator.ts';
+
 // Time calculation utilities
 export {
   calculateArrivalTime,

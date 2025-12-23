@@ -7,8 +7,10 @@ import { calculateDistanceAlongShape, calculateDistanceViaStops } from './distan
 import { calculateArrivalTime } from './timeUtils.ts';
 import { generateStatusMessage, getArrivalStatus } from './statusUtils.ts';
 import type {
-  Vehicle,
-  Stop,
+  TranzyVehicleResponse,
+  TranzyStopResponse,
+  TranzyTripResponse,
+  TranzyStopTimeResponse,
   RouteShape,
   ArrivalTimeResult
 } from '../../types/arrivalTime.ts';
@@ -18,28 +20,33 @@ import { ARRIVAL_STATUS_SORT_ORDER } from '../../types/arrivalTime.ts';
  * Calculate arrival time for a single vehicle to a target stop
  */
 export function calculateVehicleArrivalTime(
-  vehicle: Vehicle,
-  targetStop: Stop,
+  vehicle: TranzyVehicleResponse,
+  targetStop: TranzyStopResponse,
+  trips: TranzyTripResponse[],
+  stopTimes: TranzyStopTimeResponse[],
+  stops: TranzyStopResponse[],
   routeShape?: RouteShape
 ): ArrivalTimeResult {
   // Calculate distance using appropriate method
+  const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
+  const stopPosition = { lat: targetStop.stop_lat, lon: targetStop.stop_lon };
   const distanceResult = routeShape 
-    ? calculateDistanceAlongShape(vehicle.position, targetStop, routeShape)
+    ? calculateDistanceAlongShape(vehiclePosition, stopPosition, routeShape)
     : calculateDistanceViaStops(
-        vehicle.position, 
-        targetStop, 
-        getIntermediateStops(vehicle, targetStop)
+        vehiclePosition, 
+        stopPosition, 
+        getIntermediateStops(vehicle, targetStop, stopTimes, stops)
       );
 
   // Calculate time estimate
-  const intermediateStopCount = countIntermediateStops(vehicle, targetStop);
+  const intermediateStopCount = countIntermediateStops(vehicle, targetStop, stopTimes);
   const estimatedMinutes = calculateArrivalTime(
     distanceResult.totalDistance,
     intermediateStopCount
   );
 
   // Get status (determines both display and sort order)
-  const status = getArrivalStatus(estimatedMinutes, vehicle, targetStop);
+  const status = getArrivalStatus(estimatedMinutes, vehicle, targetStop, trips, stopTimes, stops);
 
   // Generate status message
   const statusMessage = generateStatusMessage(status, estimatedMinutes);
@@ -59,17 +66,21 @@ export function calculateVehicleArrivalTime(
  * Calculate arrival times for multiple vehicles
  */
 export function calculateMultipleArrivals(
-  vehicles: Vehicle[],
-  targetStop: Stop
+  vehicles: TranzyVehicleResponse[],
+  targetStop: TranzyStopResponse,
+  trips: TranzyTripResponse[],
+  stopTimes: TranzyStopTimeResponse[],
+  stops: TranzyStopResponse[]
 ): ArrivalTimeResult[] {
   // Filter vehicles that serve the target stop (reuse existing filtering pattern)
   const relevantVehicles = vehicles.filter(vehicle => {
-    return vehicle.trip.stops.some(tripStop => tripStop.stopId === targetStop.id);
+    if (!vehicle.trip_id) return false;
+    return stopTimes.some(st => st.trip_id === vehicle.trip_id && st.stop_id === targetStop.stop_id);
   });
   
   return relevantVehicles.map(vehicle => {
-    const routeShape = vehicle.trip.shape;
-    return calculateVehicleArrivalTime(vehicle, targetStop, routeShape);
+    const routeShape = undefined; // Route shape not implemented yet
+    return calculateVehicleArrivalTime(vehicle, targetStop, trips, stopTimes, stops, routeShape);
   });
 }
 
@@ -88,36 +99,57 @@ export function sortVehiclesByArrival(results: ArrivalTimeResult[]): ArrivalTime
     }
     
     // Tertiary: stable sort by vehicle ID
-    return a.vehicleId.localeCompare(b.vehicleId);
+    return a.vehicleId - b.vehicleId;
   });
 }
 
 /**
  * Get intermediate stops between vehicle and target
  */
-function getIntermediateStops(vehicle: Vehicle, targetStop: Stop): Stop[] {
-  // Placeholder implementation - will be enhanced in later tasks
-  return vehicle.trip.stops
-    .filter(tripStop => tripStop.stopId !== targetStop.id)
-    .map(tripStop => ({
-      id: tripStop.stopId,
-      name: `Stop ${tripStop.stopId}`,
-      position: tripStop.position
-    }));
+function getIntermediateStops(
+  vehicle: TranzyVehicleResponse, 
+  targetStop: TranzyStopResponse,
+  stopTimes: TranzyStopTimeResponse[],
+  stops: TranzyStopResponse[]
+): { lat: number, lon: number }[] {
+  if (!vehicle.trip_id) return [];
+  
+  // Get stop times for this trip, sorted by sequence
+  const tripStopTimes = stopTimes
+    .filter(st => st.trip_id === vehicle.trip_id)
+    .sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+  // Find target stop index
+  const targetStopIndex = tripStopTimes.findIndex(st => st.stop_id === targetStop.stop_id);
+  if (targetStopIndex === -1) return [];
+
+  // Get intermediate stops (assume vehicle is at beginning of trip for now)
+  const intermediateStopTimes = tripStopTimes.slice(0, targetStopIndex);
+  
+  return intermediateStopTimes.map(st => {
+    const stopData = stops.find(s => s.stop_id === st.stop_id);
+    return stopData ? { lat: stopData.stop_lat, lon: stopData.stop_lon } : { lat: 0, lon: 0 };
+  });
 }
 
 /**
  * Count intermediate stops between vehicle and target
  */
-function countIntermediateStops(vehicle: Vehicle, targetStop: Stop): number {
-  // Placeholder implementation - will be enhanced in later tasks
-  const targetStopIndex = vehicle.trip.stops.findIndex(
-    tripStop => tripStop.stopId === targetStop.id
-  );
+function countIntermediateStops(
+  vehicle: TranzyVehicleResponse, 
+  targetStop: TranzyStopResponse,
+  stopTimes: TranzyStopTimeResponse[]
+): number {
+  if (!vehicle.trip_id) return 0;
   
-  if (targetStopIndex === -1) {
-    return 0;
-  }
+  // Get stop times for this trip, sorted by sequence
+  const tripStopTimes = stopTimes
+    .filter(st => st.trip_id === vehicle.trip_id)
+    .sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+  // Find target stop index
+  const targetStopIndex = tripStopTimes.findIndex(st => st.stop_id === targetStop.stop_id);
+  if (targetStopIndex === -1) return 0;
 
   // Assume vehicle is at the beginning of the trip for now
   return Math.max(0, targetStopIndex);

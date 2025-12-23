@@ -8,7 +8,7 @@ import { calculateDistance } from '../location/distanceUtils.ts';
 import { projectPointToSegment } from './geometryUtils.ts';
 import type {
   Coordinates,
-  Stop,
+  TranzyStopResponse,
   RouteShape,
   DistanceResult,
   ProjectionResult
@@ -25,14 +25,14 @@ const PROJECTION_CONFIDENCE_THRESHOLDS = {
  */
 export function calculateDistanceAlongShape(
   vehiclePosition: Coordinates,
-  targetStop: Stop,
+  targetStopPosition: Coordinates,
   routeShape: RouteShape
 ): DistanceResult {
   // Project vehicle position to route shape
   const vehicleProjection = projectPointToShape(vehiclePosition, routeShape);
   
   // Project target stop to route shape
-  const stopProjection = projectPointToShape(targetStop.position, routeShape);
+  const stopProjection = projectPointToShape(targetStopPosition, routeShape);
   
   // Calculate distance along shape between projections
   const distanceAlongShape = calculateDistanceBetweenProjections(
@@ -60,20 +60,20 @@ export function calculateDistanceAlongShape(
  */
 export function calculateDistanceViaStops(
   vehiclePosition: Coordinates,
-  targetStop: Stop,
-  intermediateStops: Stop[]
+  targetStopPosition: Coordinates,
+  intermediateStops: Coordinates[]
 ): DistanceResult {
   let totalDistance = 0;
   let currentPosition = vehiclePosition;
 
   // Add distances to each intermediate stop
-  for (const stop of intermediateStops) {
-    totalDistance += calculateDistance(currentPosition, stop.position);
-    currentPosition = stop.position;
+  for (const stopPosition of intermediateStops) {
+    totalDistance += calculateDistance(currentPosition, stopPosition);
+    currentPosition = stopPosition;
   }
 
   // Add final distance to target stop
-  totalDistance += calculateDistance(currentPosition, targetStop.position);
+  totalDistance += calculateDistance(currentPosition, targetStopPosition);
 
   return {
     totalDistance,
