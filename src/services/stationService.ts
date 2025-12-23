@@ -6,8 +6,7 @@ import axios from 'axios';
 import type { TranzyStopResponse } from '../types/rawTranzyApi.ts';
 import { handleApiError, apiStatusTracker } from './error';
 import { getApiConfig } from '../context/appContext';
-
-const API_BASE = '/api/tranzy/v1/opendata';
+import { API_CONFIG } from '../utils/core/constants';
 
 export const stationService = {
   /**
@@ -18,7 +17,7 @@ export const stationService = {
 
     const startTime = Date.now();
     try {
-      const response = await axios.get(`${API_BASE}/stops`, {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/stops`, {
         headers: {
           'X-API-Key': apiKey,
           'X-Agency-Id': agencyId.toString()

@@ -2,6 +2,15 @@
 // Centralized configuration for cache durations and other app-wide settings
 
 /**
+ * API Configuration
+ * Centralized API endpoints and configuration
+ */
+export const API_CONFIG = {
+  // Base URL for all Tranzy API endpoints
+  BASE_URL: '/api/tranzy/v1/opendata',
+} as const;
+
+/**
  * Cache duration constants (in milliseconds)
  * These control how long data stays fresh before requiring a refresh
  */
@@ -28,4 +37,22 @@ export const PERFORMANCE = {
   
   // Maximum number of concurrent API requests
   MAX_CONCURRENT_REQUESTS: 3,
+} as const;
+
+/**
+ * Arrival time calculation constants
+ * Configurable values for arrival time estimation (Requirements 2.3, 2.5)
+ */
+export const ARRIVAL_CONFIG = {
+  // Average bus speed for time calculations (km/h)
+  AVERAGE_SPEED: 25,
+  
+  // Dwell time per intermediate stop (seconds)
+  DWELL_TIME: 30,
+  
+  // Proximity threshold for "at stop" status (meters)
+  PROXIMITY_THRESHOLD: 50,
+  
+  // Recent departure window for "just left" status (minutes)
+  RECENT_DEPARTURE_WINDOW: 2
 } as const;

@@ -3,6 +3,9 @@
  * for accurate distance calculations between GPS coordinates.
  */
 
+// Earth's radius in meters for Haversine formula
+const EARTH_RADIUS_METERS = 6371000;
+
 export interface Coordinates {
   lat: number;
   lon: number;
@@ -31,7 +34,6 @@ export function calculateDistance(from: Coordinates, to: Coordinates): number {
     throw new Error('Invalid coordinates provided');
   }
 
-  const R = 6371000; // Earth's radius in meters
   const φ1 = (from.lat * Math.PI) / 180; // φ, λ in radians
   const φ2 = (to.lat * Math.PI) / 180;
   const Δφ = ((to.lat - from.lat) * Math.PI) / 180;
@@ -42,7 +44,7 @@ export function calculateDistance(from: Coordinates, to: Coordinates): number {
             Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  const distance = R * c; // Distance in meters
+  const distance = EARTH_RADIUS_METERS * c; // Distance in meters
   return Math.round(distance); // Round to nearest meter
 }
 
