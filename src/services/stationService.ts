@@ -4,6 +4,7 @@
 
 import axios from 'axios';
 import type { TranzyStopResponse } from '../types/rawTranzyApi.ts';
+import type { ArrivalTimeResult } from '../types/arrivalTime.ts';
 import { handleApiError, apiStatusTracker } from './error';
 import { getApiConfig } from '../context/appContext';
 import { API_CONFIG } from '../utils/core/constants';
@@ -37,6 +38,19 @@ export const stationService = {
       return response.data;
     } catch (error) {
       handleApiError(error, 'fetch stops');
+    }
+  },
+
+  /**
+   * Get arrival times for vehicles approaching a specific stop
+   * Delegates to dedicated arrival service for real-time calculations
+   */
+  async getStopArrivals(stopId: string): Promise<ArrivalTimeResult[]> {
+    try {
+      const { arrivalService } = await import('./arrivalService');
+      return arrivalService.calculateArrivalsForStop(stopId);
+    } catch (error) {
+      handleApiError(error, 'fetch stop arrivals');
     }
   }
 };

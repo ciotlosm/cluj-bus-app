@@ -4,9 +4,8 @@
  */
 
 import { calculateDistance } from '../location/distanceUtils.ts';
-import { determineNextStopEnhanced } from './vehiclePositionUtils.ts';
 import { ARRIVAL_CONFIG } from '../../utils/core/constants.ts';
-import type { Stop, ArrivalStatus, Vehicle } from '../../types/arrivalTime.ts';
+import type { TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse, ArrivalStatus } from '../../types/arrivalTime.ts';
 import type { Coordinates } from '../location/distanceUtils.ts';
 
 /**
@@ -32,8 +31,9 @@ export function generateStatusMessage(status: ArrivalStatus, estimatedMinutes: n
 /**
  * Check if vehicle is within proximity threshold of a stop
  */
-function isWithinProximityThreshold(vehiclePosition: Coordinates, targetStop: Stop): boolean {
-  const distance = calculateDistance(vehiclePosition, targetStop.position);
+function isWithinProximityThreshold(vehiclePosition: Coordinates, targetStop: TranzyStopResponse): boolean {
+  const stopPosition = { lat: targetStop.stop_lat, lon: targetStop.stop_lon };
+  const distance = calculateDistance(vehiclePosition, stopPosition);
   return distance <= ARRIVAL_CONFIG.PROXIMITY_THRESHOLD;
 }
 
@@ -41,7 +41,13 @@ function isWithinProximityThreshold(vehiclePosition: Coordinates, targetStop: St
  * Determine status when vehicle is within proximity threshold
  * Based on speed and next station logic
  */
-function getProximityBasedStatus(vehicle: Vehicle, targetStop: Stop): 'at_stop' | 'arriving_soon' | 'just_left' {
+function getProximityBasedStatus(
+  vehicle: TranzyVehicleResponse, 
+  targetStop: TranzyStopResponse,
+  trips: TranzyTripResponse[],
+  stopTimes: TranzyStopTimeResponse[],
+  stops: TranzyStopResponse[]
+): 'at_stop' | 'arriving_soon' | 'just_left' {
   // Default to 0 if speed not available and within proximity threshold
   const speed = vehicle.speed ?? 0;
   
@@ -50,8 +56,8 @@ function getProximityBasedStatus(vehicle: Vehicle, targetStop: Stop): 'at_stop' 
   }
   
   // Determine if targetStop is the vehicle's next stop using enhanced logic
-  const nextStopResult = determineNextStopEnhanced(vehicle);
-  const isNextStation = nextStopResult.nextStop?.id === targetStop.id;
+  const nextStop = determineNextStop(vehicle, trips, stopTimes, stops);
+  const isNextStation = nextStop?.stop_id === targetStop.stop_id;
   
   return isNextStation ? 'arriving_soon' : 'just_left';
 }
@@ -61,23 +67,27 @@ function getProximityBasedStatus(vehicle: Vehicle, targetStop: Stop): 'at_stop' 
  */
 export function getArrivalStatus(
   estimatedMinutes: number,
-  vehicle: Vehicle,
-  targetStop: Stop
+  vehicle: TranzyVehicleResponse,
+  targetStop: TranzyStopResponse,
+  trips: TranzyTripResponse[],
+  stopTimes: TranzyStopTimeResponse[],
+  stops: TranzyStopResponse[]
 ): ArrivalStatus {
   // Check if within proximity threshold first
-  if (isWithinProximityThreshold(vehicle.position, targetStop)) {
-    return getProximityBasedStatus(vehicle, targetStop);
+  const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
+  if (isWithinProximityThreshold(vehiclePosition, targetStop)) {
+    return getProximityBasedStatus(vehicle, targetStop, trips, stopTimes, stops);
   }
   
-  // Outside proximity threshold - use enhanced sequence-based logic
-  const nextStopResult = determineNextStopEnhanced(vehicle);
+  // Outside proximity threshold - use sequence-based logic
+  const nextStop = determineNextStop(vehicle, trips, stopTimes, stops);
   
-  if (nextStopResult.isOffRoute) {
-    // Vehicle is way off route
+  if (!nextStop) {
+    // Vehicle is way off route or no trip data
     return 'off_route';
   }
   
-  if (nextStopResult.nextStop?.id === targetStop.id) {
+  if (nextStop.stop_id === targetStop.stop_id) {
     // Target stop is the vehicle's next stop
     return 'in_minutes';
   } else {
@@ -99,8 +109,28 @@ export function generateStatusWithConfidence(
 }
 
 /**
- * Generate time-based arrival message
+ * Determine the next stop for a vehicle using trip data
  */
+function determineNextStop(
+  vehicle: TranzyVehicleResponse,
+  trips: TranzyTripResponse[],
+  stopTimes: TranzyStopTimeResponse[],
+  stops: TranzyStopResponse[]
+): TranzyStopResponse | null {
+  if (!vehicle.trip_id) return null;
+  
+  // Get stop times for this trip, sorted by sequence
+  const tripStopTimes = stopTimes
+    .filter(st => st.trip_id === vehicle.trip_id)
+    .sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+  if (tripStopTimes.length === 0) return null;
+
+  // For now, assume the first stop in sequence is the next stop
+  // This is a simplified implementation that can be enhanced later
+  const nextStopTime = tripStopTimes[0];
+  return stops.find(s => s.stop_id === nextStopTime.stop_id) || null;
+}
 function generateTimeBasedMessage(estimatedMinutes: number): string {
   const roundedMinutes = Math.round(estimatedMinutes);
   return `In ${roundedMinutes} minute${roundedMinutes !== 1 ? 's' : ''}`;

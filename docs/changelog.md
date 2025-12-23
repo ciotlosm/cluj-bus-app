@@ -2,6 +2,16 @@
 
 ## Recent Updates (December 2024)
 
+### December 23, 2024 - Type System Simplification
+- **🧹 CLEANUP**: Removed duplicate Stop interface, now using TranzyStopResponse directly
+- **Type Consolidation**: Eliminated unnecessary abstraction between API types and internal types
+- **Code Reduction**: Removed convertStop method from arrivalService
+- **Type Consistency**: Fixed ID type mismatches, eliminated excessive toString() calls
+- **MAJOR REFACTOR**: Eliminated Vehicle, Trip, and TripStop interfaces - using raw API types directly
+- **Performance**: Removed expensive object transformation overhead in arrival calculations
+- **Simplification**: Deleted ~100 lines of unnecessary transformation code in buildVehicleTrips/buildTrip methods
+- **Improved Consistency**: All arrival calculations now use consistent raw API data format
+
 ### December 22, 2024 - Vehicle Headsign Display
 - **✨ NEW FEATURE**: Added headsign information to vehicle list in stations view
 - **API Integration**: Implemented trips endpoint to fetch headsign data from Tranzy API

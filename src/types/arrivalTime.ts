@@ -5,9 +5,10 @@
  */
 
 import type { Coordinates } from '../utils/location/distanceUtils.ts';
+import type { TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse } from './rawTranzyApi.ts';
 
-// Re-export Coordinates for use in arrival modules
-export type { Coordinates };
+// Re-export types for use in arrival modules
+export type { Coordinates, TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse };
 
 // ============================================================================
 // Geometric Types
@@ -36,33 +37,7 @@ export interface ShapeSegment {
   distance: number;
 }
 
-export interface Vehicle {
-  id: string;
-  position: Coordinates;
-  speed?: number; // km/h from API if available
-  trip: Trip;
-  lastUpdated: Date;
-}
-
-export interface Trip {
-  id: string;
-  routeId: string;
-  stops: TripStop[];
-  shape?: RouteShape;
-}
-
-export interface TripStop {
-  stopId: string;
-  sequence: number;
-  scheduledTime?: Date;
-  position: Coordinates;
-}
-
-export interface Stop {
-  id: string;
-  name: string;
-  position: Coordinates;
-}
+// Vehicle, Trip, and TripStop interfaces removed - using raw API types directly
 
 export interface DistanceResult {
   totalDistance: number;
@@ -71,7 +46,7 @@ export interface DistanceResult {
 }
 
 export interface ArrivalTimeResult {
-  vehicleId: string;
+  vehicleId: number;
   estimatedMinutes: number; // Always positive - actual time value
   status: ArrivalStatus;    // Determines sort order and display
   statusMessage: string;
