@@ -12,11 +12,7 @@ export {
 
 // Vehicle position utilities
 export {
-  identifyNextStop,
-  determineNextStopEnhanced,
-  getSortedTripStops,
-  findClosestStopInTrip,
-  getNextStopInSequence
+  determineNextStop
 } from './vehiclePositionUtils.ts';
 
 // Geometry utilities
@@ -55,9 +51,6 @@ export {
 export type {
   ArrivalTimeResult,
   DistanceResult,
-  Vehicle,
-  Stop,
-  Trip,
   RouteShape,
   ArrivalStatus
 } from '../../types/arrivalTime.ts';

@@ -3,6 +3,7 @@
  * Shows how to get real-time arrival calculations without caching
  */
 
+import { useState, useEffect } from 'react';
 import { arrivalService } from '../services/arrivalService';
 import { stationService } from '../services/stationService';
 
@@ -48,8 +49,8 @@ export function useArrivals(stopId: string) {
   // In a React component, you would call arrivalService directly
   // No need for store caching since data is ephemeral
   
-  const [arrivals, setArrivals] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
+  const [arrivals, setArrivals] = useState([]);
+  const [loading, setLoading] = useState(false);
   
   const loadArrivals = async () => {
     setLoading(true);
@@ -64,7 +65,7 @@ export function useArrivals(stopId: string) {
   };
   
   // Refresh every 30 seconds for real-time updates
-  React.useEffect(() => {
+  useEffect(() => {
     loadArrivals();
     const interval = setInterval(loadArrivals, 30000);
     return () => clearInterval(interval);

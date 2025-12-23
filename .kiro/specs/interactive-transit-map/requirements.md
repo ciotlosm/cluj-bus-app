@@ -91,11 +91,11 @@ An interactive map component for visualizing real-time transit data including ve
 
 ### Requirement 7: Station Symbol Customization
 
-**User Story:** As a developer, I want to customize station symbols, so that I can indicate special stations like user location or terminus points.
+**User Story:** As a developer, I want to customize station symbols, so that I can indicate special stations like user location, terminus points, and nearby stations.
 
 #### Acceptance Criteria
 
-1. THE Interactive_Map SHALL support different Station_Symbol types (circle, user-location, terminus)
+1. THE Interactive_Map SHALL support different Station_Symbol types (circle, user-location, terminus, nearby)
 2. WHEN station type is specified, THE Interactive_Map SHALL render appropriate symbol variant
 3. THE Interactive_Map SHALL allow custom colors and sizes for Station_Symbol markers
 4. WHEN station has special significance, THE Interactive_Map SHALL apply enhanced visual styling
