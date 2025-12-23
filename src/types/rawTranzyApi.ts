@@ -95,4 +95,13 @@ export interface TranzyTripResponse {
   service_id: string;
   trip_headsign: string;
   direction_id: number;
+  block_id: number;
+  shape_id: string;
+}
+
+export interface TranzyShapeResponse {
+  shape_id: string;
+  shape_pt_lat: number;
+  shape_pt_lon: number;
+  shape_pt_sequence: number;
 }

@@ -70,7 +70,8 @@ export function calculateMultipleArrivals(
   targetStop: TranzyStopResponse,
   trips: TranzyTripResponse[],
   stopTimes: TranzyStopTimeResponse[],
-  stops: TranzyStopResponse[]
+  stops: TranzyStopResponse[],
+  routeShapes?: Map<string, RouteShape>
 ): ArrivalTimeResult[] {
   // Filter vehicles that serve the target stop (reuse existing filtering pattern)
   const relevantVehicles = vehicles.filter(vehicle => {
@@ -79,7 +80,15 @@ export function calculateMultipleArrivals(
   });
   
   return relevantVehicles.map(vehicle => {
-    const routeShape = undefined; // Route shape not implemented yet
+    // Get route shape for this vehicle's trip
+    let routeShape: RouteShape | undefined;
+    if (routeShapes && vehicle.trip_id) {
+      const trip = trips.find(t => t.trip_id === vehicle.trip_id);
+      if (trip && trip.shape_id) {
+        routeShape = routeShapes.get(trip.shape_id);
+      }
+    }
+    
     return calculateVehicleArrivalTime(vehicle, targetStop, trips, stopTimes, stops, routeShape);
   });
 }
