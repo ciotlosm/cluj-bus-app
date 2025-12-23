@@ -51,3 +51,16 @@ export function getAccessibilityFeatures(
   
   return features;
 }
+
+/**
+ * Format arrival time result for display
+ * 
+ * @param arrivalResult - Arrival time calculation result
+ * @returns Formatted arrival time string
+ */
+export function formatArrivalTime(arrivalResult?: { statusMessage: string; confidence: string }): string {
+  if (!arrivalResult) return '';
+  
+  const confidenceIndicator = arrivalResult.confidence === 'low' ? ' (est.)' : '';
+  return `${arrivalResult.statusMessage}${confidenceIndicator}`;
+}

@@ -17,6 +17,11 @@ export interface StationVehicle {
   vehicle: TranzyVehicleResponse;
   route: TranzyRouteResponse | null;
   trip: TranzyTripResponse | null; // NEW: trip information for headsign
+  arrivalTime?: {
+    statusMessage: string;
+    confidence: 'high' | 'medium' | 'low';
+    estimatedMinutes: number;
+  }; // NEW: arrival time information
 }
 
 /**
