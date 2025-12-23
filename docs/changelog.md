@@ -2,6 +2,19 @@
 
 ## Recent Updates (December 2024)
 
+### December 23, 2024 - Route Shape Integration for Accurate Arrival Times
+- **✨ NEW FEATURE**: Integrated route shapes (polylines) for accurate distance calculations in arrival time predictions
+- **API Integration**: Added support for Tranzy API `/shapes` endpoint with `shape_id` header parameter
+- **Enhanced Accuracy**: Arrival times now use actual route geometry instead of straight-line distances between stops
+- **Data Flow**: Added `shape_id` to `TranzyTripResponse` interface and created `TranzyShapeResponse` type
+- **Services**: Created `shapesService` and `routeShapeService` for efficient shape data management
+- **Utilities**: Built `shapeUtils` for converting raw API shape data to `RouteShape` format with distance calculations
+- **Caching**: Implemented shape caching to minimize API calls and improve performance
+- **Confidence Levels**: Route shape calculations provide higher confidence levels (high/medium/low) for arrival predictions
+- **Fallback Support**: Maintains backward compatibility with stop-based distance calculations when shapes unavailable
+- **Testing**: Added comprehensive unit tests for shape conversion and caching functionality
+- **Performance**: Parallel shape fetching for multiple trips with efficient unique shape ID deduplication
+
 ### December 23, 2024 - Type System Simplification
 - **🧹 CLEANUP**: Removed duplicate Stop interface, now using TranzyStopResponse directly
 - **Type Consolidation**: Eliminated unnecessary abstraction between API types and internal types

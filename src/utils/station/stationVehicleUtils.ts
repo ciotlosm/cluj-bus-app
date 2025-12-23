@@ -11,7 +11,7 @@ import { checkStationFavoritesMatch } from './tripValidationUtils';
 import { calculateVehicleArrivalTime, sortVehiclesByArrival } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
-import type { ArrivalTimeResult, ArrivalStatus } from '../../types/arrivalTime';
+import type { ArrivalTimeResult, ArrivalStatus, RouteShape } from '../../types/arrivalTime';
 
 /**
  * Sort StationVehicle objects by arrival time using existing arrival sorting logic
@@ -75,7 +75,8 @@ export const getStationVehicles = (
   vehicles: TranzyVehicleResponse[],
   allRoutes: TranzyRouteResponse[],
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
-  stops: TranzyStopResponse[] = [] // NEW: stop data for arrival calculations
+  stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
+  routeShapes?: Map<string, RouteShape> // NEW: route shapes for accurate distance calculations
 ): StationVehicle[] => {
   // Return empty array if we don't have the required data
   if (stopTimes.length === 0 || vehicles.length === 0) {
@@ -122,12 +123,19 @@ export const getStationVehicles = (
       
       if (targetStop && stops.length > 0) {
         try {
+          // Get route shape for this vehicle's trip
+          let routeShape: RouteShape | undefined;
+          if (routeShapes && trip && trip.shape_id) {
+            routeShape = routeShapes.get(trip.shape_id);
+          }
+          
           const arrivalResult = calculateVehicleArrivalTime(
             vehicle,
             targetStop,
             trips,
             stopTimes,
-            stops
+            stops,
+            routeShape // Now passing actual route shape data
           );
           
           arrivalTime = {
@@ -168,12 +176,13 @@ export const addStationMetadata = (
   favoriteRouteIds: Set<string>,
   favoritesStoreAvailable: boolean,
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
-  stops: TranzyStopResponse[] = [] // NEW: stop data for arrival calculations
+  stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
+  routeShapes?: Map<string, RouteShape> // NEW: route shapes for accurate distance calculations
 ): FilteredStation => {
   const stationObj = station.station || station;
   
   // Get vehicles for this station (now includes trip and arrival time data)
-  const stationVehicles = getStationVehicles(stationObj.stop_id, stopTimes, vehicles, allRoutes, trips, stops);
+  const stationVehicles = getStationVehicles(stationObj.stop_id, stopTimes, vehicles, allRoutes, trips, stops, routeShapes);
   
   // Get route IDs for this station
   let routeIds: number[] = [];
