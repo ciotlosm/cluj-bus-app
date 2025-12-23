@@ -66,13 +66,13 @@ export const filterStations = (
       }
     }
 
-    // Create station with metadata
+    // Create station with metadata (now includes arrival time calculations)
     const stationWithMetadata = addStationMetadata({
       station,
       distance: userLocation ? calculateDistance(userLocation, { lat: station.stop_lat, lon: station.stop_lon }) : 0,
       hasActiveTrips: true,
       stationType: 'all' as const // Will be updated based on position
-    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable, trips);
+    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable, trips, stops);
 
     validStations.push(stationWithMetadata);
 

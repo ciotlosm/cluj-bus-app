@@ -95,7 +95,7 @@ This implementation plan breaks down the vehicle arrival time feature into discr
   - Test integration with existing vehicle and station data flows
   - _Requirements: 4.1, 4.2_
 
-- [ ] 9. Update UI components to display arrival times
+- [x] 9. Update UI components to display arrival times
   - Modify StationVehicleList component to show arrival time messages
   - Update VehicleList component with arrival time sorting
   - Add arrival time display to nearby stops view

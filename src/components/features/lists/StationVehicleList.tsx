@@ -10,9 +10,11 @@ import {
 } from '@mui/material';
 import { 
   DirectionsBus as BusIcon, AccessibleForward as WheelchairIcon,
-  DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon
+  DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon,
+  AccessTime as ArrivalIcon
 } from '@mui/icons-material';
-import { formatTimestamp, formatSpeed, getAccessibilityFeatures } from '../../../utils/vehicle/vehicleFormatUtils';
+import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTime } from '../../../utils/vehicle/vehicleFormatUtils';
+import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
 import type { StationVehicle } from '../../../types/stationFilter';
 
 interface StationVehicleListProps {
@@ -33,6 +35,9 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
     );
   }
 
+  // Sort vehicles by arrival time using existing utility
+  const sortedVehicles = sortStationVehiclesByArrival(vehicles);
+
   return (
     <Box>
       <Divider sx={{ my: 1 }} />
@@ -41,7 +46,7 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
       </Typography>
       
       <List dense>
-        {vehicles.map(({ vehicle, route, trip }) => (
+        {sortedVehicles.map(({ vehicle, route, trip, arrivalTime }) => (
           <ListItem key={vehicle.id} sx={{ py: 1 }}>
             <ListItemText
               primary={
@@ -66,6 +71,21 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
               }
               secondary={
                 <Stack spacing={0.5} sx={{ mt: 0.5 }} component="span">
+                  {/* Arrival time information */}
+                  {arrivalTime && (
+                    <Box display="flex" alignItems="center" gap={0.5} component="span">
+                      <ArrivalIcon fontSize="small" color="primary" />
+                      <Typography 
+                        variant="caption" 
+                        component="span"
+                        color="primary"
+                        sx={{ fontWeight: 'medium' }}
+                      >
+                        {formatArrivalTime(arrivalTime)}
+                      </Typography>
+                    </Box>
+                  )}
+                  
                   {/* Speed and timestamp */}
                   <Stack direction="row" alignItems="center" spacing={2} component="span">
                     <Box display="flex" alignItems="center" gap={0.5} component="span">
