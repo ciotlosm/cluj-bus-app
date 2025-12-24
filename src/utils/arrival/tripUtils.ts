@@ -3,6 +3,8 @@
  * Shared logic for parsing trip sequences and stop relationships
  */
 
+import { calculateDistance } from '../location/distanceUtils';
+import { estimateVehicleProgressWithStops } from './vehicleProgressUtils';
 import type {
   TranzyVehicleResponse,
   TranzyStopResponse,
@@ -38,6 +40,7 @@ export function findStopInSequence(
 
 /**
  * Get intermediate stop data between vehicle and target stop
+ * Uses existing vehicle progress estimation to determine actual position
  */
 export function getIntermediateStopData(
   vehicle: TranzyVehicleResponse,
@@ -60,8 +63,33 @@ export function getIntermediateStopData(
     };
   }
 
-  // Get intermediate stops (assume vehicle is at beginning of trip for now)
-  const intermediateStopTimes = tripStopTimes.slice(0, targetStopIndex);
+  // Use existing vehicle progress estimation to find where vehicle actually is
+  let vehicleCurrentStopIndex = 0;
+  
+  try {
+    const vehicleProgress = estimateVehicleProgressWithStops(vehicle, tripStopTimes, stops);
+    
+    if (vehicleProgress.segmentBetweenStops) {
+      // Vehicle is between two stops - find the index of the next stop
+      const nextStopSequence = vehicleProgress.segmentBetweenStops.nextStop.stop_sequence;
+      
+      // Find the index of this next stop in our trip sequence
+      const nextStopIndex = tripStopTimes.findIndex(st => st.stop_sequence === nextStopSequence);
+      if (nextStopIndex !== -1) {
+        vehicleCurrentStopIndex = nextStopIndex;
+      }
+    }
+  } catch (error) {
+    // Fallback: assume vehicle is at beginning of trip
+    console.warn('Could not determine vehicle position, using trip start as fallback');
+    vehicleCurrentStopIndex = 0;
+  }
+
+  // Get intermediate stops between vehicle's current position and target
+  const startIndex = Math.min(vehicleCurrentStopIndex, targetStopIndex);
+  const endIndex = targetStopIndex;
+  
+  const intermediateStopTimes = tripStopTimes.slice(startIndex, endIndex);
   
   const coordinates = intermediateStopTimes.map(st => {
     const stopData = stops.find(s => s.stop_id === st.stop_id);
@@ -70,7 +98,7 @@ export function getIntermediateStopData(
 
   return {
     coordinates,
-    count: Math.max(0, targetStopIndex),
+    count: Math.max(0, endIndex - startIndex),
     tripStopTimes
   };
 }
