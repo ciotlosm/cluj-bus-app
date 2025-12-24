@@ -6,106 +6,15 @@
 
 import type { FC } from 'react';
 import { Polyline, Marker, Popup, Circle } from 'react-leaflet';
-import { Icon, DivIcon } from 'leaflet';
 import type { DebugLayerProps } from '../../../types/interactiveMap';
-
-// Create debug marker icons with distinct shapes for different purposes
-const createDebugIcon = (color: string, shape: 'circle' | 'square' | 'triangle' = 'circle', size: number = 12) => {
-  let shapeElement: string;
-  
-  switch (shape) {
-    case 'square':
-      shapeElement = `<rect x="2" y="2" width="8" height="8" fill="${color}" stroke="#fff" stroke-width="1"/>`;
-      break;
-    case 'triangle':
-      shapeElement = `<polygon points="6,2 10,10 2,10" fill="${color}" stroke="#fff" stroke-width="1"/>`;
-      break;
-    case 'circle':
-    default:
-      shapeElement = `<circle cx="6" cy="6" r="4" fill="${color}" stroke="#fff" stroke-width="1"/>`;
-      break;
-  }
-
-  return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(`
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-        ${shapeElement}
-      </svg>
-    `)}`,
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
-  });
-};
-
-// Create distance label with enhanced styling and color coding
-const createDistanceLabelIcon = (
-  distance: string, 
-  type: 'direct' | 'route' | 'projection' = 'direct',
-  confidence?: 'high' | 'medium' | 'low'
-) => {
-  let backgroundColor: string;
-  let textColor = 'white';
-  
-  // Color code based on confidence level
-  switch (confidence) {
-    case 'high':
-      backgroundColor = 'rgba(76, 175, 80, 0.9)'; // Green
-      break;
-    case 'medium':
-      backgroundColor = 'rgba(255, 152, 0, 0.9)'; // Orange
-      break;
-    case 'low':
-      backgroundColor = 'rgba(244, 67, 54, 0.9)'; // Red
-      break;
-    default:
-      backgroundColor = 'rgba(0, 0, 0, 0.8)'; // Default black
-      break;
-  }
-
-  // Add type indicator
-  const typeIndicator = type === 'direct' ? '↔' : type === 'route' ? '↗' : '⊥';
-  
-  return new DivIcon({
-    html: `
-      <div style="
-        background: ${backgroundColor}; 
-        color: ${textColor}; 
-        padding: 4px 8px; 
-        border-radius: 6px; 
-        font-size: 11px; 
-        font-weight: bold;
-        white-space: nowrap;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        border: 1px solid rgba(255,255,255,0.3);
-      ">
-        ${typeIndicator} ${distance}
-      </div>
-    `,
-    className: 'debug-distance-label',
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
-};
+import { calculateDistance } from '../../../utils/location/distanceUtils';
+import { createDebugIcon, createDistanceLabelIcon } from '../../../utils/maps/iconUtils';
 
 // Calculate midpoint between two coordinates
 const calculateMidpoint = (coord1: { lat: number; lon: number }, coord2: { lat: number; lon: number }) => ({
   lat: (coord1.lat + coord2.lat) / 2,
   lon: (coord1.lon + coord2.lon) / 2,
 });
-
-// Calculate distance between two coordinates (Haversine formula)
-const calculateDistance = (coord1: { lat: number; lon: number }, coord2: { lat: number; lon: number }): number => {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
-  const dLon = (coord2.lon - coord1.lon) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
 
 export const DebugLayer: FC<DebugLayerProps> = ({
   debugData,
@@ -245,51 +154,87 @@ export const DebugLayer: FC<DebugLayerProps> = ({
         </Popup>
       </Polyline>
 
-      {/* Route shape highlight with enhanced styling */}
-      <Polyline
-        positions={routeShape.points.map(p => [p.lat, p.lon] as [number, number])}
-        pathOptions={{
-          color: colorScheme.debug.routeShape,
-          weight: 5,
-          opacity: 0.7,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }}
-      >
-        <Popup>
-          <div style={{ minWidth: '180px' }}>
-            <div style={{ 
-              fontWeight: 'bold', 
-              fontSize: '14px', 
-              marginBottom: '8px',
-              color: colorScheme.debug.routeShape 
-            }}>
-              Route Shape (Debug)
-            </div>
-            <div><strong>Shape ID:</strong> {routeShape.id}</div>
-            <div><strong>Total Points:</strong> {routeShape.points.length}</div>
-            <div><strong>Segments:</strong> {routeShape.segments.length}</div>
-            {routeShape.segments.length > 0 && (
-              <div><strong>Total Length:</strong> {routeShape.segments.reduce((sum, seg) => sum + seg.distance, 0).toFixed(0)}m</div>
-            )}
-            <div style={{ 
-              fontSize: '11px', 
-              color: '#666', 
-              marginTop: '6px',
-              fontStyle: 'italic'
-            }}>
-              Highlighted route shape used for distance calculations
-            </div>
-          </div>
-        </Popup>
-      </Polyline>
+      {/* Route segment between vehicle and target station */}
+      {(() => {
+        // Extract only the route segment between vehicle and target station projections
+        const startSegmentIndex = Math.min(vehicleProjection.segmentIndex, stationProjection.segmentIndex);
+        const endSegmentIndex = Math.max(vehicleProjection.segmentIndex, stationProjection.segmentIndex);
+        
+        // Build the route segment points
+        const segmentPoints: [number, number][] = [];
+        
+        // Add vehicle projection point as start
+        segmentPoints.push([vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]);
+        
+        // Add intermediate segment points
+        for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
+          const segment = routeShape.segments[i];
+          if (segment) {
+            // Add segment end point (start point is already added from previous segment)
+            segmentPoints.push([segment.end.lat, segment.end.lon]);
+          }
+        }
+        
+        // Add station projection point as end
+        segmentPoints.push([stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]);
+        
+        // Remove duplicate consecutive points
+        const uniquePoints = segmentPoints.filter((point, index) => {
+          if (index === 0) return true;
+          const prevPoint = segmentPoints[index - 1];
+          return !(point[0] === prevPoint[0] && point[1] === prevPoint[1]);
+        });
+        
+        const segmentDistance = routeShape.segments
+          .slice(startSegmentIndex, endSegmentIndex + 1)
+          .reduce((sum, seg) => sum + seg.distance, 0);
+        
+        return (
+          <Polyline
+            positions={uniquePoints}
+            pathOptions={{
+              color: colorScheme.debug.routeShape,
+              weight: 6,
+              opacity: 0.8,
+              lineCap: 'round',
+              lineJoin: 'round',
+            }}
+          >
+            <Popup>
+              <div style={{ minWidth: '200px' }}>
+                <div style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: '14px', 
+                  marginBottom: '8px',
+                  color: colorScheme.debug.routeShape 
+                }}>
+                  Route Segment (Vehicle → Station)
+                </div>
+                <div><strong>Shape ID:</strong> {routeShape.id}</div>
+                <div><strong>Segment Range:</strong> {startSegmentIndex} → {endSegmentIndex}</div>
+                <div><strong>Segment Points:</strong> {uniquePoints.length}</div>
+                <div><strong>Segment Distance:</strong> {segmentDistance.toFixed(0)}m</div>
+                <div><strong>Total Distance:</strong> {distanceCalculation.totalDistance.toFixed(0)}m</div>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666', 
+                  marginTop: '6px',
+                  fontStyle: 'italic'
+                }}>
+                  Route segment used for distance calculation from vehicle to target station
+                </div>
+              </div>
+            </Popup>
+          </Polyline>
+        );
+      })()}
 
       {/* Debug markers with distinct shapes (Requirement 4.4) */}
       
       {/* Vehicle projection point */}
       <Marker
         position={[vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]}
-        icon={createDebugIcon(colorScheme.debug.projectionLine, 'square', 14)}
+        icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'square', size: 14 })}
       >
         <Popup>
           <div>
@@ -307,7 +252,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       {/* Station projection point */}
       <Marker
         position={[stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]}
-        icon={createDebugIcon(colorScheme.debug.projectionLine, 'triangle', 14)}
+        icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'triangle', size: 14 })}
       >
         <Popup>
           <div>
@@ -325,7 +270,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       {/* Vehicle position marker */}
       <Marker
         position={[vehiclePosition.lat, vehiclePosition.lon]}
-        icon={createDebugIcon('#FF5722', 'circle', 16)}
+        icon={createDebugIcon({ color: '#FF5722', shape: 'circle', size: 16 })}
       >
         <Popup>
           <div>
@@ -341,7 +286,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       {/* Target station marker */}
       <Marker
         position={[targetStationPosition.lat, targetStationPosition.lon]}
-        icon={createDebugIcon('#9C27B0', 'circle', 16)}
+        icon={createDebugIcon({ color: '#9C27B0', shape: 'circle', size: 16 })}
       >
         <Popup>
           <div>

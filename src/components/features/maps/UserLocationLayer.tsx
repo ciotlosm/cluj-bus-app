@@ -6,23 +6,8 @@
 
 import type { FC } from 'react';
 import { Marker, Circle, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
 import type { UserLocationLayerProps } from '../../../types/interactiveMap';
-
-// Create user location icon
-const createUserLocationIcon = (color: string) => {
-  return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(`
-      <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="10" cy="10" r="8" fill="${color}" stroke="#fff" stroke-width="2"/>
-        <circle cx="10" cy="10" r="3" fill="#fff"/>
-      </svg>
-    `)}`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
-  });
-};
+import { createUserLocationIcon } from '../../../utils/maps/iconUtils';
 
 export const UserLocationLayer: FC<UserLocationLayerProps> = ({
   position,
@@ -32,7 +17,7 @@ export const UserLocationLayer: FC<UserLocationLayerProps> = ({
   if (!position) return null;
 
   const { latitude, longitude, accuracy } = position.coords;
-  const icon = createUserLocationIcon(colorScheme.stations.userLocation);
+  const icon = createUserLocationIcon({ color: colorScheme.stations.userLocation });
 
   return (
     <>

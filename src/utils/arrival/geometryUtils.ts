@@ -102,3 +102,32 @@ export function projectPointToSegment(
   const { t, closestPoint } = projectPointToSegmentCore(point, segmentStart, segmentEnd);
   return { point: closestPoint, position: t };
 }
+
+/**
+ * Calculate bearing between two coordinates for direction arrows
+ * Used by map components for route direction visualization
+ */
+export function calculateBearing(start: Coordinates, end: Coordinates): number {
+  const startLat = start.lat * Math.PI / 180;
+  const startLon = start.lon * Math.PI / 180;
+  const endLat = end.lat * Math.PI / 180;
+  const endLon = end.lon * Math.PI / 180;
+
+  const dLon = endLon - startLon;
+  const y = Math.sin(dLon) * Math.cos(endLat);
+  const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLon);
+
+  const bearing = Math.atan2(y, x) * 180 / Math.PI;
+  return (bearing + 360) % 360; // Normalize to 0-360
+}
+
+/**
+ * Calculate midpoint between two coordinates
+ * Used for positioning labels and markers between points
+ */
+export function calculateMidpoint(coord1: Coordinates, coord2: Coordinates): Coordinates {
+  return {
+    lat: (coord1.lat + coord2.lat) / 2,
+    lon: (coord1.lon + coord2.lon) / 2,
+  };
+}

@@ -20,6 +20,8 @@ import {
   LocationOn as StationIcon,
   BugReport as DebugIcon,
   MyLocation as LocationIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import type { MapControlsProps } from '../../../types/interactiveMap';
 import { MapMode } from '../../../types/interactiveMap';
@@ -31,6 +33,12 @@ export const MapControls: FC<MapControlsProps> = ({
   onDebugToggle,
   showUserLocation,
   onUserLocationToggle,
+  showVehicles,
+  onVehiclesToggle,
+  showRouteShapes,
+  onRouteShapesToggle,
+  showStations,
+  onStationsToggle,
 }) => {
   return (
     <Box
@@ -76,6 +84,44 @@ export const MapControls: FC<MapControlsProps> = ({
             </Tooltip>
           </ToggleButton>
         </ToggleButtonGroup>
+
+        <Divider />
+
+        {/* Layer visibility controls */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {/* Vehicles layer toggle */}
+          <Tooltip title={`${showVehicles ? 'Hide' : 'Show'} Vehicles`} placement="left">
+            <IconButton
+              size="small"
+              color={showVehicles ? 'primary' : 'default'}
+              onClick={() => onVehiclesToggle(!showVehicles)}
+            >
+              <VehicleIcon />
+            </IconButton>
+          </Tooltip>
+
+          {/* Route shapes layer toggle */}
+          <Tooltip title={`${showRouteShapes ? 'Hide' : 'Show'} Route Shapes`} placement="left">
+            <IconButton
+              size="small"
+              color={showRouteShapes ? 'primary' : 'default'}
+              onClick={() => onRouteShapesToggle(!showRouteShapes)}
+            >
+              <RouteIcon />
+            </IconButton>
+          </Tooltip>
+
+          {/* Stations layer toggle */}
+          <Tooltip title={`${showStations ? 'Hide' : 'Show'} Stations`} placement="left">
+            <IconButton
+              size="small"
+              color={showStations ? 'primary' : 'default'}
+              onClick={() => onStationsToggle(!showStations)}
+            >
+              <StationIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
         <Divider />
 

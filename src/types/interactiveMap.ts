@@ -122,6 +122,38 @@ export const DEFAULT_MAP_PERFORMANCE: MapPerformanceConfig = {
 };
 
 // ============================================================================
+// Default Loading States
+// ============================================================================
+
+export const DEFAULT_LOADING_STATE: MapLoadingState = {
+  vehicles: false,
+  routes: false,
+  stations: false,
+  routeShapes: false,
+  userLocation: false,
+  overall: false,
+};
+
+// ============================================================================
+// Loading States
+// ============================================================================
+
+export interface MapLoadingState {
+  vehicles: boolean;
+  routes: boolean;
+  stations: boolean;
+  routeShapes: boolean;
+  userLocation: boolean;
+  overall: boolean;
+}
+
+export interface MapDataStatus {
+  loading: MapLoadingState;
+  errors: Partial<Record<keyof MapLoadingState, string>>;
+  lastUpdated: Partial<Record<keyof MapLoadingState, number>>;
+}
+
+// ============================================================================
 // Component Props Interfaces
 // ============================================================================
 
@@ -156,6 +188,10 @@ export interface InteractiveTransitMapProps {
   showUserLocation?: boolean;
   performanceConfig?: Partial<MapPerformanceConfig>;
   
+  // Loading states
+  loadingState?: Partial<MapLoadingState>;
+  onLoadingChange?: (loading: MapLoadingState) => void;
+  
   // Event handlers
   onVehicleClick?: (vehicle: TranzyVehicleResponse) => void;
   onStationClick?: (station: TranzyStopResponse) => void;
@@ -173,6 +209,8 @@ export interface VehicleLayerProps {
   highlightedVehicleId?: number;
   colorStrategy?: VehicleColorStrategy;
   colorScheme: MapColorScheme;
+  performanceConfig?: MapPerformanceConfig;
+  loading?: boolean;
 }
 
 export interface RouteShapeLayerProps {
@@ -181,6 +219,9 @@ export interface RouteShapeLayerProps {
   highlightedRouteIds?: number[];
   showDirectionArrows?: boolean;
   colorScheme: MapColorScheme;
+  onRouteClick?: (route: TranzyRouteResponse) => void;
+  performanceConfig?: MapPerformanceConfig;
+  loading?: boolean;
 }
 
 export interface StationLayerProps {
@@ -189,6 +230,8 @@ export interface StationLayerProps {
   onStationClick?: (station: TranzyStopResponse) => void;
   highlightedStationId?: number;
   colorScheme: MapColorScheme;
+  performanceConfig?: MapPerformanceConfig;
+  loading?: boolean;
 }
 
 export interface DebugLayerProps {
@@ -210,6 +253,13 @@ export interface MapControlsProps {
   onDebugToggle: (enabled: boolean) => void;
   showUserLocation: boolean;
   onUserLocationToggle: (enabled: boolean) => void;
+  // Layer visibility controls
+  showVehicles: boolean;
+  onVehiclesToggle: (enabled: boolean) => void;
+  showRouteShapes: boolean;
+  onRouteShapesToggle: (enabled: boolean) => void;
+  showStations: boolean;
+  onStationsToggle: (enabled: boolean) => void;
 }
 
 // ============================================================================

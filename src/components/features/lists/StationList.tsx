@@ -28,9 +28,10 @@ interface StationListProps {
   stations: FilteredStation[];
   utilities: StationUtilities;
   isFiltering: boolean;
+  onVehicleClick?: (vehicleId: number) => void;
 }
 
-export const StationList: FC<StationListProps> = memo(({ stations, utilities, isFiltering }) => {
+export const StationList: FC<StationListProps> = memo(({ stations, utilities, isFiltering, onVehicleClick }) => {
   const { formatDistance, getStationTypeColor, getStationTypeLabel } = utilities;
   
   // Expansion state management per station
@@ -153,6 +154,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
               <StationVehicleList 
                 vehicles={filteredStation.vehicles}
                 expanded={isExpanded}
+                onVehicleClick={onVehicleClick}
               />
             </Collapse>
           </div>

@@ -2,6 +2,26 @@
 
 ## Recent Updates (December 2024)
 
+### December 23, 2024 - Maps Code Consolidation
+- **🔧 CODE QUALITY**: Consolidated duplicate map utilities into reusable functions
+- **📦 NEW UTILITY**: Created `src/utils/maps/iconUtils.ts` with centralized icon creation functions
+- **♻️ REUSE**: Replaced duplicate `formatTimestamp` and `calculateDistance` functions with existing utilities
+- **🎯 EXTENDED UTILS**: Added geometry functions (`calculateBearing`, `calculateMidpoint`) to existing `geometryUtils.ts`
+- **🏷️ STATION UTILS**: Moved station display functions to existing `stationDisplayUtils.ts` for reusability
+- **📉 REDUCED CODE**: Eliminated ~120 lines of duplicate code across map components
+- **🧹 CLEAN IMPORTS**: Updated all map components to use centralized utilities
+
+### December 23, 2024 - Vehicle Full-Screen Map View
+- **✨ NEW FEATURE**: Click any vehicle in station lists to open full-screen map view
+- **🎯 FOCUSED VIEW**: Shows only the selected vehicle, its route, and trip stations
+- **🗺️ ROUTE VISUALIZATION**: Displays actual trip path using route shapes from Tranzy API
+- **📍 SMART FILTERING**: Filters stations to show only those on the vehicle's trip
+- **🚌 ENHANCED TRACKING**: Full-screen vehicle tracking with route context and fallback visualization
+- **🔄 ROBUST LOADING**: Automatic fallback to station-connected route when API shapes unavailable
+- **🐛 BUG FIX**: Fixed null coordinate handling in map components to prevent crashes
+- **🐛 BUG FIX**: Fixed deprecated Material-UI button prop warnings
+- **🐛 BUG FIX**: Eliminated console spam from invalid vehicle coordinates with smart filtering
+
 ### December 23, 2024 - Route Shape Integration for Accurate Arrival Times
 - **✨ NEW FEATURE**: Integrated route shapes (polylines) for accurate distance calculations in arrival time predictions
 - **API Integration**: Added support for Tranzy API `/shapes` endpoint with `shape_id` header parameter

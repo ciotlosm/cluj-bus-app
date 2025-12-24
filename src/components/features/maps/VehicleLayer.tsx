@@ -2,40 +2,26 @@
  * VehicleLayer - Renders vehicle markers on the map with route-based coloring
  * Handles vehicle click events and popup functionality
  * Supports multiple coloring strategies: by route, by confidence, uniform
+ * Includes performance optimizations and loading states
  */
 
 import type { FC } from 'react';
-import { Marker, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { useMemo, useState, useCallback } from 'react';
+import { Marker, Popup, useMap } from 'react-leaflet';
+import { CircularProgress, Box } from '@mui/material';
 import type { VehicleLayerProps } from '../../../types/interactiveMap';
-import { VehicleColorStrategy } from '../../../types/interactiveMap';
+import { VehicleColorStrategy, DEFAULT_MAP_PERFORMANCE } from '../../../types/interactiveMap';
+import { formatTimestamp } from '../../../utils/vehicle/vehicleFormatUtils';
+import { createVehicleIcon } from '../../../utils/maps/iconUtils';
+import { useOptimizedVehicles, useDebouncedLoading } from '../../../utils/maps/performanceUtils';
+import { ClusterMarker } from './ClusterMarker';
 
-// Vehicle icon SVG template with directional arrow
-const createVehicleIcon = (color: string, isSelected: boolean = false, speed: number = 0) => {
-  const size = isSelected ? 28 : 24;
-  const radius = isSelected ? 12 : 10;
-  const strokeWidth = isSelected ? 3 : 2;
-  
-  // Show directional arrow if vehicle is moving (speed > 0)
-  const showArrow = speed > 0;
-  
-  return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(`
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="${color}" stroke="#fff" stroke-width="${strokeWidth}"/>
-        ${showArrow ? `
-          <polygon points="${size/2},${size/2-4} ${size/2-3},${size/2+2} ${size/2+3},${size/2+2}" 
-                   fill="#fff" stroke="none"/>
-        ` : `
-          <circle cx="${size/2}" cy="${size/2}" r="3" fill="#fff"/>
-        `}
-      </svg>
-    `)}`,
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
-  });
-};
+// Extend window object for tracking logged vehicles
+declare global {
+  interface Window {
+    loggedInvalidVehicles?: Set<number>;
+  }
+}
 
 export const VehicleLayer: FC<VehicleLayerProps> = ({
   vehicles,
@@ -44,9 +30,71 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
   highlightedVehicleId,
   colorStrategy = VehicleColorStrategy.BY_ROUTE,
   colorScheme,
+  performanceConfig = DEFAULT_MAP_PERFORMANCE,
+  loading = false,
 }) => {
+  const map = useMap();
+  const [mapBounds, setMapBounds] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(map.getZoom());
+
+  // Update bounds and zoom when map changes
+  const updateMapState = useCallback(() => {
+    const bounds = map.getBounds();
+    setMapBounds({
+      north: bounds.getNorth(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      west: bounds.getWest(),
+    });
+    setZoomLevel(map.getZoom());
+  }, [map]);
+
+  // Listen to map events for performance optimization
+  useMemo(() => {
+    map.on('moveend', updateMapState);
+    map.on('zoomend', updateMapState);
+    updateMapState(); // Initial call
+    
+    return () => {
+      map.off('moveend', updateMapState);
+      map.off('zoomend', updateMapState);
+    };
+  }, [map, updateMapState]);
+
+  // Filter out vehicles with invalid coordinates upfront to prevent spam
+  const validVehicles = useMemo(() => {
+    const valid = vehicles.filter(vehicle => {
+      const hasValidCoords = vehicle.latitude != null && vehicle.longitude != null && 
+                           !isNaN(vehicle.latitude) && !isNaN(vehicle.longitude);
+      
+      // Only log once per vehicle ID to prevent spam
+      if (!hasValidCoords && !window.loggedInvalidVehicles?.has(vehicle.id)) {
+        if (!window.loggedInvalidVehicles) {
+          window.loggedInvalidVehicles = new Set();
+        }
+        window.loggedInvalidVehicles.add(vehicle.id);
+        console.warn(`Vehicle ${vehicle.id} has invalid coordinates:`, vehicle.latitude, vehicle.longitude);
+      }
+      
+      return hasValidCoords;
+    });
+    
+    return valid;
+  }, [vehicles]);
+
+  // Apply performance optimizations
+  const { optimizedVehicles, clusters, shouldCluster } = useOptimizedVehicles(
+    validVehicles,
+    mapBounds,
+    performanceConfig,
+    zoomLevel
+  );
+
+  // Debounce loading state to prevent flicker
+  const debouncedLoading = useDebouncedLoading(loading, 300);
+
   // Get color for vehicle based on strategy
-  const getVehicleColor = (vehicle: typeof vehicles[0]): string => {
+  const getVehicleColor = useCallback((vehicle: typeof vehicles[0]): string => {
     switch (colorStrategy) {
       case VehicleColorStrategy.BY_ROUTE:
         if (vehicle.route_id && colorScheme.vehicles.byRoute.has(vehicle.route_id)) {
@@ -71,20 +119,10 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
       default:
         return colorScheme.vehicles.default;
     }
-  };
-
-  // Format timestamp for display
-  const formatTimestamp = (timestamp: string): string => {
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return 'Unknown';
-    }
-  };
+  }, [colorStrategy, colorScheme]);
 
   // Get vehicle status text
-  const getVehicleStatus = (vehicle: typeof vehicles[0]): string => {
+  const getVehicleStatus = useCallback((vehicle: typeof vehicles[0]): string => {
     if (vehicle.speed === 0) {
       return 'Stopped';
     } else if (vehicle.speed < 5) {
@@ -92,14 +130,66 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
     } else {
       return 'In transit';
     }
-  };
+  }, []);
 
+  // Handle cluster click
+  const handleClusterClick = useCallback((cluster) => {
+    // Zoom to cluster bounds
+    const bounds = cluster.points.map(point => [point.position.lat, point.position.lon]);
+    map.fitBounds(bounds, { padding: [20, 20] });
+  }, [map]);
+
+  // Show loading indicator if data is loading
+  if (debouncedLoading && optimizedVehicles.length === 0) {
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: 1,
+          p: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <CircularProgress size={16} />
+        <span style={{ fontSize: '12px' }}>Loading vehicles...</span>
+      </Box>
+    );
+  }
+
+  // Render clusters if clustering is enabled
+  if (shouldCluster && clusters.length > 0) {
+    return (
+      <>
+        {clusters.map(cluster => (
+          <ClusterMarker
+            key={cluster.id}
+            cluster={cluster}
+            onClick={handleClusterClick}
+            color={colorScheme.vehicles.default}
+          />
+        ))}
+      </>
+    );
+  }
+
+  // Render individual vehicle markers
   return (
     <>
-      {vehicles.map(vehicle => {
+      {optimizedVehicles.map(vehicle => {
         const isSelected = vehicle.id === highlightedVehicleId;
         const color = isSelected ? colorScheme.vehicles.selected : getVehicleColor(vehicle);
-        const icon = createVehicleIcon(color, isSelected, vehicle.speed);
+        const icon = createVehicleIcon({ 
+          color, 
+          isSelected, 
+          speed: vehicle.speed,
+          size: 24 
+        });
         const route = vehicle.route_id ? routes.get(vehicle.route_id) : null;
 
         return (
@@ -153,7 +243,7 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
                   borderTop: '1px solid #eee',
                   paddingTop: '4px'
                 }}>
-                  ID: {vehicle.id} | Lat: {vehicle.latitude.toFixed(6)}, Lon: {vehicle.longitude.toFixed(6)}
+                  ID: {vehicle.id} | Lat: {vehicle.latitude?.toFixed(6) ?? 'N/A'}, Lon: {vehicle.longitude?.toFixed(6) ?? 'N/A'}
                 </div>
                 
                 {/* Accessibility info */}
@@ -167,6 +257,20 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
                     {vehicle.wheelchair_accessible === 'WHEELCHAIR_ACCESSIBLE' && '♿ '}
                     {vehicle.bike_accessible === 'BIKE_ACCESSIBLE' && '🚲 '}
                     Accessible
+                  </div>
+                )}
+
+                {/* Performance info for debugging */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: '#999', 
+                    marginTop: '4px',
+                    borderTop: '1px solid #eee',
+                    paddingTop: '2px'
+                  }}>
+                    Showing {optimizedVehicles.length} of {vehicles.length} vehicles
+                    {shouldCluster && ` (${clusters.length} clusters)`}
                   </div>
                 )}
               </div>

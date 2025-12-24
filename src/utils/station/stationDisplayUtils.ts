@@ -30,3 +30,42 @@ export const getStationTypeLabel = (stationType: 'primary' | 'secondary' | 'all'
   if (stationType === 'secondary') return 'Nearby';
   return ''; // No label for filtered view
 };
+
+/**
+ * Get readable station type name for display
+ * Moved from StationLayer component for reusability
+ */
+export const getStationTypeName = (type: 'default' | 'user-location' | 'terminus' | 'nearby'): string => {
+  switch (type) {
+    case 'user-location':
+      return 'User Location';
+    case 'terminus':
+      return 'Terminus';
+    case 'nearby':
+      return 'Nearby Station';
+    case 'default':
+    default:
+      return 'Transit Stop';
+  }
+};
+
+/**
+ * Get location type description for GTFS location types
+ * Moved from StationLayer component for reusability
+ */
+export const getLocationTypeDescription = (locationType: number): string => {
+  switch (locationType) {
+    case 0:
+      return 'Stop/Platform';
+    case 1:
+      return 'Station';
+    case 2:
+      return 'Station Entrance/Exit';
+    case 3:
+      return 'Generic Node';
+    case 4:
+      return 'Boarding Area';
+    default:
+      return 'Transit Location';
+  }
+};

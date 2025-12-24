@@ -3,113 +3,19 @@
  * Supports different symbol types (circle, user-location, terminus, nearby)
  * Implements station click handlers and comprehensive information display
  * Requirements: 1.3, 2.3, 3.1, 7.1, 7.2, 7.3, 7.4
+ * Includes performance optimizations and clustering for high-density areas
  */
 
 import type { FC } from 'react';
-import { Marker, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { useMemo, useState, useCallback } from 'react';
+import { Marker, Popup, useMap } from 'react-leaflet';
+import { CircularProgress, Box } from '@mui/material';
 import type { StationLayerProps } from '../../../types/interactiveMap';
-import { StationSymbolType } from '../../../types/interactiveMap';
-
-// Create station icons based on type with enhanced customization
-const createStationIcon = (
-  type: StationSymbolType, 
-  color: string, 
-  isSelected: boolean = false,
-  customSize?: number
-) => {
-  const baseSize = customSize || 16;
-  const size = isSelected ? baseSize + 6 : baseSize;
-  const strokeWidth = isSelected ? 3 : 2;
-  const innerRadius = Math.max(2, size / 4);
-  
-  // Create different symbol shapes based on type
-  let symbolSvg = '';
-  
-  switch (type) {
-    case StationSymbolType.USER_LOCATION:
-      // User location: filled circle with crosshairs
-      symbolSvg = `
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - strokeWidth}" fill="${color}" stroke="#fff" stroke-width="${strokeWidth}"/>
-        <circle cx="${size/2}" cy="${size/2}" r="${innerRadius}" fill="#fff"/>
-        <line x1="${size/2 - innerRadius/2}" y1="${size/2}" x2="${size/2 + innerRadius/2}" y2="${size/2}" stroke="${color}" stroke-width="1"/>
-        <line x1="${size/2}" y1="${size/2 - innerRadius/2}" x2="${size/2}" y2="${size/2 + innerRadius/2}" stroke="${color}" stroke-width="1"/>
-      `;
-      break;
-      
-    case StationSymbolType.TERMINUS:
-      // Terminus: square with inner square
-      symbolSvg = `
-        <rect x="${strokeWidth}" y="${strokeWidth}" width="${size - 2*strokeWidth}" height="${size - 2*strokeWidth}" 
-              fill="${color}" stroke="#fff" stroke-width="${strokeWidth}" rx="2"/>
-        <rect x="${size/2 - innerRadius/2}" y="${size/2 - innerRadius/2}" width="${innerRadius}" height="${innerRadius}" 
-              fill="#fff" rx="1"/>
-      `;
-      break;
-      
-    case StationSymbolType.NEARBY:
-      // Nearby: diamond shape with inner circle
-      const halfSize = size / 2;
-      symbolSvg = `
-        <polygon points="${halfSize},${strokeWidth} ${size-strokeWidth},${halfSize} ${halfSize},${size-strokeWidth} ${strokeWidth},${halfSize}" 
-                 fill="${color}" stroke="#fff" stroke-width="${strokeWidth}"/>
-        <circle cx="${halfSize}" cy="${halfSize}" r="${innerRadius/2}" fill="#fff"/>
-      `;
-      break;
-      
-    case StationSymbolType.DEFAULT:
-    default:
-      // Default: simple circle
-      symbolSvg = `
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - strokeWidth}" fill="${color}" stroke="#fff" stroke-width="${strokeWidth}"/>
-        <circle cx="${size/2}" cy="${size/2}" r="${innerRadius/2}" fill="#fff"/>
-      `;
-  }
-
-  return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(`
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-        ${symbolSvg}
-      </svg>
-    `)}`,
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
-  });
-};
-
-// Get readable station type name for display
-const getStationTypeName = (type: StationSymbolType): string => {
-  switch (type) {
-    case StationSymbolType.USER_LOCATION:
-      return 'User Location';
-    case StationSymbolType.TERMINUS:
-      return 'Terminus';
-    case StationSymbolType.NEARBY:
-      return 'Nearby Station';
-    case StationSymbolType.DEFAULT:
-    default:
-      return 'Transit Stop';
-  }
-};
-
-// Get location type description
-const getLocationTypeDescription = (locationType: number): string => {
-  switch (locationType) {
-    case 0:
-      return 'Stop/Platform';
-    case 1:
-      return 'Station';
-    case 2:
-      return 'Station Entrance/Exit';
-    case 3:
-      return 'Generic Node';
-    case 4:
-      return 'Boarding Area';
-    default:
-      return 'Transit Location';
-  }
-};
+import { StationSymbolType, DEFAULT_MAP_PERFORMANCE } from '../../../types/interactiveMap';
+import { createStationIcon } from '../../../utils/maps/iconUtils';
+import { getStationTypeName, getLocationTypeDescription } from '../../../utils/station/stationDisplayUtils';
+import { useOptimizedStations, useDebouncedLoading } from '../../../utils/maps/performanceUtils';
+import { ClusterMarker } from './ClusterMarker';
 
 export const StationLayer: FC<StationLayerProps> = ({
   stations,
@@ -117,10 +23,112 @@ export const StationLayer: FC<StationLayerProps> = ({
   onStationClick,
   highlightedStationId,
   colorScheme,
+  performanceConfig = DEFAULT_MAP_PERFORMANCE,
+  loading = false,
 }) => {
+  const map = useMap();
+  const [mapBounds, setMapBounds] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(map.getZoom());
+
+  // Update bounds and zoom when map changes
+  const updateMapState = useCallback(() => {
+    const bounds = map.getBounds();
+    setMapBounds({
+      north: bounds.getNorth(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      west: bounds.getWest(),
+    });
+    setZoomLevel(map.getZoom());
+  }, [map]);
+
+  // Listen to map events for performance optimization
+  useMemo(() => {
+    map.on('moveend', updateMapState);
+    map.on('zoomend', updateMapState);
+    updateMapState(); // Initial call
+    
+    return () => {
+      map.off('moveend', updateMapState);
+      map.off('zoomend', updateMapState);
+    };
+  }, [map, updateMapState]);
+
+  // Filter out stations with invalid coordinates
+  const validStations = useMemo(() => {
+    return stations.filter(station => {
+      const hasValidCoords = station.stop_lat != null && station.stop_lon != null && 
+                           !isNaN(station.stop_lat) && !isNaN(station.stop_lon);
+      
+      if (!hasValidCoords) {
+        console.warn(`Station ${station.stop_id} has invalid coordinates:`, station.stop_lat, station.stop_lon);
+      }
+      
+      return hasValidCoords;
+    });
+  }, [stations]);
+
+  // Apply performance optimizations
+  const { optimizedStations, clusters, shouldCluster } = useOptimizedStations(
+    validStations,
+    mapBounds,
+    performanceConfig,
+    zoomLevel
+  );
+
+  // Debounce loading state to prevent flicker
+  const debouncedLoading = useDebouncedLoading(loading, 300);
+
+  // Handle cluster click
+  const handleClusterClick = useCallback((cluster) => {
+    // Zoom to cluster bounds
+    const bounds = cluster.points.map(point => [point.position.lat, point.position.lon]);
+    map.fitBounds(bounds, { padding: [20, 20] });
+  }, [map]);
+
+  // Show loading indicator if data is loading
+  if (debouncedLoading && optimizedStations.length === 0) {
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 40,
+          right: 10,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: 1,
+          p: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <CircularProgress size={16} />
+        <span style={{ fontSize: '12px' }}>Loading stations...</span>
+      </Box>
+    );
+  }
+
+  // Render clusters if clustering is enabled
+  if (shouldCluster && clusters.length > 0) {
+    return (
+      <>
+        {clusters.map(cluster => (
+          <ClusterMarker
+            key={cluster.id}
+            cluster={cluster}
+            onClick={handleClusterClick}
+            color={colorScheme.stations.default}
+          />
+        ))}
+      </>
+    );
+  }
+
+  // Render individual station markers
   return (
     <>
-      {stations.map(station => {
+      {optimizedStations.map(station => {
         const isSelected = station.stop_id === highlightedStationId;
         const stationType = stationTypes.get(station.stop_id) || StationSymbolType.DEFAULT;
         
@@ -146,7 +154,12 @@ export const StationLayer: FC<StationLayerProps> = ({
         // Create icon with appropriate size based on type and selection
         const customSize = stationType === StationSymbolType.USER_LOCATION ? 20 : 
                           stationType === StationSymbolType.TERMINUS ? 18 : 16;
-        const icon = createStationIcon(stationType, color, isSelected, customSize);
+        const icon = createStationIcon({
+          color,
+          isSelected,
+          symbolType: stationType,
+          customSize
+        });
 
         return (
           <Marker
@@ -173,7 +186,7 @@ export const StationLayer: FC<StationLayerProps> = ({
                 
                 {/* Station type and location type */}
                 <div style={{ marginBottom: '6px' }}>
-                  <strong>Type:</strong> {getStationTypeName(stationType)}
+                  <strong>Type:</strong> {getStationTypeName(stationType as any)}
                 </div>
                 
                 <div style={{ marginBottom: '6px' }}>
@@ -189,7 +202,7 @@ export const StationLayer: FC<StationLayerProps> = ({
                 
                 {/* Coordinates */}
                 <div style={{ marginBottom: '6px' }}>
-                  <strong>Coordinates:</strong> {station.stop_lat.toFixed(6)}, {station.stop_lon.toFixed(6)}
+                  <strong>Coordinates:</strong> {station.stop_lat?.toFixed(6) ?? 'N/A'}, {station.stop_lon?.toFixed(6) ?? 'N/A'}
                 </div>
                 
                 {/* Station ID for debugging */}
@@ -217,6 +230,20 @@ export const StationLayer: FC<StationLayerProps> = ({
                     {stationType === StationSymbolType.USER_LOCATION && '📍 Your Location'}
                     {stationType === StationSymbolType.TERMINUS && '🔚 Route End'}
                     {stationType === StationSymbolType.NEARBY && '📍 Nearby'}
+                  </div>
+                )}
+
+                {/* Performance info for debugging */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: '#999', 
+                    marginTop: '4px',
+                    borderTop: '1px solid #eee',
+                    paddingTop: '2px'
+                  }}>
+                    Showing {optimizedStations.length} of {stations.length} stations
+                    {shouldCluster && ` (${clusters.length} clusters)`}
                   </div>
                 )}
               </div>

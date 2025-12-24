@@ -2,49 +2,22 @@
  * RouteShapeLayer - Renders route shapes as colored lines with direction indicators
  * Supports multiple route shapes with distinct styling and direction arrows
  * Implements requirements 1.2, 2.1, 2.2, 2.4, 3.2, 3.4
+ * Includes performance optimizations for large datasets
  */
 
 import type { FC } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Polyline, Popup, Marker } from 'react-leaflet';
-import { Icon, DivIcon } from 'leaflet';
+import { CircularProgress, Box } from '@mui/material';
 import type { RouteShapeLayerProps, MapColorScheme } from '../../../types/interactiveMap';
 import type { Coordinates } from '../../../types/interactiveMap';
 import type { TranzyRouteResponse } from '../../../types/rawTranzyApi';
+import { calculateBearing } from '../../../utils/arrival/geometryUtils';
+import { createDirectionArrow } from '../../../utils/maps/iconUtils';
+import { useDebouncedLoading } from '../../../utils/maps/performanceUtils';
+import { PerformanceMonitor } from '../../../utils/core/performanceUtils';
 
-// Calculate bearing between two points for direction arrows
-const calculateBearing = (start: Coordinates, end: Coordinates): number => {
-  const startLat = start.lat * Math.PI / 180;
-  const startLon = start.lon * Math.PI / 180;
-  const endLat = end.lat * Math.PI / 180;
-  const endLon = end.lon * Math.PI / 180;
 
-  const dLon = endLon - startLon;
-  const y = Math.sin(dLon) * Math.cos(endLat);
-  const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLon);
-
-  const bearing = Math.atan2(y, x) * 180 / Math.PI;
-  return (bearing + 360) % 360; // Normalize to 0-360
-};
-
-// Create direction arrow icon
-const createDirectionArrow = (color: string, bearing: number): DivIcon => {
-  return new DivIcon({
-    html: `
-      <div style="
-        width: 0; 
-        height: 0; 
-        border-left: 6px solid transparent; 
-        border-right: 6px solid transparent; 
-        border-bottom: 12px solid ${color}; 
-        transform: rotate(${bearing}deg);
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-      "></div>
-    `,
-    className: 'direction-arrow',
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
-  });
-};
 
 // Find route associated with a shape ID
 const findRouteForShape = (shapeId: string, routes: Map<number, TranzyRouteResponse>): TranzyRouteResponse | null => {
@@ -76,7 +49,8 @@ const getRouteShapeColor = (
   
   // Use route_color from API if available
   if (route && route.route_color) {
-    return `#${route.route_color}`;
+    const color = route.route_color.startsWith('#') ? route.route_color : `#${route.route_color}`;
+    return color;
   }
   
   // Fallback to default colors
@@ -112,17 +86,79 @@ const calculateArrowPositions = (points: Coordinates[], maxArrows: number = 5): 
   return arrows;
 };
 
-export const RouteShapeLayer: FC<RouteShapeLayerProps> = ({
+export const RouteShapeLayer: FC<RouteShapeLayerProps> = React.memo(({
   routeShapes,
   routes,
   highlightedRouteIds = [],
   showDirectionArrows = false,
   colorScheme,
+  onRouteClick,
+  performanceConfig,
+  loading = false,
 }) => {
+  // Debounce loading state to prevent flicker
+  const debouncedLoading = useDebouncedLoading(loading, 300);
+
+  // Performance optimization: limit route shapes based on config
+  const optimizedRouteShapes = useMemo(() => {
+    return PerformanceMonitor.measure('RouteShapeLayer:optimize', () => {
+      const shapesArray = Array.from(routeShapes.entries());
+      
+      // Limit total route shapes for performance
+      if (performanceConfig && shapesArray.length > performanceConfig.maxRouteShapes) {
+        // Prioritize highlighted routes first
+        const highlighted = shapesArray.filter(([shapeId]) => {
+          const route = findRouteForShape(shapeId, routes);
+          return route && highlightedRouteIds.includes(route.route_id);
+        });
+        
+        const remaining = shapesArray.filter(([shapeId]) => {
+          const route = findRouteForShape(shapeId, routes);
+          return !route || !highlightedRouteIds.includes(route.route_id);
+        });
+        
+        const maxRemaining = performanceConfig.maxRouteShapes - highlighted.length;
+        return new Map([...highlighted, ...remaining.slice(0, maxRemaining)]);
+      }
+      
+      return routeShapes;
+    });
+  }, [routeShapes, routes, highlightedRouteIds, performanceConfig]);
+
+  // Handle route click with performance monitoring
+  const handleRouteClick = useCallback((route: TranzyRouteResponse) => {
+    PerformanceMonitor.measure('RouteShapeLayer:click', () => {
+      onRouteClick?.(route);
+    });
+  }, [onRouteClick]);
+
+  // Show loading indicator if data is loading
+  if (debouncedLoading && optimizedRouteShapes.size === 0) {
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: 1,
+          p: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <CircularProgress size={16} />
+        <span style={{ fontSize: '12px' }}>Loading routes...</span>
+      </Box>
+    );
+  }
+
   return (
     <>
-      {Array.from(routeShapes.entries()).map(([shapeId, routeShape]) => {
-        // Convert coordinates to Leaflet format
+      {Array.from(optimizedRouteShapes.entries()).map(([shapeId, routeShape]) => {
+        // Use original route points without simplification
         const positions = routeShape.points.map(point => [point.lat, point.lon] as [number, number]);
         
         if (positions.length < 2) {
@@ -137,13 +173,14 @@ export const RouteShapeLayer: FC<RouteShapeLayerProps> = ({
         // Get color for this route shape
         const color = getRouteShapeColor(shapeId, routes, colorScheme, isHighlighted);
         
-        // Calculate direction arrows if enabled
-        const arrows = showDirectionArrows ? calculateArrowPositions(routeShape.points) : [];
+        // Calculate direction arrows if enabled (limit for performance)
+        const arrows = showDirectionArrows ? calculateArrowPositions(routeShape.points, 3) : [];
         
         return (
-          <div key={shapeId}>
+          <React.Fragment key={shapeId}>
             {/* Route shape polyline */}
             <Polyline
+              key={`${shapeId}-line`}
               positions={positions}
               pathOptions={{
                 color,
@@ -151,6 +188,13 @@ export const RouteShapeLayer: FC<RouteShapeLayerProps> = ({
                 opacity: isHighlighted ? 1.0 : 0.8,
                 lineCap: 'round',
                 lineJoin: 'round',
+              }}
+              eventHandlers={{
+                click: () => {
+                  if (associatedRoute) {
+                    handleRouteClick(associatedRoute);
+                  }
+                },
               }}
             >
               <Popup>
@@ -198,6 +242,19 @@ export const RouteShapeLayer: FC<RouteShapeLayerProps> = ({
                       Total Distance: {routeShape.segments.reduce((sum, seg) => sum + seg.distance, 0).toFixed(0)}m
                     </div>
                   )}
+
+                  {/* Performance info for debugging */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div style={{ 
+                      fontSize: '10px', 
+                      color: '#999', 
+                      marginTop: '4px',
+                      borderTop: '1px solid #eee',
+                      paddingTop: '2px'
+                    }}>
+                      Showing {optimizedRouteShapes.size} of {routeShapes.size} route shapes
+                    </div>
+                  )}
                 </div>
               </Popup>
             </Polyline>
@@ -207,13 +264,13 @@ export const RouteShapeLayer: FC<RouteShapeLayerProps> = ({
               <Marker
                 key={`${shapeId}-arrow-${index}`}
                 position={[arrow.position.lat, arrow.position.lon]}
-                icon={createDirectionArrow(color, arrow.bearing)}
+                icon={createDirectionArrow({ color, bearing: arrow.bearing })}
                 interactive={false} // Arrows shouldn't be clickable
               />
             ))}
-          </div>
+          </React.Fragment>
         );
       })}
     </>
   );
-};
+});

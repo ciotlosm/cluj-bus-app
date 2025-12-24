@@ -19,8 +19,10 @@ export const shapesService = {
       const response = await axios.get<TranzyShapeResponse[]>(`${API_CONFIG.BASE_URL}/shapes`, {
         headers: {
           'X-API-Key': apiKey,
-          'X-Agency-Id': agencyId.toString(),
-          'shape_id': shapeId
+          'X-Agency-Id': agencyId.toString()
+        },
+        params: {
+          shape_id: shapeId
         }
       });
       

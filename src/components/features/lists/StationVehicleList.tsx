@@ -20,9 +20,10 @@ import type { StationVehicle } from '../../../types/stationFilter';
 interface StationVehicleListProps {
   vehicles: StationVehicle[];
   expanded: boolean;
+  onVehicleClick?: (vehicleId: number) => void;
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded }) => {
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, onVehicleClick }) => {
   // Don't render when collapsed (performance optimization)
   if (!expanded) return null;
 
@@ -47,7 +48,13 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
       
       <List dense>
         {sortedVehicles.map(({ vehicle, route, trip, arrivalTime }) => (
-          <ListItem key={vehicle.id} sx={{ py: 1 }}>
+          <ListItem 
+            key={vehicle.id} 
+            sx={{ py: 1 }}
+            component="div"
+            onClick={() => onVehicleClick?.(vehicle.id)}
+            style={{ cursor: 'pointer' }}
+          >
             <ListItemText
               primary={
                 <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
