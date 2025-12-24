@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan breaks down the vehicle arrival time feature into discrete coding tasks. The core arrival time calculation functionality has been implemented, including distance calculations, time estimation, status message generation, and vehicle position utilities. The remaining tasks focus on property-based testing, service integration, UI updates, and configuration management.
+This implementation plan breaks down the vehicle arrival time feature into discrete coding tasks. The core arrival time calculation functionality has been fully implemented, including distance calculations, time estimation, status message generation, vehicle position utilities, service integration, and UI updates. The remaining tasks focus on configuration management, enhanced error handling, and comprehensive testing.
 
 ## Tasks
 
@@ -50,8 +50,8 @@ This implementation plan breaks down the vehicle arrival time feature into discr
 
 - [x] 4. Implement arrival status message generation
   - Create status message utilities for human-friendly arrival messages
-  - Implement time-based status messages (arriving soon, in X minutes)
-  - Add proximity-based status messages (at stop, just left, departed)
+  - Implement time-based status messages (in X minutes)
+  - Add proximity-based status messages (at stop, departed)
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
 - [ ]* 4.1 Write property test for status message generation
@@ -105,20 +105,30 @@ This implementation plan breaks down the vehicle arrival time feature into discr
   - Test arrival time display formatting and sorting in UI components
   - _Requirements: 4.1, 4.2_
 
-- [ ] 10. Add configuration management UI
-  - Create settings interface for adjusting average speed and dwell time constants
-  - Add validation and persistence for arrival time configuration
-  - Include configuration reset to defaults functionality
-  - _Requirements: 2.3, 2.5_
+- [ ] 10. Implement missing core design components
+  - Add OFF_ROUTE_THRESHOLD constant to ARRIVAL_CONFIG (200 meters)
+  - Implement VehicleProgressEstimation interface and logic
+  - Add estimateVehicleProgressWithShape() and estimateVehicleProgressWithStops() functions
+  - Implement determineTargetStopRelation() function for proper upcoming/passed logic
+  - Add isVehicleOffRoute() function with distance threshold detection
+  - _Requirements: 1.1, 1.2, 5.2, 5.3, 6.2, 6.3_
 
-- [ ]* 10.1 Write unit tests for configuration UI
-  - Test configuration validation, persistence, and reset functionality
-  - _Requirements: 2.3, 2.5_
+- [ ]* 10.1 Write property test for enhanced next stop identification
+  - **Property 1: Next Stop Identification**
+  - **Validates: Requirements 1.1**
 
-- [ ] 11. Add error handling and validation
-  - Implement input validation for GPS coordinates and trip data
+- [ ] 10.2. Fix status type alignment with design
+  - Align ArrivalStatus types with design specification (4 statuses vs current 6)
+  - Update status generation logic to match design priority system
+  - Fix ArrivalTimeResult.vehicleId type (should be string, not number)
+  - Add missing debugInfo field to ArrivalTimeResult
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [ ] 11. Enhance error handling and validation
+  - Implement comprehensive input validation for GPS coordinates and trip data
   - Add graceful fallback handling for missing route shapes
-  - Create comprehensive error reporting with calculation confidence levels
+  - Create detailed error reporting with calculation confidence levels
+  - Add validation for malformed route shape data
   - _Requirements: 4.3, 5.5_
 
 - [ ]* 11.1 Write unit tests for error handling scenarios
@@ -135,4 +145,4 @@ This implementation plan breaks down the vehicle arrival time feature into discr
 - Checkpoints ensure incremental validation
 - Property tests validate universal correctness properties using fast-check library
 - Unit tests validate specific examples and edge cases
-- Core calculation functionality is already implemented - focus is now on integration and UI
+- Core functionality is fully implemented - remaining tasks focus on enhancements and testing
