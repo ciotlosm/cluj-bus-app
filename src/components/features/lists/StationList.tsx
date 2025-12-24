@@ -109,7 +109,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                       {matchesFavorites && (
                         <Chip
                           icon={<FavoriteIcon />}
-                          label={`${favoriteRouteCount} favorite route${favoriteRouteCount !== 1 ? 's' : ''}`}
+                          label={`${favoriteRouteCount} ${favoriteRouteCount !== 1 ? 's' : ''}`}
                           size="small"
                           color="error"
                           variant="outlined"
@@ -153,6 +153,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
               <StationVehicleList 
                 vehicles={filteredStation.vehicles}
                 expanded={isExpanded}
+                station={filteredStation.station}
               />
             </Collapse>
           </div>

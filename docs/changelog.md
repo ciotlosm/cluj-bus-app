@@ -2,6 +2,23 @@
 
 ## Recent Updates (December 2024)
 
+### December 24, 2024 - Improved Arrival Time Estimation Accuracy
+- **🕐 REALISTIC TIMING**: Reduced average speed from 25 km/h to 18 km/h for more accurate urban bus estimates
+- **⏱️ LONGER DWELL TIMES**: Increased stop dwell time from 30s to 60s for realistic boarding times
+
+### December 24, 2024 - Vehicle Card Redesign with Target Station Highlighting in Stops List
+- **🎨 UI REDESIGN**: Transformed vehicle display from simple list items to card-based layout
+- **📍 REAL STOP DATA**: Integrated actual trip stop sequences using `getTripStopSequence` utility
+- **🚌 REUSED LOGIC**: Leveraged existing `determineTargetStopRelation` utility for accurate stop status
+- **🛣️ ENHANCED FILTERING**: Added `trip_id` requirement and off-route filtering to show only active, assigned vehicles
+- **🎯 TARGET STATION INDICATOR**: Added location icon in expandable stops list next to the current station
+- **🧹 CODE CLEANUP**: Removed duplicate `isVehicleOffRoute` function from `vehiclePositionUtils.ts`
+- **🎯 CONSISTENT BEHAVIOR**: Stop status logic matches existing arrival time calculations
+- **Enhanced Layout**: Added circular route badges, improved typography hierarchy, and better spacing
+- **Interactive Features**: Added expandable stops section with visual indicators for stop progression
+- **Data Integration**: Connected trip store and station store to display actual stop names and sequences
+- **Improved UX**: Better visual separation between vehicles and clearer information hierarchy
+
 ### December 24, 2024 - Documentation Cleanup and Simplification
 - **🧹 MAJOR CLEANUP**: Removed 700+ lines of documentation for non-existent VehicleTransformationService
 - **Documentation Accuracy**: Eliminated references to theoretical features and non-existent functions

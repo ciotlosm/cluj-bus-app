@@ -8,7 +8,7 @@ import {
   getRouteIdsForStation 
 } from '../route/routeStationMapping';
 import { checkStationFavoritesMatch } from './tripValidationUtils';
-import { calculateVehicleArrivalTime, sortVehiclesByArrival } from '../arrival/arrivalUtils';
+import { calculateVehicleArrivalTime, sortVehiclesByArrival, isVehicleOffRoute } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
 import type { ArrivalTimeResult, ArrivalStatus, RouteShape } from '../../types/arrivalTime';
@@ -99,12 +99,30 @@ export const getStationVehicles = (
     // Find the target stop for arrival calculations
     const targetStop = stops.find(stop => stop.stop_id === stationId);
     
-    // Filter vehicles that match this station's route IDs
-    const filteredVehicles = vehicles.filter(vehicle => 
-      vehicle.route_id !== null && 
-      vehicle.route_id !== undefined &&
-      routeIds.includes(vehicle.route_id)
-    );
+    // Filter vehicles that match this station's route IDs and are not off-route
+    const filteredVehicles = vehicles.filter(vehicle => {
+      // Basic route matching - require both route_id and trip_id
+      if (vehicle.route_id === null || 
+          vehicle.route_id === undefined ||
+          !routeIds.includes(vehicle.route_id) ||
+          !vehicle.trip_id) {
+        return false;
+      }
+      
+      // Filter out off-route vehicles
+      // Get route shape for this vehicle's trip if available
+      let routeShape: RouteShape | undefined;
+      if (routeShapes && vehicle.trip_id) {
+        const vehicleTrip = trips.find(trip => trip.trip_id === vehicle.trip_id);
+        if (vehicleTrip && vehicleTrip.shape_id) {
+          routeShape = routeShapes.get(vehicleTrip.shape_id);
+        }
+      }
+      
+      // Use existing utility to check if vehicle is off-route
+      const isOffRoute = isVehicleOffRoute(vehicle, routeShape);
+      return !isOffRoute;
+    });
 
     // Combine vehicle data with route, trip, and arrival time information
     const vehiclesWithData = filteredVehicles.map(vehicle => {

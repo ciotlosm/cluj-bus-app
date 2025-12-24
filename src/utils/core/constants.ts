@@ -45,10 +45,12 @@ export const PERFORMANCE = {
  */
 export const ARRIVAL_CONFIG = {
   // Average bus speed for time calculations (km/h)
-  AVERAGE_SPEED: 25,
+  // Reduced from 25 to 18 for more realistic urban conditions
+  AVERAGE_SPEED: 18,
   
   // Dwell time per intermediate stop (seconds)
-  DWELL_TIME: 30,
+  // Increased from 30 to 60 for more realistic stop times
+  DWELL_TIME: 60,
   
   // Proximity threshold for "at stop" status (meters)
   PROXIMITY_THRESHOLD: 50,
