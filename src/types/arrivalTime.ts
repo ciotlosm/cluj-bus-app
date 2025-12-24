@@ -37,22 +37,41 @@ export interface ShapeSegment {
   distance: number;
 }
 
-// Vehicle, Trip, and TripStop interfaces removed - using raw API types directly
-
 export interface DistanceResult {
   totalDistance: number;
   method: 'route_shape' | 'stop_segments';
   confidence: 'high' | 'medium' | 'low';
 }
 
+// ============================================================================
+// Vehicle Progress Estimation
+// ============================================================================
+
+export interface VehicleProgressEstimation {
+  projectionPoint: Coordinates;
+  segmentBetweenStops: {
+    previousStop: TranzyStopTimeResponse | null; // null when before first stop
+    nextStop: TranzyStopTimeResponse;
+  } | null; // null when after last stop or off-route
+  confidence: 'high' | 'medium' | 'low';
+  method: 'route_projection' | 'stop_segments' | 'off_route' | 'fallback';
+}
+
 export interface ArrivalTimeResult {
-  vehicleId: number;
+  vehicleId: number; // Matches TranzyVehicleResponse.id type
   estimatedMinutes: number; // Always positive - actual time value
   status: ArrivalStatus;    // Determines sort order and display
   statusMessage: string;
   confidence: 'high' | 'medium' | 'low';
   calculationMethod: 'route_shape' | 'stop_segments';
   rawDistance?: number;
+  debugInfo?: {
+    vehicleToShapeDistance: number;
+    distanceAlongShape: number;
+    stopToShapeDistance: number;
+    totalCalculatedDistance: number;
+    targetStopRelation: 'upcoming' | 'passed' | 'not_in_trip';
+  };
 }
 
 // ============================================================================
@@ -60,21 +79,17 @@ export interface ArrivalTimeResult {
 // ============================================================================
 
 export type ArrivalStatus = 
-  | 'at_stop'          // within proximity threshold, speed = 0 OR no progress along segment
-  | 'arriving_soon'    // within proximity threshold, speed > 0, is next station
-  | 'in_minutes'       // on route, heading to station
-  | 'just_left'        // within proximity threshold, speed > 0, not next station
-  | 'departed'         // not on route to this station anymore
-  | 'off_route';       // way off expected path
+  | 'at_stop'          // within proximity threshold AND speed = 0
+  | 'in_minutes'       // target stop upcoming, sorted by estimated minutes ascending
+  | 'departed'         // target stop already passed in trip sequence
+  | 'off_route';       // no route_id or exceeds distance threshold
 
 // Sort order: lower number = higher priority
 export const ARRIVAL_STATUS_SORT_ORDER: Record<ArrivalStatus, number> = {
   'at_stop': 0,
-  'arriving_soon': 1,
-  'in_minutes': 2,
-  'just_left': 3,
-  'departed': 4,
-  'off_route': 5
+  'in_minutes': 1,
+  'departed': 2,
+  'off_route': 3
 };
 
 export interface StatusMessageConfig {

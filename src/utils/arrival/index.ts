@@ -7,24 +7,32 @@
 export {
   calculateVehicleArrivalTime,
   calculateMultipleArrivals,
-  sortVehiclesByArrival
+  sortVehiclesByArrival,
+  determineTargetStopRelation,
+  isVehicleOffRoute
 } from './arrivalUtils.ts';
 
 // Vehicle position utilities
 export {
-  identifyNextStop,
-  determineNextStopEnhanced,
-  getSortedTripStops,
-  findClosestStopInTrip,
-  getNextStopInSequence
+  determineNextStop
 } from './vehiclePositionUtils.ts';
 
 // Geometry utilities
 export {
   calculateProgressAlongSegment,
   distancePointToLineSegment,
-  projectPointToSegment
+  projectPointToSegment,
+  isProjectionBetween,
+  calculateRoutePosition,
+  calculateSegmentConfidence
 } from './geometryUtils.ts';
+
+// Trip parsing utilities
+export {
+  getTripStopSequence,
+  findStopInSequence,
+  getIntermediateStopData
+} from './tripUtils.ts';
 
 // Distance calculation utilities
 export {
@@ -33,8 +41,7 @@ export {
   projectPointToShape
 } from './distanceUtils.ts';
 
-// Distance Calculator class
-export { DistanceCalculator, distanceCalculator } from './DistanceCalculator.ts';
+// Distance Calculator class removed - use direct function imports from distanceUtils.ts
 
 // Time calculation utilities
 export {
@@ -55,9 +62,6 @@ export {
 export type {
   ArrivalTimeResult,
   DistanceResult,
-  Vehicle,
-  Stop,
-  Trip,
   RouteShape,
   ArrivalStatus
 } from '../../types/arrivalTime.ts';

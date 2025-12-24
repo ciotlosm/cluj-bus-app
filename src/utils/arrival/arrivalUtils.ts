@@ -3,16 +3,20 @@
  * Main orchestration functions for arrival time calculations
  */
 
-import { calculateDistanceAlongShape, calculateDistanceViaStops } from './distanceUtils.ts';
+import { calculateDistanceAlongShape, calculateDistanceViaStops, projectPointToShape } from './distanceUtils.ts';
 import { calculateArrivalTime } from './timeUtils.ts';
 import { generateStatusMessage, getArrivalStatus } from './statusUtils.ts';
+import { getTripStopSequence, findStopInSequence, getIntermediateStopData } from './tripUtils.ts';
+import { estimateVehicleProgressWithShape, estimateVehicleProgressWithStops } from './vehicleProgressUtils.ts';
+import { ARRIVAL_CONFIG } from '../core/constants.ts';
 import type {
   TranzyVehicleResponse,
   TranzyStopResponse,
   TranzyTripResponse,
   TranzyStopTimeResponse,
   RouteShape,
-  ArrivalTimeResult
+  ArrivalTimeResult,
+  VehicleProgressEstimation
 } from '../../types/arrivalTime.ts';
 import { ARRIVAL_STATUS_SORT_ORDER } from '../../types/arrivalTime.ts';
 
@@ -30,19 +34,18 @@ export function calculateVehicleArrivalTime(
   // Calculate distance using appropriate method
   const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
   const stopPosition = { lat: targetStop.stop_lat, lon: targetStop.stop_lon };
+  
+  // Get intermediate stop data using consolidated utility
+  const intermediateData = getIntermediateStopData(vehicle, targetStop, stopTimes, stops);
+  
   const distanceResult = routeShape 
     ? calculateDistanceAlongShape(vehiclePosition, stopPosition, routeShape)
-    : calculateDistanceViaStops(
-        vehiclePosition, 
-        stopPosition, 
-        getIntermediateStops(vehicle, targetStop, stopTimes, stops)
-      );
+    : calculateDistanceViaStops(vehiclePosition, stopPosition, intermediateData.coordinates);
 
   // Calculate time estimate
-  const intermediateStopCount = countIntermediateStops(vehicle, targetStop, stopTimes);
   const estimatedMinutes = calculateArrivalTime(
     distanceResult.totalDistance,
-    intermediateStopCount
+    intermediateData.count
   );
 
   // Get status (determines both display and sort order)
@@ -52,7 +55,7 @@ export function calculateVehicleArrivalTime(
   const statusMessage = generateStatusMessage(status, estimatedMinutes);
 
   return {
-    vehicleId: vehicle.id,
+    vehicleId: vehicle.id, // Keep as number - matches API type
     estimatedMinutes,
     status,
     statusMessage,
@@ -113,53 +116,68 @@ export function sortVehiclesByArrival(results: ArrivalTimeResult[]): ArrivalTime
 }
 
 /**
- * Get intermediate stops between vehicle and target
+ * Determine target stop relationship using enhanced vehicle progress estimation
  */
-function getIntermediateStops(
-  vehicle: TranzyVehicleResponse, 
+export function determineTargetStopRelation(
+  vehicle: TranzyVehicleResponse,
   targetStop: TranzyStopResponse,
+  trips: TranzyTripResponse[],
   stopTimes: TranzyStopTimeResponse[],
-  stops: TranzyStopResponse[]
-): { lat: number, lon: number }[] {
-  if (!vehicle.trip_id) return [];
+  stops: TranzyStopResponse[],
+  routeShape?: RouteShape
+): 'upcoming' | 'passed' | 'not_in_trip' {
+  if (!vehicle.trip_id) return 'not_in_trip';
   
-  // Get stop times for this trip, sorted by sequence
-  const tripStopTimes = stopTimes
-    .filter(st => st.trip_id === vehicle.trip_id)
-    .sort((a, b) => a.stop_sequence - b.stop_sequence);
+  // Get stop times for this trip using utility
+  const tripStopTimes = getTripStopSequence(vehicle, stopTimes);
 
-  // Find target stop index
-  const targetStopIndex = tripStopTimes.findIndex(st => st.stop_id === targetStop.stop_id);
-  if (targetStopIndex === -1) return [];
-
-  // Get intermediate stops (assume vehicle is at beginning of trip for now)
-  const intermediateStopTimes = tripStopTimes.slice(0, targetStopIndex);
+  // Find target stop in trip sequence using utility
+  const { stopTime: targetStopInTrip } = findStopInSequence(targetStop.stop_id, tripStopTimes);
+  if (!targetStopInTrip) return 'not_in_trip';
   
-  return intermediateStopTimes.map(st => {
-    const stopData = stops.find(s => s.stop_id === st.stop_id);
-    return stopData ? { lat: stopData.stop_lat, lon: stopData.stop_lon } : { lat: 0, lon: 0 };
-  });
+  // Estimate vehicle's current position using available method
+  let vehicleProgress: VehicleProgressEstimation;
+  
+  if (routeShape) {
+    // Use route shape projection (most accurate)
+    vehicleProgress = estimateVehicleProgressWithShape(vehicle, tripStopTimes, stops, routeShape);
+  } else {
+    // Fallback: use stop-to-stop GPS segments
+    vehicleProgress = estimateVehicleProgressWithStops(vehicle, tripStopTimes, stops);
+  }
+  
+  // Compare target stop with vehicle's segment
+  if (vehicleProgress.segmentBetweenStops) {
+    const nextStopSequence = vehicleProgress.segmentBetweenStops.nextStop.stop_sequence;
+    const targetSequence = targetStopInTrip.stop_sequence;
+    
+    return targetSequence >= nextStopSequence ? 'upcoming' : 'passed';
+  }
+  
+  // Low confidence or no segment identified - assume upcoming
+  return 'upcoming';
 }
 
 /**
- * Count intermediate stops between vehicle and target
+ * Check if vehicle is off-route based on route_id and distance threshold
  */
-function countIntermediateStops(
-  vehicle: TranzyVehicleResponse, 
-  targetStop: TranzyStopResponse,
-  stopTimes: TranzyStopTimeResponse[]
-): number {
-  if (!vehicle.trip_id) return 0;
+export function isVehicleOffRoute(
+  vehicle: TranzyVehicleResponse,
+  routeShape?: RouteShape
+): boolean {
+  // No route ID means off-route
+  if (!vehicle.route_id) {
+    return true;
+  }
   
-  // Get stop times for this trip, sorted by sequence
-  const tripStopTimes = stopTimes
-    .filter(st => st.trip_id === vehicle.trip_id)
-    .sort((a, b) => a.stop_sequence - b.stop_sequence);
-
-  // Find target stop index
-  const targetStopIndex = tripStopTimes.findIndex(st => st.stop_id === targetStop.stop_id);
-  if (targetStopIndex === -1) return 0;
-
-  // Assume vehicle is at the beginning of the trip for now
-  return Math.max(0, targetStopIndex);
+  // If we have route shape, check distance threshold
+  if (routeShape) {
+    const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
+    const projection = projectPointToShape(vehiclePosition, routeShape);
+    
+    return projection.distanceToShape > ARRIVAL_CONFIG.OFF_ROUTE_THRESHOLD;
+  }
+  
+  // No route shape available, assume on-route if has route_id
+  return false;
 }

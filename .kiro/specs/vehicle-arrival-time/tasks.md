@@ -105,7 +105,7 @@ This implementation plan breaks down the vehicle arrival time feature into discr
   - Test arrival time display formatting and sorting in UI components
   - _Requirements: 4.1, 4.2_
 
-- [ ] 10. Implement missing core design components
+- [x] 10. Implement missing core design components
   - Add OFF_ROUTE_THRESHOLD constant to ARRIVAL_CONFIG (200 meters)
   - Implement VehicleProgressEstimation interface and logic
   - Add estimateVehicleProgressWithShape() and estimateVehicleProgressWithStops() functions
@@ -120,7 +120,6 @@ This implementation plan breaks down the vehicle arrival time feature into discr
 - [ ] 10.2. Fix status type alignment with design
   - Align ArrivalStatus types with design specification (4 statuses vs current 6)
   - Update status generation logic to match design priority system
-  - Fix ArrivalTimeResult.vehicleId type (should be string, not number)
   - Add missing debugInfo field to ArrivalTimeResult
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 

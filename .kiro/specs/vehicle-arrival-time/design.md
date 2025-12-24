@@ -257,7 +257,7 @@ interface ArrivalCalculator {
 }
 
 interface ArrivalTimeResult {
-  vehicleId: string;
+  vehicleId: number;
   estimatedMinutes: number;
   status: ArrivalStatus;
   statusMessage: string;
@@ -371,7 +371,7 @@ interface ProjectionResult {
 }
 
 interface ArrivalTimeResult {
-  vehicleId: string;
+  vehicleId: number;
   estimatedMinutes: number;
   status: ArrivalStatus;
   statusMessage: string;

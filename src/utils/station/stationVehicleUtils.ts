@@ -23,7 +23,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
     if (stationVehicle.arrivalTime) {
       // Create a mock ArrivalTimeResult that matches the sorting interface
       return {
-        vehicleId: stationVehicle.vehicle.id,
+        vehicleId: stationVehicle.vehicle.id, // Keep as number - matches API type
         estimatedMinutes: stationVehicle.arrivalTime.estimatedMinutes,
         status: getStatusFromMessage(stationVehicle.arrivalTime.statusMessage), // Convert message back to status
         statusMessage: stationVehicle.arrivalTime.statusMessage,
@@ -34,7 +34,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
     } else {
       // Vehicle without arrival time - assign lowest priority
       return {
-        vehicleId: stationVehicle.vehicle.id,
+        vehicleId: stationVehicle.vehicle.id, // Keep as number - matches API type
         estimatedMinutes: 999, // High value for sorting to end
         status: 'off_route' as const, // Lowest priority status
         statusMessage: '',
@@ -55,12 +55,10 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
 
 /**
  * Helper function to convert status message back to status enum
- * This is a simple heuristic - ideally we'd store the status directly
+ * Updated to match the new 4-status system
  */
 function getStatusFromMessage(statusMessage: string): ArrivalStatus {
   if (statusMessage.includes('At stop')) return 'at_stop';
-  if (statusMessage.includes('Arriving soon')) return 'arriving_soon';
-  if (statusMessage.includes('Just left')) return 'just_left';
   if (statusMessage.includes('Departed')) return 'departed';
   if (statusMessage.includes('minutes')) return 'in_minutes';
   return 'off_route';

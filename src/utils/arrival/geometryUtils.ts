@@ -5,6 +5,7 @@
 
 import { calculateDistance } from '../location/distanceUtils.ts';
 import type { Coordinates } from '../location/distanceUtils.ts';
+import type { RouteShape } from '../../types/arrivalTime.ts';
 
 /**
  * Core projection calculation - projects a point onto a line segment
@@ -101,4 +102,71 @@ export function projectPointToSegment(
 ): { point: Coordinates; position: number } {
   const { t, closestPoint } = projectPointToSegmentCore(point, segmentStart, segmentEnd);
   return { point: closestPoint, position: t };
+}
+
+// ============================================================================
+// Route Shape Projection Utilities
+// ============================================================================
+
+/**
+ * Check if a projection is between two other projections on route shape
+ */
+export function isProjectionBetween(
+  vehicleProjection: { segmentIndex: number; positionAlongSegment: number },
+  stopAProjection: { segmentIndex: number; positionAlongSegment: number },
+  stopBProjection: { segmentIndex: number; positionAlongSegment: number },
+  routeShape: RouteShape
+): boolean {
+  // Calculate position along entire route for each projection
+  const vehicleRoutePosition = calculateRoutePosition(vehicleProjection, routeShape);
+  const stopARoutePosition = calculateRoutePosition(stopAProjection, routeShape);
+  const stopBRoutePosition = calculateRoutePosition(stopBProjection, routeShape);
+  
+  const minStopPosition = Math.min(stopARoutePosition, stopBRoutePosition);
+  const maxStopPosition = Math.max(stopARoutePosition, stopBRoutePosition);
+  
+  return vehicleRoutePosition >= minStopPosition && vehicleRoutePosition <= maxStopPosition;
+}
+
+/**
+ * Calculate position along entire route from segment index and position
+ */
+export function calculateRoutePosition(
+  projection: { segmentIndex: number; positionAlongSegment: number },
+  routeShape: RouteShape
+): number {
+  let totalDistance = 0;
+  
+  // Add distances from all previous segments
+  for (let i = 0; i < projection.segmentIndex; i++) {
+    totalDistance += routeShape.segments[i].distance;
+  }
+  
+  // Add partial distance from current segment
+  if (projection.segmentIndex < routeShape.segments.length) {
+    totalDistance += routeShape.segments[projection.segmentIndex].distance * projection.positionAlongSegment;
+  }
+  
+  return totalDistance;
+}
+
+/**
+ * Calculate confidence for segment identification
+ */
+export function calculateSegmentConfidence(
+  vehicleProjection: { distanceToShape: number },
+  stopAProjection: { distanceToShape: number },
+  stopBProjection: { distanceToShape: number }
+): number {
+  const maxDistance = Math.max(
+    vehicleProjection.distanceToShape,
+    stopAProjection.distanceToShape,
+    stopBProjection.distanceToShape
+  );
+  
+  // Higher confidence when all points are close to route shape
+  if (maxDistance < 50) return 0.9;
+  if (maxDistance < 100) return 0.7;
+  if (maxDistance < 200) return 0.5;
+  return 0.3;
 }

@@ -54,5 +54,8 @@ export const ARRIVAL_CONFIG = {
   PROXIMITY_THRESHOLD: 50,
   
   // Recent departure window for "just left" status (minutes)
-  RECENT_DEPARTURE_WINDOW: 2
+  RECENT_DEPARTURE_WINDOW: 2,
+  
+  // Off-route threshold for distance from route shape (meters)
+  OFF_ROUTE_THRESHOLD: 200
 } as const;
