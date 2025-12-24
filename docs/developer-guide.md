@@ -358,23 +358,22 @@ const routeDataResult = useStoreData({
 
 ```typescript
 import { 
-  enhanceVehicleData,
-  analyzeVehicleDirection,
-  createVehicleTransformationPipeline
-} from '@/hooks/shared/processing';
+  formatTimestamp,
+  formatSpeed,
+  getAccessibilityFeatures
+} from '@/utils/vehicle/vehicleFormatUtils';
 
-// Reusable vehicle enhancement
-const enhanced = enhanceVehicleData(vehicles, stations);
+import { 
+  createTripToRouteMap,
+  getRouteIdsForTrips
+} from '@/utils/vehicle/vehicleMappingUtils';
 
-// Direction analysis utilities
-const direction = analyzeVehicleDirection(vehicle, route);
+// Format vehicle data for display
+const timeString = formatTimestamp(vehicle.timestamp);
+const speedString = formatSpeed(vehicle.speed);
 
-// Transformation pipelines
-const pipeline = createVehicleTransformationPipeline([
-  enhanceVehicleData,
-  filterByProximity,
-  groupByStation
-]);
+// Map trips to routes
+const tripRouteMap = createTripToRouteMap(vehicles);
 ```
 
 ### Performance Improvements
@@ -457,38 +456,14 @@ netlify deploy --prod
 - `VITE_TRANZY_API_BASE_URL`: API base URL
 - Production uses environment-specific configs
 
-## Performance Benchmarking
+## Performance Testing
 
-### Vehicle Transformation Service Benchmarks
-
-The new vehicle data architecture includes comprehensive performance benchmarking:
+### Available Performance Tests
 
 ```bash
-# Run transformation service benchmarks
-npm run benchmark:transformation
-
-# Run with custom output files
-npm run benchmark:transformation -- --output=results.json --report=report.txt
+npm run test:performance    # Run performance analysis
+npm run analyze            # Generate codebase statistics
 ```
-
-**Benchmark Features:**
-- Transformation pipeline performance measurement
-- Cache effectiveness analysis
-- Memory usage optimization tracking
-- Error handling overhead assessment
-- Performance regression detection
-
-**Performance Targets:**
-- Transformation time: <200ms for typical datasets
-- Memory usage: <25MB for normal operations
-- Cache hit rate: >70% for optimal performance
-
-### API Documentation
-
-Comprehensive API documentation is available for the new architecture:
-
-- **[Vehicle Transformation Service API](api/vehicle-transformation-service.md)** - Complete API reference
-- **[API Documentation Index](api/README.md)** - Overview and integration patterns
 
 ## Version Management
 

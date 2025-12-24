@@ -2,6 +2,15 @@
 
 ## Recent Updates (December 2024)
 
+### December 24, 2024 - Documentation Cleanup and Simplification
+- **🧹 MAJOR CLEANUP**: Removed 700+ lines of documentation for non-existent VehicleTransformationService
+- **Documentation Accuracy**: Eliminated references to theoretical features and non-existent functions
+- **API Documentation**: Simplified API docs from 978 lines to 52 lines, focusing on actual services
+- **Package Scripts**: Removed non-existent benchmark script from package.json
+- **Developer Guide**: Updated to reference actual utilities instead of theoretical transformation pipelines
+- **File Size Reduction**: Total documentation reduced by 950+ lines while maintaining all useful information
+- **Verification**: All documentation now accurately reflects the actual codebase implementation
+
 ### December 23, 2024 - Route Shape Integration for Accurate Arrival Times
 - **✨ NEW FEATURE**: Integrated route shapes (polylines) for accurate distance calculations in arrival time predictions
 - **API Integration**: Added support for Tranzy API `/shapes` endpoint with `shape_id` header parameter
