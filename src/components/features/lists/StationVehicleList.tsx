@@ -3,29 +3,47 @@
 // Includes performance optimizations with memoization to prevent unnecessary re-renders
 
 import type { FC } from 'react';
-import { memo } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { 
   List, ListItem, ListItemText, Typography, Chip, Stack, Box,
-  Divider
+  Divider, Button, Switch, FormControlLabel
 } from '@mui/material';
 import { 
   DirectionsBus as BusIcon, AccessibleForward as WheelchairIcon,
   DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon,
-  AccessTime as ArrivalIcon
+  AccessTime as ArrivalIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTime } from '../../../utils/vehicle/vehicleFormatUtils';
 import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
+import { groupVehiclesForDisplay } from '../../../utils/station/vehicleGroupingUtils';
+import { VEHICLE_DISPLAY } from '../../../utils/core/constants';
 import type { StationVehicle } from '../../../types/stationFilter';
 
 interface StationVehicleListProps {
   vehicles: StationVehicle[];
   expanded: boolean;
   onVehicleClick?: (vehicleId: number) => void;
+  stationRouteCount?: number;
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, onVehicleClick }) => {
-  // Don't render when collapsed (performance optimization)
+/**
+ * Local state interface for vehicle display optimization
+ */
+interface VehicleDisplayState {
+  isGrouped: boolean;
+  showingAll: boolean;
+  showOffRouteVehicles: boolean; // Local state, resets on view change
+  displayedVehicles: StationVehicle[];
+  hiddenVehicleCount: number;
+}
+
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, onVehicleClick, stationRouteCount = 1 }) => {
+  // Don't render when collapsed (performance optimization) - MUST be before any hooks
   if (!expanded) return null;
+
+  // Local state for display optimization
+  const [showingAll, setShowingAll] = useState(false);
+  const [showOffRouteVehicles, setShowOffRouteVehicles] = useState(false);
 
   // Empty state - no vehicles found
   if (vehicles.length === 0) {
@@ -36,15 +54,58 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
     );
   }
 
+  // Calculate display state using grouping logic
+  const displayState: VehicleDisplayState = useMemo(() => {
+    const groupingResult = groupVehiclesForDisplay(vehicles, {
+      maxVehicles: VEHICLE_DISPLAY.VEHICLE_DISPLAY_THRESHOLD,
+      includeOffRoute: showOffRouteVehicles,
+      routeCount: stationRouteCount
+    });
+
+    const isGrouped = groupingResult.groupingApplied;
+    const displayedVehicles = showingAll ? 
+      (showOffRouteVehicles ? vehicles : vehicles.filter(v => (v.arrivalTime?.status ?? 'off_route') !== 'off_route')) :
+      groupingResult.displayed;
+    
+    return {
+      isGrouped,
+      showingAll,
+      showOffRouteVehicles,
+      displayedVehicles,
+      hiddenVehicleCount: groupingResult.hidden.length // Always use the original hidden count, not 0 when showingAll
+    };
+  }, [vehicles, showingAll, showOffRouteVehicles, stationRouteCount]);
+
   // Sort vehicles by arrival time using existing utility
-  const sortedVehicles = sortStationVehiclesByArrival(vehicles);
+  const sortedVehicles = sortStationVehiclesByArrival(displayState.displayedVehicles);
 
   return (
     <Box>
       <Divider sx={{ my: 1 }} />
-      <Typography variant="caption" color="text.secondary" sx={{ px: 2, display: 'block' }}>
-        Active Vehicles ({vehicles.length})
-      </Typography>
+      
+      {/* Header with vehicle count and off-route toggle */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2, py: 1 }}>
+        <Typography variant="caption" color="text.secondary">
+          Active Vehicles ({displayState.displayedVehicles.length}
+          {displayState.hiddenVehicleCount > 0 && ` of ${vehicles.length}`})
+        </Typography>
+        
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={showOffRouteVehicles}
+              onChange={(e) => setShowOffRouteVehicles(e.target.checked)}
+            />
+          }
+          label={
+            <Typography variant="caption" color="text.secondary">
+              Off-route
+            </Typography>
+          }
+          sx={{ m: 0 }}
+        />
+      </Stack>
       
       <List dense>
         {sortedVehicles.map(({ vehicle, route, trip, arrivalTime }) => (
@@ -122,11 +183,32 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
                   </Stack>
                 </Stack>
               }
-              secondaryTypographyProps={{ component: 'div' }}
+              slotProps={{ 
+                secondary: { component: 'div' }
+              }}
             />
           </ListItem>
         ))}
       </List>
+      
+      {/* Show more/less button when grouping is applied */}
+      {((displayState.isGrouped && (displayState.hiddenVehicleCount > 0 || showingAll)) || 
+        (vehicles.length > displayState.displayedVehicles.length)) && (
+        <Box sx={{ px: 2, pb: 2 }}> {/* Increased bottom padding from 1 to 2 */}
+          <Button
+            size="small"
+            variant="text"
+            startIcon={showingAll ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            onClick={() => setShowingAll(!showingAll)}
+            sx={{ textTransform: 'none' }}
+          >
+            {showingAll 
+              ? 'Show less' 
+              : `Show ${displayState.hiddenVehicleCount} more vehicle${displayState.hiddenVehicleCount > 1 ? 's' : ''}`
+            }
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 });

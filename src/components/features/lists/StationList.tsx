@@ -28,7 +28,7 @@ interface StationListProps {
   stations: FilteredStation[];
   utilities: StationUtilities;
   isFiltering: boolean;
-  onVehicleClick?: (vehicleId: number) => void;
+  onVehicleClick?: (vehicleId: number, stationId?: number) => void;
 }
 
 export const StationList: FC<StationListProps> = memo(({ stations, utilities, isFiltering, onVehicleClick }) => {
@@ -154,7 +154,8 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
               <StationVehicleList 
                 vehicles={filteredStation.vehicles}
                 expanded={isExpanded}
-                onVehicleClick={onVehicleClick}
+                onVehicleClick={(vehicleId) => onVehicleClick?.(vehicleId, filteredStation.station.stop_id)}
+                stationRouteCount={filteredStation.routeIds.length}
               />
             </Collapse>
           </div>

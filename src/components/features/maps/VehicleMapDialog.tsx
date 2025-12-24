@@ -26,7 +26,8 @@ import { MapControls } from './MapControls';
 import { MapMode, VehicleColorStrategy } from '../../../types/interactiveMap';
 import { fetchRouteShapesForTrips } from '../../../services/routeShapeService';
 import { distanceCalculator } from '../../../utils/arrival/DistanceCalculator';
-import type { RouteShape } from '../../../types/arrivalTime';
+import { determineNextStop } from '../../../utils/arrival/vehiclePositionUtils';
+import type { RouteShape, ProjectionResult } from '../../../types/arrivalTime';
 import type { DebugVisualizationData } from '../../../types/interactiveMap';
 import { DEFAULT_MAP_COLORS, MAP_DEFAULTS } from '../../../types/interactiveMap';
 import type { 
@@ -44,6 +45,7 @@ interface VehicleMapDialogProps {
   open: boolean;
   onClose: () => void;
   vehicleId: number | null;
+  targetStationId?: number | null; // NEW: The station where the user clicked the vehicle
   vehicles: TranzyVehicleResponse[];
   routes: TranzyRouteResponse[];
   stations: TranzyStopResponse[];
@@ -55,6 +57,7 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   open,
   onClose,
   vehicleId,
+  targetStationId,
   vehicles,
   routes,
   stations,
@@ -197,30 +200,76 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       const vehiclePosition = { lat: targetVehicle.latitude, lon: targetVehicle.longitude };
       const routeShape = displayRouteShapes.values().next().value!;
       
-      // Find a station that's ahead of the vehicle on the route
-      let targetStation = filteredStations[filteredStations.length - 1]; // Default to last station
-      let targetStationPosition = { lat: targetStation.stop_lat, lon: targetStation.stop_lon };
+      // Use the target station (where user clicked the vehicle) if available
+      let targetStation: TranzyStopResponse;
+      let targetStationPosition: { lat: number; lon: number };
       
-      // Try to find a station ahead of the vehicle
+      if (targetStationId) {
+        // Find the specific target station
+        const foundTargetStation = stations.find(s => s.stop_id === targetStationId);
+        if (foundTargetStation) {
+          targetStation = foundTargetStation;
+          targetStationPosition = { lat: targetStation.stop_lat, lon: targetStation.stop_lon };
+        } else {
+          // Fallback to first filtered station if target station not found
+          targetStation = filteredStations[0];
+          targetStationPosition = { lat: targetStation.stop_lat, lon: targetStation.stop_lon };
+        }
+      } else {
+        // Fallback: find a station ahead of the vehicle on the route
+        targetStation = filteredStations[filteredStations.length - 1]; // Default to last station
+        targetStationPosition = { lat: targetStation.stop_lat, lon: targetStation.stop_lon };
+        
+        // Try to find a station ahead of the vehicle
+        const vehicleProjection = distanceCalculator.projectPointToShape(vehiclePosition, routeShape);
+        
+        for (let i = 0; i < filteredStations.length; i++) {
+          const station = filteredStations[i];
+          const stationPos = { lat: station.stop_lat, lon: station.stop_lon };
+          const stationProjection = distanceCalculator.projectPointToShape(stationPos, routeShape);
+          
+          // Use the first station that's ahead of the vehicle
+          if (stationProjection.segmentIndex > vehicleProjection.segmentIndex) {
+            targetStation = station;
+            targetStationPosition = stationPos;
+            break;
+          }
+        }
+      }
+      
+      // Get vehicle projection for debug data
       const vehicleProjection = distanceCalculator.projectPointToShape(vehiclePosition, routeShape);
       
-      for (let i = 0; i < filteredStations.length; i++) {
-        const station = filteredStations[i];
-        const stationPos = { lat: station.stop_lat, lon: station.stop_lon };
-        const stationProjection = distanceCalculator.projectPointToShape(stationPos, routeShape);
-        
-        // Use the first station that's ahead of the vehicle
-        if (stationProjection.segmentIndex > vehicleProjection.segmentIndex) {
-          targetStation = station;
-          targetStationPosition = stationPos;
-          break;
-        }
+      // NEW: Determine the vehicle's next stop using GPS-based logic
+      const nextStop = determineNextStop(
+        targetVehicle, 
+        trips, 
+        stopTimes, 
+        stations, 
+        routeShape
+      );
+      
+      let nextStationPosition: { lat: number; lon: number } | undefined;
+      let nextStationProjection: ProjectionResult | undefined;
+      let nextStationInfo: { stop_id: number; stop_name: string; isTargetStation: boolean } | undefined;
+      
+      if (nextStop) {
+        nextStationPosition = { lat: nextStop.stop_lat, lon: nextStop.stop_lon };
+        nextStationProjection = distanceCalculator.projectPointToShape(nextStationPosition, routeShape);
+        nextStationInfo = {
+          stop_id: nextStop.stop_id,
+          stop_name: nextStop.stop_name,
+          isTargetStation: nextStop.stop_id === targetStation.stop_id
+        };
       }
       
       console.log('Debug: Creating real distance calculations');
       console.log('Vehicle position:', vehiclePosition);
+      console.log('Target station ID (from click):', targetStationId);
       console.log('Selected target station:', targetStation.stop_name);
       console.log('Target station position:', targetStationPosition);
+      console.log('Next station (GPS-based):', nextStop?.stop_name || 'None determined');
+      console.log('Next station is target:', nextStationInfo?.isTargetStation || false);
       console.log('Route shape points:', routeShape.points.length);
       console.log('Route shape segments:', routeShape.segments.length);
       console.log('Vehicle projection:', vehicleProjection);
@@ -238,10 +287,13 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       return {
         vehiclePosition,
         targetStationPosition,
+        nextStationPosition,
         vehicleProjection,
         stationProjection: finalStationProjection,
+        nextStationProjection,
         routeShape,
-        distanceCalculation: distanceResult
+        distanceCalculation: distanceResult,
+        nextStationInfo
       };
     } catch (error) {
       console.error('Error creating debug data:', error);

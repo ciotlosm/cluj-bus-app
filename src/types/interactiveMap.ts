@@ -72,10 +72,17 @@ export interface MapColorScheme {
 export interface DebugVisualizationData {
   vehiclePosition: Coordinates;
   targetStationPosition: Coordinates;
+  nextStationPosition?: Coordinates; // NEW: Position of the vehicle's next stop
   vehicleProjection: ProjectionResult;
   stationProjection: ProjectionResult;
+  nextStationProjection?: ProjectionResult; // NEW: Projection of next stop onto route
   routeShape: RouteShape;
   distanceCalculation: DistanceResult;
+  nextStationInfo?: { // NEW: Information about the next station
+    stop_id: number;
+    stop_name: string;
+    isTargetStation: boolean; // true if next station is the same as target station
+  };
 }
 
 // ============================================================================

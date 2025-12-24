@@ -11,7 +11,7 @@ import { checkStationFavoritesMatch } from './tripValidationUtils';
 import { calculateVehicleArrivalTime, sortVehiclesByArrival } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
-import type { ArrivalTimeResult, ArrivalStatus, RouteShape } from '../../types/arrivalTime';
+import type { ArrivalTimeResult, RouteShape } from '../../types/arrivalTime';
 
 /**
  * Sort StationVehicle objects by arrival time using existing arrival sorting logic
@@ -25,7 +25,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
       return {
         vehicleId: stationVehicle.vehicle.id,
         estimatedMinutes: stationVehicle.arrivalTime.estimatedMinutes,
-        status: getStatusFromMessage(stationVehicle.arrivalTime.statusMessage), // Convert message back to status
+        status: stationVehicle.arrivalTime.status, // Use preserved status directly
         statusMessage: stationVehicle.arrivalTime.statusMessage,
         confidence: stationVehicle.arrivalTime.confidence,
         calculationMethod: 'route_shape' as const, // Default value
@@ -53,18 +53,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
     .map(result => result.originalVehicle);
 };
 
-/**
- * Helper function to convert status message back to status enum
- * This is a simple heuristic - ideally we'd store the status directly
- */
-function getStatusFromMessage(statusMessage: string): ArrivalStatus {
-  if (statusMessage.includes('At stop')) return 'at_stop';
-  if (statusMessage.includes('Arriving soon')) return 'arriving_soon';
-  if (statusMessage.includes('Just left')) return 'just_left';
-  if (statusMessage.includes('Departed')) return 'departed';
-  if (statusMessage.includes('minutes')) return 'in_minutes';
-  return 'off_route';
-}
+
 
 /**
  * Get vehicles serving a specific station with arrival time calculations
@@ -139,6 +128,7 @@ export const getStationVehicles = (
           );
           
           arrivalTime = {
+            status: arrivalResult.status, // Preserve the original status
             statusMessage: arrivalResult.statusMessage,
             confidence: arrivalResult.confidence,
             estimatedMinutes: arrivalResult.estimatedMinutes

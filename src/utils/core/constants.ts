@@ -56,3 +56,15 @@ export const ARRIVAL_CONFIG = {
   // Recent departure window for "just left" status (minutes)
   RECENT_DEPARTURE_WINDOW: 2
 } as const;
+
+/**
+ * Vehicle display optimization constants
+ * Configuration for intelligent vehicle grouping and display limits (Requirements 1.4, 5.1)
+ */
+export const VEHICLE_DISPLAY = {
+  // Maximum vehicles before applying grouping logic
+  VEHICLE_DISPLAY_THRESHOLD: 5,
+  
+  // Maximum vehicles per route per status in grouped mode
+  MAX_VEHICLES_PER_ROUTE_STATUS: 1,
+} as const;

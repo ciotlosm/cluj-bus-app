@@ -4,6 +4,7 @@
  */
 
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from './rawTranzyApi';
+import type { ArrivalStatus } from './arrivalTime';
 
 /**
  * Constants for filtering behavior
@@ -18,6 +19,7 @@ export interface StationVehicle {
   route: TranzyRouteResponse | null;
   trip: TranzyTripResponse | null; // NEW: trip information for headsign
   arrivalTime?: {
+    status: ArrivalStatus; // NEW: preserve the original status
     statusMessage: string;
     confidence: 'high' | 'medium' | 'low';
     estimatedMinutes: number;

@@ -42,9 +42,10 @@ export const StationView: FC = () => {
   // Vehicle map dialog state
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
 
   // Handle vehicle click to open map dialog
-  const handleVehicleClick = (vehicleId: number) => {
+  const handleVehicleClick = (vehicleId: number, stationId?: number) => {
     // Only open dialog if we have vehicle data
     if (vehicles.length === 0) {
       console.warn('No vehicle data available for map display');
@@ -52,6 +53,7 @@ export const StationView: FC = () => {
     }
     
     setSelectedVehicleId(vehicleId);
+    setSelectedStationId(stationId || null);
     setMapDialogOpen(true);
   };
 
@@ -59,6 +61,7 @@ export const StationView: FC = () => {
   const handleCloseMapDialog = () => {
     setMapDialogOpen(false);
     setSelectedVehicleId(null);
+    setSelectedStationId(null);
   };
 
   useEffect(() => {
@@ -130,6 +133,7 @@ export const StationView: FC = () => {
         open={mapDialogOpen}
         onClose={handleCloseMapDialog}
         vehicleId={selectedVehicleId}
+        targetStationId={selectedStationId}
         vehicles={vehicles}
         routes={routes}
         stations={stops}

@@ -26,10 +26,13 @@ export const DebugLayer: FC<DebugLayerProps> = ({
   const {
     vehiclePosition,
     targetStationPosition,
+    nextStationPosition,
     vehicleProjection,
     stationProjection,
+    nextStationProjection,
     routeShape,
     distanceCalculation,
+    nextStationInfo,
   } = debugData;
 
   // Calculate various distances for display
@@ -39,16 +42,16 @@ export const DebugLayer: FC<DebugLayerProps> = ({
 
   return (
     <>
-      {/* 1. Vehicle to station direct distance line (Requirement 4.1) */}
+      {/* 1. Vehicle to station direct distance line (Requirement 4.1) - NOT used in calculation */}
       <Polyline
         positions={[
           [vehiclePosition.lat, vehiclePosition.lon],
           [targetStationPosition.lat, targetStationPosition.lon],
         ]}
         pathOptions={{
-          color: colorScheme.debug.distanceLine,
-          weight: 3,
-          opacity: 0.8,
+          color: '#FF5722', // Bright red - indicates this is NOT used in calculation
+          weight: 2,
+          opacity: 0.7,
           dashArray: '8, 4',
         }}
       >
@@ -58,9 +61,9 @@ export const DebugLayer: FC<DebugLayerProps> = ({
               fontWeight: 'bold', 
               fontSize: '14px', 
               marginBottom: '8px',
-              color: colorScheme.debug.distanceLine 
+              color: '#FF5722'
             }}>
-              Direct Distance Line
+              Direct Distance Line (NOT USED)
             </div>
             <div><strong>Distance:</strong> {directDistance.toFixed(0)}m</div>
             <div><strong>Calculation Method:</strong> {distanceCalculation.method}</div>
@@ -72,128 +75,186 @@ export const DebugLayer: FC<DebugLayerProps> = ({
               marginTop: '6px',
               fontStyle: 'italic'
             }}>
-              This line shows the straight-line distance between vehicle and target station
+              This straight line is NOT used for arrival calculations - shown for reference only
             </div>
           </div>
         </Popup>
       </Polyline>
 
-      {/* 2. Vehicle projection line (Requirement 4.2) */}
-      <Polyline
-        positions={[
-          [vehiclePosition.lat, vehiclePosition.lon],
-          [vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon],
-        ]}
-        pathOptions={{
-          color: colorScheme.debug.projectionLine,
-          weight: 2,
-          opacity: 0.9,
-          lineCap: 'round',
-        }}
-      >
-        <Popup>
-          <div style={{ minWidth: '180px' }}>
-            <div style={{ 
-              fontWeight: 'bold', 
-              fontSize: '14px', 
-              marginBottom: '8px',
-              color: colorScheme.debug.projectionLine 
-            }}>
-              Vehicle Projection
+      {/* 2. Vehicle projection line (Requirement 4.2) - NOT used in calculation */}
+      {vehicleProjection.distanceToShape > 10 && ( // Only show if vehicle is significantly off route
+        <Polyline
+          positions={[
+            [vehiclePosition.lat, vehiclePosition.lon],
+            [vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon],
+          ]}
+          pathOptions={{
+            color: '#2196F3', // Bright blue - indicates this is NOT used in calculation
+            weight: 2,
+            opacity: 0.7,
+            lineCap: 'round',
+          }}
+        >
+          <Popup>
+            <div style={{ minWidth: '180px' }}>
+              <div style={{ 
+                fontWeight: 'bold', 
+                fontSize: '14px', 
+                marginBottom: '8px',
+                color: '#2196F3'
+              }}>
+                Vehicle Projection (NOT USED)
+              </div>
+              <div><strong>Distance to Route:</strong> {vehicleProjection.distanceToShape.toFixed(1)}m</div>
+              <div><strong>Segment Index:</strong> {vehicleProjection.segmentIndex}</div>
+              <div><strong>Position on Segment:</strong> {(vehicleProjection.positionAlongSegment * 100).toFixed(1)}%</div>
+              <div style={{ 
+                fontSize: '11px', 
+                color: '#666', 
+                marginTop: '6px',
+                fontStyle: 'italic'
+              }}>
+                Shows how vehicle position projects onto the route shape - for debugging only
+              </div>
             </div>
-            <div><strong>Distance to Route:</strong> {vehicleProjection.distanceToShape.toFixed(1)}m</div>
-            <div><strong>Segment Index:</strong> {vehicleProjection.segmentIndex}</div>
-            <div><strong>Position on Segment:</strong> {(vehicleProjection.positionAlongSegment * 100).toFixed(1)}%</div>
-            <div style={{ 
-              fontSize: '11px', 
-              color: '#666', 
-              marginTop: '6px',
-              fontStyle: 'italic'
-            }}>
-              Shows how vehicle position projects onto the route shape
-            </div>
-          </div>
-        </Popup>
-      </Polyline>
+          </Popup>
+        </Polyline>
+      )}
 
-      {/* 3. Station projection line (Requirement 4.3) */}
-      <Polyline
-        positions={[
-          [targetStationPosition.lat, targetStationPosition.lon],
-          [stationProjection.closestPoint.lat, stationProjection.closestPoint.lon],
-        ]}
-        pathOptions={{
-          color: colorScheme.debug.projectionLine,
-          weight: 2,
-          opacity: 0.9,
-          lineCap: 'round',
-        }}
-      >
-        <Popup>
-          <div style={{ minWidth: '180px' }}>
-            <div style={{ 
-              fontWeight: 'bold', 
-              fontSize: '14px', 
-              marginBottom: '8px',
-              color: colorScheme.debug.projectionLine 
-            }}>
-              Station Projection
+      {/* 3. Station projection line (Requirement 4.3) - NOT used in calculation */}
+      {stationProjection.distanceToShape > 10 && ( // Only show if station is significantly off route
+        <Polyline
+          positions={[
+            [targetStationPosition.lat, targetStationPosition.lon],
+            [stationProjection.closestPoint.lat, stationProjection.closestPoint.lon],
+          ]}
+          pathOptions={{
+            color: '#9C27B0', // Bright purple - indicates this is NOT used in calculation
+            weight: 2,
+            opacity: 0.7,
+            lineCap: 'round',
+          }}
+        >
+          <Popup>
+            <div style={{ minWidth: '180px' }}>
+              <div style={{ 
+                fontWeight: 'bold', 
+                fontSize: '14px', 
+                marginBottom: '8px',
+                color: '#9C27B0'
+              }}>
+                Station Projection (NOT USED)
+              </div>
+              <div><strong>Distance to Route:</strong> {stationProjection.distanceToShape.toFixed(1)}m</div>
+              <div><strong>Segment Index:</strong> {stationProjection.segmentIndex}</div>
+              <div><strong>Position on Segment:</strong> {(stationProjection.positionAlongSegment * 100).toFixed(1)}%</div>
+              <div style={{ 
+                fontSize: '11px', 
+                color: '#666', 
+                marginTop: '6px',
+                fontStyle: 'italic'
+              }}>
+                Shows how station position projects onto the route shape - for debugging only
+              </div>
             </div>
-            <div><strong>Distance to Route:</strong> {stationProjection.distanceToShape.toFixed(1)}m</div>
-            <div><strong>Segment Index:</strong> {stationProjection.segmentIndex}</div>
-            <div><strong>Position on Segment:</strong> {(stationProjection.positionAlongSegment * 100).toFixed(1)}%</div>
-            <div style={{ 
-              fontSize: '11px', 
-              color: '#666', 
-              marginTop: '6px',
-              fontStyle: 'italic'
-            }}>
-              Shows how station position projects onto the route shape
-            </div>
-          </div>
-        </Popup>
-      </Polyline>
+          </Popup>
+        </Polyline>
+      )}
 
       {/* Route segment between vehicle and target station */}
       {(() => {
-        // Extract only the route segment between vehicle and target station projections
-        const startSegmentIndex = Math.min(vehicleProjection.segmentIndex, stationProjection.segmentIndex);
-        const endSegmentIndex = Math.max(vehicleProjection.segmentIndex, stationProjection.segmentIndex);
+        // Show the route from vehicle position to target station (or from station to vehicle if passed)
+        const vehicleSegmentIndex = vehicleProjection.segmentIndex;
+        const stationSegmentIndex = stationProjection.segmentIndex;
         
-        // Build the route segment points
-        const segmentPoints: [number, number][] = [];
+        // Determine if vehicle has passed the station
+        const vehiclePassed = vehicleSegmentIndex > stationSegmentIndex;
+        const segmentSpan = Math.abs(stationSegmentIndex - vehicleSegmentIndex);
         
-        // Add vehicle projection point as start
-        segmentPoints.push([vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]);
+        // Skip if the route would be too long (performance protection)
+        if (segmentSpan > 400) {
+          return null; // Truly excessive, would be too long to display meaningfully
+        }
         
-        // Add intermediate segment points
-        for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
-          const segment = routeShape.segments[i];
-          if (segment) {
-            // Add segment end point (start point is already added from previous segment)
-            segmentPoints.push([segment.end.lat, segment.end.lon]);
+        // Skip if vehicle and station are on the same segment (too close)
+        if (segmentSpan === 0) {
+          return null;
+        }
+        
+        // Build route points following the actual route shape
+        const routePoints: [number, number][] = [];
+        
+        if (vehiclePassed) {
+          // Vehicle has passed the station - show route from station to vehicle
+          
+          // Start from station's exact projected position
+          const stationSegment = routeShape.segments[stationSegmentIndex];
+          if (stationSegment && stationProjection.positionAlongSegment <= 1.0) {
+            const t = stationProjection.positionAlongSegment;
+            const exactStationPoint = {
+              lat: stationSegment.start.lat + t * (stationSegment.end.lat - stationSegment.start.lat),
+              lon: stationSegment.start.lon + t * (stationSegment.end.lon - stationSegment.start.lon)
+            };
+            routePoints.push([exactStationPoint.lat, exactStationPoint.lon]);
+          }
+          
+          // Add the end of the station segment (if not already added)
+          if (stationSegmentIndex < routeShape.points.length) {
+            const stationSegmentEndPoint = routeShape.points[stationSegmentIndex + 1];
+            if (stationSegmentEndPoint) {
+              routePoints.push([stationSegmentEndPoint.lat, stationSegmentEndPoint.lon]);
+            }
+          }
+          
+          // Add all intermediate points from station to vehicle
+          for (let i = stationSegmentIndex + 1; i < vehicleSegmentIndex && i < routeShape.points.length; i++) {
+            const point = routeShape.points[i];
+            routePoints.push([point.lat, point.lon]);
+          }
+          
+          // Add vehicle's projected position as final point
+          routePoints.push([vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]);
+          
+        } else {
+          // Vehicle hasn't reached station yet - show route from vehicle to station
+          
+          // Start from vehicle's projected position
+          routePoints.push([vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]);
+          
+          // Add all complete intermediate segments (no sampling)
+          for (let i = vehicleSegmentIndex + 1; i < stationSegmentIndex && i < routeShape.points.length; i++) {
+            const point = routeShape.points[i];
+            routePoints.push([point.lat, point.lon]);
+          }
+          
+          // Add the start of the station segment
+          if (stationSegmentIndex < routeShape.points.length) {
+            const stationSegmentStartPoint = routeShape.points[stationSegmentIndex];
+            routePoints.push([stationSegmentStartPoint.lat, stationSegmentStartPoint.lon]);
+          }
+          
+          // ALWAYS calculate and add the exact station position as the final point
+          const stationSegment = routeShape.segments[stationSegmentIndex];
+          if (stationSegment && stationProjection.positionAlongSegment <= 1.0) {
+            const t = stationProjection.positionAlongSegment;
+            const exactStationPoint = {
+              lat: stationSegment.start.lat + t * (stationSegment.end.lat - stationSegment.start.lat),
+              lon: stationSegment.start.lon + t * (stationSegment.end.lon - stationSegment.start.lon)
+            };
+            routePoints.push([exactStationPoint.lat, exactStationPoint.lon]);
           }
         }
         
-        // Add station projection point as end
-        segmentPoints.push([stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]);
-        
-        // Remove duplicate consecutive points
-        const uniquePoints = segmentPoints.filter((point, index) => {
-          if (index === 0) return true;
-          const prevPoint = segmentPoints[index - 1];
-          return !(point[0] === prevPoint[0] && point[1] === prevPoint[1]);
-        });
-        
-        const segmentDistance = routeShape.segments
-          .slice(startSegmentIndex, endSegmentIndex + 1)
-          .reduce((sum, seg) => sum + seg.distance, 0);
+        // Only show if we have a meaningful route
+        if (routePoints.length < 2) {
+          return null;
+        }
         
         return (
           <Polyline
-            positions={uniquePoints}
+            positions={routePoints}
             pathOptions={{
-              color: colorScheme.debug.routeShape,
+              color: '#666666',
               weight: 6,
               opacity: 0.8,
               lineCap: 'round',
@@ -206,22 +267,27 @@ export const DebugLayer: FC<DebugLayerProps> = ({
                   fontWeight: 'bold', 
                   fontSize: '14px', 
                   marginBottom: '8px',
-                  color: colorScheme.debug.routeShape 
+                  color: '#666666'
                 }}>
-                  Route Segment (Vehicle → Station)
+                  Route Segment (USED IN CALCULATION)
                 </div>
                 <div><strong>Shape ID:</strong> {routeShape.id}</div>
-                <div><strong>Segment Range:</strong> {startSegmentIndex} → {endSegmentIndex}</div>
-                <div><strong>Segment Points:</strong> {uniquePoints.length}</div>
-                <div><strong>Segment Distance:</strong> {segmentDistance.toFixed(0)}m</div>
-                <div><strong>Total Distance:</strong> {distanceCalculation.totalDistance.toFixed(0)}m</div>
+                <div><strong>Vehicle Segment:</strong> {vehicleSegmentIndex}</div>
+                <div><strong>Station Segment:</strong> {stationSegmentIndex}</div>
+                <div><strong>Segment Span:</strong> {segmentSpan} segments</div>
+                <div><strong>Route Points:</strong> {routePoints.length}</div>
+                <div><strong>Direction:</strong> {vehiclePassed ? 'Station → Vehicle (PASSED)' : 'Vehicle → Station (APPROACHING)'}</div>
+                <div><strong>Station Position:</strong> t={stationProjection.positionAlongSegment.toFixed(3)}</div>
                 <div style={{ 
                   fontSize: '11px', 
                   color: '#666', 
                   marginTop: '6px',
                   fontStyle: 'italic'
                 }}>
-                  Route segment used for distance calculation from vehicle to target station
+                  {vehiclePassed 
+                    ? 'Shows distance from station to vehicle (for "just left" calculation)'
+                    : 'Route follows road geometry and stops at exact station position'
+                  }
                 </div>
               </div>
             </Popup>
@@ -298,6 +364,119 @@ export const DebugLayer: FC<DebugLayerProps> = ({
           </div>
         </Popup>
       </Marker>
+
+      {/* Next station marker and line (NEW) */}
+      {nextStationPosition && nextStationInfo && (
+        <>
+          {/* Line from vehicle to next station - NOT used in calculation */}
+          <Polyline
+            positions={[
+              [vehiclePosition.lat, vehiclePosition.lon],
+              [nextStationPosition.lat, nextStationPosition.lon],
+            ]}
+            pathOptions={{
+              color: nextStationInfo.isTargetStation ? '#4CAF50' : '#FF9800', // Bright colors - NOT used in calculation
+              weight: 3,
+              opacity: 0.9,
+              dashArray: nextStationInfo.isTargetStation ? undefined : '12, 6', // Solid if target, dashed if different
+            }}
+          >
+            <Popup>
+              <div style={{ minWidth: '200px' }}>
+                <div style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: '14px', 
+                  marginBottom: '8px',
+                  color: nextStationInfo.isTargetStation ? '#4CAF50' : '#FF9800'
+                }}>
+                  Vehicle → Next Station (NOT USED)
+                </div>
+                <div><strong>Next Stop:</strong> {nextStationInfo.stop_name}</div>
+                <div><strong>Stop ID:</strong> {nextStationInfo.stop_id}</div>
+                <div><strong>Is Target:</strong> {nextStationInfo.isTargetStation ? 'YES' : 'NO'}</div>
+                <div><strong>Distance:</strong> {calculateDistance(vehiclePosition, nextStationPosition).toFixed(0)}m</div>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666', 
+                  marginTop: '6px',
+                  fontStyle: 'italic'
+                }}>
+                  {nextStationInfo.isTargetStation 
+                    ? 'Vehicle is heading directly to your target station - straight line for reference only'
+                    : 'Vehicle must visit this stop before reaching your target station - straight line for reference only'
+                  }
+                </div>
+              </div>
+            </Popup>
+          </Polyline>
+
+          {/* Next station marker */}
+          <Marker
+            position={[nextStationPosition.lat, nextStationPosition.lon]}
+            icon={createDebugIcon({ 
+              color: nextStationInfo.isTargetStation ? '#4CAF50' : '#FF9800', 
+              shape: 'triangle', 
+              size: 18 
+            })}
+          >
+            <Popup>
+              <div>
+                <strong>Next Station (GPS-Based)</strong>
+                <br />
+                <strong>Name:</strong> {nextStationInfo.stop_name}
+                <br />
+                <strong>Stop ID:</strong> {nextStationInfo.stop_id}
+                <br />
+                <strong>Status:</strong> {nextStationInfo.isTargetStation ? 'TARGET STATION' : 'INTERMEDIATE STOP'}
+                <br />
+                <strong>Distance from Vehicle:</strong> {calculateDistance(vehiclePosition, nextStationPosition).toFixed(0)}m
+                <br />
+                Coordinates: {nextStationPosition.lat.toFixed(6)}, {nextStationPosition.lon.toFixed(6)}
+              </div>
+            </Popup>
+          </Marker>
+
+          {/* Next station projection line (if available) */}
+          {nextStationProjection && (
+            <Polyline
+              positions={[
+                [nextStationPosition.lat, nextStationPosition.lon],
+                [nextStationProjection.closestPoint.lat, nextStationProjection.closestPoint.lon],
+              ]}
+              pathOptions={{
+                color: '#FF9800',
+                weight: 2,
+                opacity: 0.7,
+                lineCap: 'round',
+              }}
+            >
+              <Popup>
+                <div style={{ minWidth: '180px' }}>
+                  <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '14px', 
+                    marginBottom: '8px',
+                    color: '#FF9800'
+                  }}>
+                    Next Station Projection
+                  </div>
+                  <div><strong>Distance to Route:</strong> {nextStationProjection.distanceToShape.toFixed(1)}m</div>
+                  <div><strong>Segment Index:</strong> {nextStationProjection.segmentIndex}</div>
+                  <div><strong>Position on Segment:</strong> {(nextStationProjection.positionAlongSegment * 100).toFixed(1)}%</div>
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#666', 
+                    marginTop: '6px',
+                    fontStyle: 'italic'
+                  }}>
+                    Shows how next station projects onto the route shape
+                  </div>
+                </div>
+              </Popup>
+            </Polyline>
+          )}
+        </>
+      )}
 
       {/* Distance labels with color coding (Requirement 4.5) */}
       

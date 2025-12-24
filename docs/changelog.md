@@ -2,6 +2,31 @@
 
 ## Recent Updates (December 2024)
 
+### December 24, 2024 - Fixed Critical Status Logic Bug
+- **🐛 CRITICAL FIX**: Fixed vehicles past stations incorrectly showing arrival times instead of "Departed" status
+- **🔧 GPS VALIDATION**: Enhanced GPS-based next stop detection with proper validation that detected stops belong to vehicle's trip
+- **🚌 INTELLIGENT FALLBACK**: Added smart fallback system using distance-based analysis when GPS detection fails
+- **✅ PROPER HANDLING**: Vehicles past all stops now correctly return "Departed" instead of invalid arrival times
+- **🎯 SEQUENCE LOGIC**: Improved sequence comparison logic to handle edge cases and GPS detection errors
+
+### December 24, 2024 - Enhanced Debug Visualization
+- **🔍 DEBUG ENHANCEMENT**: Added next station visualization to debug mode on vehicle maps
+- **🎯 VISUAL DISTINCTION**: Shows target station (purple) vs next station (green/orange) with different markers
+- **📍 GPS VALIDATION**: Displays line from vehicle to GPS-determined next stop with status indicators
+- **🚌 ROUTE ACCURACY**: Green solid line when next stop = target, orange dashed line when different stops
+- **🎯 CONTEXT AWARE**: Target station is now the station where user clicked the vehicle (not arbitrary route station)
+
+### December 24, 2024 - Fixed Distance Calculation Logic
+- **🐛 CRITICAL FIX**: Distance calculation now uses actual route through intermediate stops instead of direct distance to target
+- **🛣️ PROPER ROUTING**: Calculates vehicle → next stop → intermediate stops → target stop for accurate arrival times
+- **⏱️ REALISTIC ESTIMATES**: Prevents showing "2 minutes" when bus needs to visit 4 stops first (now shows actual ~15 minutes)
+
+### December 24, 2024 - GPS-Based Next Stop Detection
+- **🎯 ENHANCED ACCURACY**: Upgraded `determineNextStop` function to use actual vehicle GPS position instead of assuming first scheduled stop
+- **📍 ROUTE PROJECTION**: Projects vehicle GPS coordinates onto route shapes to determine position along route
+- **🚌 SMART FALLBACK**: Falls back to simple sequence logic when route shapes unavailable or vehicle too far from route (>200m)
+- **⚡ IMPROVED STATUS**: More accurate "arriving soon" vs "just left" status based on actual vehicle position relative to stops
+
 ### December 23, 2024 - Maps Code Consolidation
 - **🔧 CODE QUALITY**: Consolidated duplicate map utilities into reusable functions
 - **📦 NEW UTILITY**: Created `src/utils/maps/iconUtils.ts` with centralized icon creation functions

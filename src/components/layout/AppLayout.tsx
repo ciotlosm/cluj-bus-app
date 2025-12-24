@@ -27,6 +27,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children, onNavigateToSettings }
         sx={{ 
           flexGrow: 1, 
           py: 2,
+          pb: 8, // Add bottom padding for fixed bottom navigation (56px + 8px margin)
           display: 'flex',
           flexDirection: 'column'
         }}

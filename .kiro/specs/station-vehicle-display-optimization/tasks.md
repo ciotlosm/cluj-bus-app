@@ -6,7 +6,7 @@ This implementation plan converts the vehicle display optimization design into d
 
 ## Tasks
 
-- [ ] 1. Add vehicle display constants and configuration
+- [x] 1. Add vehicle display constants and configuration
   - Add VEHICLE_DISPLAY constants to `src/utils/core/constants.ts`
   - Define VEHICLE_DISPLAY_THRESHOLD with initial value of 5
   - Define MAX_VEHICLES_PER_ROUTE_STATUS with value of 1
@@ -17,8 +17,8 @@ This implementation plan converts the vehicle display optimization design into d
   - Test that constants are positive integers
   - _Requirements: 1.4, 5.3_
 
-- [ ] 2. Create vehicle grouping utilities
-  - [ ] 2.1 Create `src/utils/station/vehicleGroupingUtils.ts`
+- [x] 2. Create vehicle grouping utilities
+  - [x] 2.1 Create `src/utils/station/vehicleGroupingUtils.ts`
     - Implement GroupedVehicles and VehicleGroupingOptions interfaces
     - Implement `groupVehiclesForDisplay` function with core grouping logic
     - Implement `selectBestVehiclePerStatus` function for priority selection
@@ -38,14 +38,14 @@ This implementation plan converts the vehicle display optimization design into d
     - Test vehicles without arrival times
     - _Requirements: 2.1-2.6_
 
-- [ ] 3. Enhance StationVehicleList component
-  - [ ] 3.1 Add local state management for display optimization
+- [x] 3. Enhance StationVehicleList component
+  - [x] 3.1 Add local state management for display optimization
     - Add VehicleDisplayState interface to component
     - Implement useState hooks for grouping state and off-route toggle
     - Add expansion state management for "Show more" functionality
     - _Requirements: 3.1, 4.1, 4.5_
 
-  - [ ] 3.2 Implement vehicle display logic
+  - [x] 3.2 Implement vehicle display logic
     - Add logic to determine when to apply grouping based on route count and vehicle count
     - Integrate groupVehiclesForDisplay utility into component
     - Implement off-route vehicle filtering with local toggle
@@ -59,14 +59,14 @@ This implementation plan converts the vehicle display optimization design into d
     - **Property 2: Multi-Route Threshold Logic**
     - **Validates: Requirements 1.2, 1.3**
 
-- [ ] 4. Add expansion controls and UI enhancements
-  - [ ] 4.1 Implement "Show more" / "Show less" button functionality
+- [x] 4. Add expansion controls and UI enhancements
+  - [x] 4.1 Implement "Show more" / "Show less" button functionality
     - Add conditional rendering of expansion button based on hidden vehicle count
     - Implement click handlers for expanding and collapsing vehicle list
     - Add appropriate button text and icons
     - _Requirements: 4.2, 4.3, 4.4_
 
-  - [ ] 4.2 Add off-route vehicle toggle UI
+  - [x] 4.2 Add off-route vehicle toggle UI
     - Add toggle button or switch for showing/hiding off-route vehicles
     - Implement toggle state management and click handlers
     - Add appropriate labeling and visual indicators
@@ -80,8 +80,8 @@ This implementation plan converts the vehicle display optimization design into d
     - **Property 6: Off-Route Vehicle Grouping Consistency**
     - **Validates: Requirements 3.3**
 
-- [ ] 5. Update parent components for route count information
-  - [ ] 5.1 Enhance StationList component
+- [x] 5. Update parent components for route count information
+  - [x] 5.1 Enhance StationList component
     - Pass route count information to StationVehicleList component
     - Calculate route count from vehicle data or station metadata
     - Update component props and prop passing
