@@ -6,8 +6,10 @@
 import { sortByDistance, calculateDistance } from '../location/distanceUtils';
 import { hasActiveTrips, checkStationFavoritesMatch } from './tripValidationUtils';
 import { addStationMetadata } from './stationVehicleUtils';
+import { useShapeStore } from '../../stores/shapeStore';
 import type { FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopResponse, TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from '../../types/rawTranzyApi';
+import type { RouteShape } from '../../types/arrivalTime';
 import { SECONDARY_STATION_THRESHOLD } from '../../types/stationFilter';
 
 /**
@@ -15,7 +17,7 @@ import { SECONDARY_STATION_THRESHOLD } from '../../types/stationFilter';
  * @param maxResults - Maximum number of results (undefined = all stations, 2 = smart filtering)
  * @param proximityThreshold - Distance threshold for secondary station selection (only used when maxResults is limited)
  */
-export const filterStations = (
+export const filterStations = async (
   stops: TranzyStopResponse[],
   currentPosition: GeolocationPosition | null,
   stopTimes: TranzyStopTimeResponse[],
@@ -28,7 +30,7 @@ export const filterStations = (
   maxResults?: number,
   proximityThreshold: number = SECONDARY_STATION_THRESHOLD,
   trips: TranzyTripResponse[] = [] // NEW: trip data for headsign
-): FilteredStation[] => {
+): Promise<FilteredStation[]> => {
   // Early return if no location and smart filtering requested
   if (!currentPosition && maxResults !== undefined) {
     return [];
@@ -43,6 +45,37 @@ export const filterStations = (
   const sortedStations = userLocation ? 
     sortByDistance(stationsWithCoords, userLocation) : 
     stationsWithCoords;
+
+  // Get route shapes early if we have trips data
+  let routeShapes: Map<string, RouteShape> | undefined;
+  if (trips.length > 0) {
+    try {
+      // Get unique shape IDs from all trips to pre-load shapes
+      const uniqueShapeIds = [...new Set(trips.map(trip => trip.shape_id).filter(Boolean))];
+      
+      if (uniqueShapeIds.length > 0) {
+        // Get shapes from the centralized store
+        const shapeStore = useShapeStore.getState();
+        routeShapes = new Map<string, RouteShape>();
+        
+        // Collect available shapes from the store
+        for (const shapeId of uniqueShapeIds) {
+          const shape = shapeStore.getShape(shapeId);
+          if (shape) {
+            routeShapes.set(shapeId, shape);
+          }
+        }
+        
+        // Only log if we have shapes available
+        if (process.env.NODE_ENV === 'development' && routeShapes.size > 0) {
+          console.log(`🗺️ Pre-loaded ${routeShapes.size}/${uniqueShapeIds.length} route shapes for filtering`);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to pre-load route shapes from store:', error);
+      routeShapes = undefined;
+    }
+  }
 
   // Apply core filtering logic: location + trips + favorites
   const validStations: FilteredStation[] = [];
@@ -66,13 +99,13 @@ export const filterStations = (
       }
     }
 
-    // Create station with metadata (now includes arrival time calculations)
+    // Create station with metadata (now with route shapes available)
     const stationWithMetadata = addStationMetadata({
       station,
       distance: userLocation ? calculateDistance(userLocation, { lat: station.stop_lat, lon: station.stop_lon }) : 0,
       hasActiveTrips: true,
       stationType: 'all' as const // Will be updated based on position
-    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable, trips, stops);
+    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable, trips, stops, routeShapes);
 
     // Skip stations with no active vehicles - they should be filtered out entirely
     if (stationWithMetadata.vehicles.length === 0) {

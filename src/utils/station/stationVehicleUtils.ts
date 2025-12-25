@@ -76,6 +76,11 @@ export const getStationVehicles = (
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
   routeShapes?: Map<string, RouteShape> // NEW: route shapes for accurate distance calculations
 ): StationVehicle[] => {
+  // Debug logging for route shapes (reduced verbosity)
+  if (process.env.NODE_ENV === 'development' && routeShapes && routeShapes.size > 0) {
+    console.log(`🔍 getStationVehicles: ${vehicles.length} vehicles, ${routeShapes.size} route shapes`);
+  }
+
   // Return empty array if we don't have the required data
   if (stopTimes.length === 0 || vehicles.length === 0) {
     return [];
@@ -99,7 +104,7 @@ export const getStationVehicles = (
     // Find the target stop for arrival calculations
     const targetStop = stops.find(stop => stop.stop_id === stationId);
     
-    // Filter vehicles that match this station's route IDs and are not off-route
+    // Filter vehicles that match this station's route IDs
     const filteredVehicles = vehicles.filter(vehicle => {
       // Basic route matching - require both route_id and trip_id
       if (vehicle.route_id === null || 
@@ -109,69 +114,112 @@ export const getStationVehicles = (
         return false;
       }
       
-      // Filter out off-route vehicles
-      // Get route shape for this vehicle's trip if available
-      let routeShape: RouteShape | undefined;
-      if (routeShapes && vehicle.trip_id) {
-        const vehicleTrip = trips.find(trip => trip.trip_id === vehicle.trip_id);
-        if (vehicleTrip && vehicleTrip.shape_id) {
-          routeShape = routeShapes.get(vehicleTrip.shape_id);
-        }
+      // Basic validation - vehicle must have valid coordinates
+      if (!vehicle.latitude || !vehicle.longitude) {
+        return false;
       }
       
-      // Use existing utility to check if vehicle is off-route
-      const isOffRoute = isVehicleOffRoute(vehicle, routeShape);
-      return !isOffRoute;
+      return true;
     });
 
     // Combine vehicle data with route, trip, and arrival time information
-    const vehiclesWithData = filteredVehicles.map(vehicle => {
-      // Use map lookup for O(1) access instead of O(n) find
-      const route = routeMap.get(vehicle.route_id) || null;
-      const trip = vehicle.trip_id ? tripMap.get(vehicle.trip_id) || null : null;
-      
-      // Calculate arrival time if we have the target stop and required data
-      let arrivalTime: {
-        statusMessage: string;
-        confidence: 'high' | 'medium' | 'low';
-        estimatedMinutes: number;
-      } | undefined;
-      
-      if (targetStop && stops.length > 0) {
-        try {
-          // Get route shape for this vehicle's trip
-          let routeShape: RouteShape | undefined;
-          if (routeShapes && trip && trip.shape_id) {
-            routeShape = routeShapes.get(trip.shape_id);
+    const vehiclesWithData = filteredVehicles
+      .map(vehicle => {
+        // Use map lookup for O(1) access instead of O(n) find
+        const route = routeMap.get(vehicle.route_id) || null;
+        const trip = vehicle.trip_id ? tripMap.get(vehicle.trip_id) || null : null;
+        
+        // Calculate arrival time if we have the target stop and required data
+        let arrivalTime: {
+          statusMessage: string;
+          confidence: 'high' | 'medium' | 'low';
+          estimatedMinutes: number;
+        } | undefined;
+        
+        if (targetStop && stops.length > 0) {
+          try {
+            // Get route shape for this vehicle's trip
+            let routeShape: RouteShape | undefined;
+            if (routeShapes && trip && trip.shape_id) {
+              routeShape = routeShapes.get(trip.shape_id);
+              
+              // Enhanced logging for route shape lookup failures
+              if (process.env.NODE_ENV === 'development' && routeShapes && trip && trip.shape_id && !routeShape) {
+                console.log(`⚠️ Missing route shape for vehicle ${vehicle.id}`, {
+                  vehicle_id: vehicle.id,
+                  trip_id: trip.trip_id,
+                  route_id: vehicle.route_id,
+                  shape_id: trip.shape_id,
+                  availableShapes: Array.from(routeShapes.keys()).slice(0, 10),
+                  totalShapes: routeShapes.size
+                });
+              }
+            }
+            
+            const arrivalResult = calculateVehicleArrivalTime(
+              vehicle,
+              targetStop,
+              trips,
+              stopTimes,
+              stops,
+              routeShape // Now passing actual route shape data
+            );
+            
+            // Only log critical issues with detailed information for debugging
+            if (process.env.NODE_ENV === 'development' && arrivalResult.calculationMethod === 'stop_segments') {
+              console.log(`⚠️ Fallback calculation for vehicle ${vehicle.id}: no route shape available`, {
+                vehicle_id: vehicle.id,
+                trip_id: vehicle.trip_id,
+                route_id: vehicle.route_id,
+                shape_id: trip?.shape_id || 'undefined',
+                hasTrip: !!trip,
+                hasRouteShapes: !!routeShapes,
+                totalShapes: routeShapes?.size || 0
+              });
+            }
+            
+            arrivalTime = {
+              statusMessage: arrivalResult.statusMessage,
+              confidence: arrivalResult.confidence,
+              estimatedMinutes: arrivalResult.estimatedMinutes
+            };
+          } catch (error) {
+            console.warn('Failed to calculate arrival time for vehicle:', vehicle.id, error);
+            // Continue without arrival time data
           }
-          
-          const arrivalResult = calculateVehicleArrivalTime(
-            vehicle,
-            targetStop,
-            trips,
-            stopTimes,
-            stops,
-            routeShape // Now passing actual route shape data
-          );
-          
-          arrivalTime = {
-            statusMessage: arrivalResult.statusMessage,
-            confidence: arrivalResult.confidence,
-            estimatedMinutes: arrivalResult.estimatedMinutes
-          };
-        } catch (error) {
-          console.warn('Failed to calculate arrival time for vehicle:', vehicle.id, error);
-          // Continue without arrival time data
         }
-      }
-      
-      return {
-        vehicle,
-        route,
-        trip, // NEW: include trip data for headsign
-        arrivalTime // NEW: include arrival time data
-      };
-    });
+        
+        return {
+          vehicle,
+          route,
+          trip, // NEW: include trip data for headsign
+          arrivalTime // NEW: include arrival time data
+        };
+      })
+      .filter(vehicleData => {
+        
+        const { vehicle, trip } = vehicleData;
+        
+        // Get route shape for this vehicle's trip
+        let routeShape: RouteShape | undefined;
+        if (trip && trip.shape_id && routeShapes) {
+          routeShape = routeShapes.get(trip.shape_id);
+        }
+        
+        // Use existing utility to check if vehicle is off-route
+        const isOffRoute = isVehicleOffRoute(vehicle, routeShape);
+        
+        if (process.env.NODE_ENV === 'development' && isOffRoute) {
+          console.log(`🚫 Filtering out off-route vehicle ${vehicle.id}:`, {
+            routeId: vehicle.route_id,
+            tripId: vehicle.trip_id,
+            shapeId: trip?.shape_id,
+            hasRouteShape: !!routeShape
+          });
+        }
+        
+        return !isOffRoute;
+      });
 
     // Sort vehicles by arrival time priority
     return sortStationVehiclesByArrival(vehiclesWithData);
