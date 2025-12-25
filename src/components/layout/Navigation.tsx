@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import { 
-  DirectionsBus as BusIcon, 
+  Favorite as FavoriteIcon, 
   Settings as SettingsIcon,
   LocationOn as LocationIcon 
 } from '@mui/icons-material';
@@ -27,8 +27,8 @@ export const Navigation: FC<NavigationProps> = ({ value, onChange }) => {
           icon={<LocationIcon />}
         />
         <BottomNavigationAction
-          label="Routes"
-          icon={<BusIcon />}
+          label="Favorites"
+          icon={<FavoriteIcon />}
         />
       </BottomNavigation>
     </Paper>
