@@ -29,6 +29,20 @@ const getRouteTypeColor = (routeType: number): 'primary' | 'secondary' | 'defaul
   }
 };
 
+// Helper function to determine text color based on background color
+const getContrastColor = (hexColor: string): string => {
+  // Convert hex to RGB
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+  
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // Return white for dark backgrounds, black for light backgrounds
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
+
 export const RouteList: FC<RouteListProps> = ({ routes }) => {
   const { toggleFavorite } = useFavoritesStore();
 
@@ -72,9 +86,10 @@ const RouteCard: FC<RouteCardProps> = ({ route, onToggleFavorite }) => {
       }}>
         {/* Header with route badge, name, and favorite toggle */}
         <Stack direction="row" alignItems="center" spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: 1.5 }}>
-          {/* Circular route badge */}
+          {/* Circular route badge with route color */}
           <Avatar sx={{ 
             bgcolor: route.route_color ? `#${route.route_color}` : 'primary.main',
+            color: route.route_color ? getContrastColor(`#${route.route_color}`) : 'primary.contrastText',
             width: { xs: 40, sm: 48 }, 
             height: { xs: 40, sm: 48 },
             fontSize: { xs: '1rem', sm: '1.1rem' },
@@ -144,32 +159,6 @@ const RouteCard: FC<RouteCardProps> = ({ route, onToggleFavorite }) => {
               flexShrink: 0
             }}
           />
-          
-          {/* Route color indicator (if different from avatar) */}
-          {route.route_color && (
-            <Box display="flex" alignItems="center" gap={0.5} sx={{ flexShrink: 0 }}>
-              <Box
-                sx={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  backgroundColor: `#${route.route_color}`,
-                  border: '1px solid rgba(0,0,0,0.2)',
-                  flexShrink: 0
-                }}
-              />
-              <Typography 
-                variant="caption" 
-                color="text.secondary"
-                sx={{ 
-                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                #{route.route_color}
-              </Typography>
-            </Box>
-          )}
         </Stack>
       </CardContent>
     </Card>
