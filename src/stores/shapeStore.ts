@@ -29,6 +29,9 @@ interface ShapeStore {
   // Internal: compressed cache data (temporary during initialization)
   _compressed?: string;
   
+  // Internal: prevent duplicate initialization from React StrictMode
+  _initializing?: boolean;
+  
   // Actions
   initializeShapes: () => Promise<void>;
   getShape: (shapeId: string) => RouteShape | undefined;
@@ -103,14 +106,24 @@ export const useShapeStore = create<ShapeStore>()(
       initializeShapes: async () => {
         const currentState = get();
         
-        // If already loading, avoid duplicate requests
-        if (currentState.loading) {
+        // Prevent duplicate initialization from React StrictMode
+        if (currentState.loading || (currentState as any)._initializing) {
           return;
         }
         
+        // Set initializing flag to prevent duplicates
+        set({ _initializing: true } as any);
+        
         // Check if we have compressed data that needs decompression
         if ((currentState as any)._compressed) {
-          console.log('Decompressing cached shape data...');
+          // Set loading state immediately to prevent duplicate decompression
+          set({ loading: true });
+          
+          // Only log in development and avoid duplicate logs from React StrictMode
+          if (process.env.NODE_ENV === 'development' && !currentState.shapes.size) {
+            console.log('Decompressing cached shape data...');
+          }
+          
           try {
             const decompressed = await decompressData((currentState as any)._compressed);
             const parsed = JSON.parse(decompressed);
@@ -125,10 +138,15 @@ export const useShapeStore = create<ShapeStore>()(
                 dataHash: parsed.state.dataHash || null,
                 error: parsed.state.error || null,
                 retryCount: parsed.state.retryCount || 0,
-                _compressed: undefined // Clear compressed data
-              });
+                loading: false,
+                _compressed: undefined, // Clear compressed data
+                _initializing: undefined // Clear initializing flag
+              } as any);
               
-              console.log(`✅ Decompressed ${shapesMap.size} shapes from cache`);
+              // Only log in development and avoid duplicate logs
+              if (process.env.NODE_ENV === 'development' && shapesMap.size > 0) {
+                console.log(`✅ Decompressed ${shapesMap.size} shapes from cache`);
+              }
               
               // Check if data is expired and trigger background refresh if needed
               if (get().isDataExpired()) {
@@ -141,6 +159,7 @@ export const useShapeStore = create<ShapeStore>()(
             }
           } catch (error) {
             console.warn('Failed to decompress cached shapes, fetching fresh data:', error);
+            set({ loading: false, _initializing: undefined } as any);
             // Fall through to fresh fetch
           }
         }
@@ -148,6 +167,7 @@ export const useShapeStore = create<ShapeStore>()(
         // Check if cached data is expired and trigger fresh fetch
         if (currentState.shapes.size > 0 && currentState.isDataExpired()) {
           console.log('Cached shapes expired, triggering fresh fetch');
+          set({ _initializing: undefined } as any); // Clear initializing flag
           await get().refreshShapes();
           return;
         }
@@ -155,6 +175,7 @@ export const useShapeStore = create<ShapeStore>()(
         // If we have fresh cached data, load it immediately and trigger background refresh
         if (currentState.shapes.size > 0 && currentState.isDataFresh()) {
           // Data is already loaded and fresh, trigger background refresh
+          set({ _initializing: undefined } as any); // Clear initializing flag
           setTimeout(() => {
             get().refreshShapes();
           }, 0);
@@ -162,6 +183,7 @@ export const useShapeStore = create<ShapeStore>()(
         }
         
         // No cached data or data is stale, fetch immediately
+        set({ _initializing: undefined } as any); // Clear initializing flag
         await get().refreshShapes();
       },
       
@@ -369,11 +391,15 @@ export const useShapeStore = create<ShapeStore>()(
                 if (process.env.NODE_ENV === 'development') {
                   const ratio = getCompressionRatio(jsonString, compressed);
                   const isCompressed = compressed.startsWith('gzip:');
-                  if (isCompressed) {
+                  
+                  // Only log meaningful compression results
+                  if (isCompressed && ratio > 1.1) {
                     console.log(`📦 Shape data compressed: ${formatSize(originalSize)} → ${formatSize(compressedSize)} (${ratio.toFixed(1)}x reduction)`);
-                  } else {
+                  } else if (!isCompressed && originalSize > 1024 * 1024) {
+                    // Only log uncompressed storage for large files (>1MB)
                     console.log(`📦 Shape data stored uncompressed: ${formatSize(originalSize)} (compression not beneficial)`);
                   }
+                  // Skip logging for small files or minimal compression to reduce noise
                 }
                 
                 localStorage.setItem(name, compressed);
