@@ -66,9 +66,9 @@ export const filterStations = async (
           }
         }
         
-        // Only log if we have shapes available
-        if (process.env.NODE_ENV === 'development' && routeShapes.size > 0) {
-          console.log(`🗺️ Pre-loaded ${routeShapes.size}/${uniqueShapeIds.length} route shapes for filtering`);
+        // Pre-load route shapes for accurate distance calculations
+        if (routeShapes.size > 0) {
+          // Route shapes are available for filtering
         }
       }
     } catch (error) {

@@ -45,6 +45,9 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
     return new Set(); // When filtering is OFF (show all), collapse all by default
   });
 
+  // Route filter state management per station - Map<stationId, selectedRouteId | null>
+  const [routeFilters, setRouteFilters] = useState<Map<number, number | null>>(new Map());
+
   // Update expansion state when filtering mode changes
   const handleFilteringChange = useCallback(() => {
     if (isFiltering) {
@@ -74,6 +77,23 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
     });
   }, []);
 
+  // Route filter handler - memoized to prevent unnecessary re-renders
+  const handleRouteFilter = useCallback((stationId: number, routeId: number) => {
+    setRouteFilters(prev => {
+      const newFilters = new Map(prev);
+      const currentFilter = newFilters.get(stationId);
+      
+      // Toggle logic: if same route clicked, clear filter; otherwise set new filter
+      if (currentFilter === routeId) {
+        newFilters.set(stationId, null);
+      } else {
+        newFilters.set(stationId, routeId);
+      }
+      
+      return newFilters;
+    });
+  }, []);
+
   if (stations.length === 0) {
     return null; // Empty state handled by parent component
   }
@@ -83,6 +103,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
       {stations.map((filteredStation) => {
         const { station, distance, stationType, matchesFavorites, vehicles, routeIds } = filteredStation;
         const isExpanded = expandedStations.has(station.stop_id);
+        const selectedRouteId = routeFilters.get(station.stop_id);
         
         // Get route data for the bubbles
         const stationRoutes = routes.filter(route => routeIds.includes(route.route_id));
@@ -178,6 +199,37 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                           maxWidth: '100%'
                         }}
                       >
+                        {stationRoutes.slice(0, 8).map((route) => (
+                          <Avatar
+                            key={route.route_id}
+                            onClick={() => handleRouteFilter(station.stop_id, route.route_id)}
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              bgcolor: selectedRouteId === route.route_id 
+                                ? 'primary.main' 
+                                : (route.route_color ? `#${route.route_color}` : 'grey.400'),
+                              color: 'white',
+                              minWidth: 32,
+                              flexShrink: 0,
+                              cursor: 'pointer',
+                              opacity: selectedRouteId === null || selectedRouteId === route.route_id ? 1 : 0.6,
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                transform: 'scale(1.1)',
+                                opacity: 1,
+                                boxShadow: 2
+                              },
+                              border: selectedRouteId === route.route_id ? '2px solid' : '1px solid transparent',
+                              borderColor: selectedRouteId === route.route_id ? 'primary.dark' : 'transparent',
+                              boxShadow: selectedRouteId === route.route_id ? 2 : 0
+                            }}
+                          >
+                            {route.route_short_name}
+                          </Avatar>
+                        ))}
                         {stationRoutes.length > 8 && (
                           <Typography 
                             variant="caption" 
@@ -188,7 +240,6 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                           </Typography>
                         )}
                       </Stack>
-                     
                     </Box>
                   )}
                 </Box>
@@ -223,25 +274,6 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                   </IconButton>
                 </Box>
               </Stack>
-               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"> 
-                                                {stationRoutes.slice(0, 8).map((route) => (
-                          <Avatar
-                            key={route.route_id}
-                            sx={{
-                              width: 45,
-                              height: 45,
-                              fontSize: '1rem',
-                              fontWeight: 'bold',
-                              bgcolor: route.route_color ? `#${route.route_color}` : 'primary.main',
-                              color: 'white',
-                              minWidth: 24, // Prevent shrinking
-                              flexShrink: 0
-                            }}
-                          >
-                            {route.route_short_name}
-                          </Avatar>
-                        ))}
-                      </Stack>
               {/* Expandable vehicle list section */}
               <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                 <StationVehicleList 
@@ -249,6 +281,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                   expanded={isExpanded}
                   station={station}
                   stationRouteCount={routeIds.length}
+                  selectedRouteId={selectedRouteId}
                 />
               </Collapse>
             </CardContent>

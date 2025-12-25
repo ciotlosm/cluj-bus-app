@@ -33,9 +33,10 @@ interface StationVehicleListProps {
   expanded: boolean;
   station: any; // The station these vehicles are being displayed for
   stationRouteCount?: number; // Number of routes serving this station
+  selectedRouteId?: number | null; // NEW: route filter
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount }) => {
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount, selectedRouteId }) => {
   // State for expansion functionality
   const [showingAll, setShowingAll] = useState(false);
   
@@ -51,11 +52,26 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
     );
   }
 
-  // Sort vehicles by arrival time using existing utility
-  const sortedVehicles = sortStationVehiclesByArrival(vehicles);
+  // Apply route filtering before sorting and grouping
+  const filteredVehicles = selectedRouteId 
+    ? vehicles.filter(({ route }) => route?.route_id === selectedRouteId)
+    : vehicles;
 
-  // Determine if grouping should be applied based on route count and vehicle count
-  const shouldApplyGrouping = (stationRouteCount || 1) > 1 && 
+  // Handle empty state when route filter is active but no vehicles match
+  if (selectedRouteId && filteredVehicles.length === 0) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ p: 2, fontStyle: 'italic' }}>
+        No active vehicles for this route
+      </Typography>
+    );
+  }
+
+  // Sort vehicles by arrival time using existing utility
+  const sortedVehicles = sortStationVehiclesByArrival(filteredVehicles);
+
+  // Skip grouping when route filter is active
+  const shouldApplyGrouping = !selectedRouteId && 
+                             (stationRouteCount || 1) > 1 && 
                              sortedVehicles.length > VEHICLE_DISPLAY.VEHICLE_DISPLAY_THRESHOLD;
 
   // Apply grouping logic if needed
@@ -93,11 +109,11 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
       
       {/* Show more/less button when grouping is applied */}
       {groupingResult.groupingApplied && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1, pb: 4 }}>
           <Chip
             label={showingAll 
               ? "Show less" 
-              : `Show ${hiddenVehicleCount} more vehicle${hiddenVehicleCount !== 1 ? 's' : ''}`
+              : `More ${hiddenVehicleCount} vehicle${hiddenVehicleCount !== 1 ? 's' : ''}`
             }
             onClick={() => setShowingAll(!showingAll)}
             variant="outlined"

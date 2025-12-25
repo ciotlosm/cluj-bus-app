@@ -76,11 +76,6 @@ export const getStationVehicles = (
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
   routeShapes?: Map<string, RouteShape> // NEW: route shapes for accurate distance calculations
 ): StationVehicle[] => {
-  // Debug logging for route shapes (reduced verbosity)
-  if (process.env.NODE_ENV === 'development' && routeShapes && routeShapes.size > 0) {
-    console.log(`🔍 getStationVehicles: ${vehicles.length} vehicles, ${routeShapes.size} route shapes`);
-  }
-
   // Return empty array if we don't have the required data
   if (stopTimes.length === 0 || vehicles.length === 0) {
     return [];
@@ -151,18 +146,6 @@ export const getStationVehicles = (
             let routeShape: RouteShape | undefined;
             if (routeShapes && trip && trip.shape_id) {
               routeShape = routeShapes.get(trip.shape_id);
-              
-              // Enhanced logging for route shape lookup failures
-              if (process.env.NODE_ENV === 'development' && routeShapes && trip && trip.shape_id && !routeShape) {
-                console.log(`⚠️ Missing route shape for vehicle ${vehicle.id}`, {
-                  vehicle_id: vehicle.id,
-                  trip_id: trip.trip_id,
-                  route_id: vehicle.route_id,
-                  shape_id: trip.shape_id,
-                  availableShapes: Array.from(routeShapes.keys()).slice(0, 10),
-                  totalShapes: routeShapes.size
-                });
-              }
             }
             
             const arrivalResult = calculateVehicleArrivalTime(
@@ -173,19 +156,6 @@ export const getStationVehicles = (
               stops,
               routeShape // Now passing actual route shape data
             );
-            
-            // Only log critical issues with detailed information for debugging
-            if (process.env.NODE_ENV === 'development' && arrivalResult.calculationMethod === 'stop_segments') {
-              console.log(`⚠️ Fallback calculation for vehicle ${vehicle.id}: no route shape available`, {
-                vehicle_id: vehicle.id,
-                trip_id: vehicle.trip_id,
-                route_id: vehicle.route_id,
-                shape_id: trip?.shape_id || 'undefined',
-                hasTrip: !!trip,
-                hasRouteShapes: !!routeShapes,
-                totalShapes: routeShapes?.size || 0
-              });
-            }
             
             arrivalTime = {
               statusMessage: arrivalResult.statusMessage,
