@@ -13,35 +13,13 @@ import {
 } from '@mui/material';
 import type { EnhancedRoute } from '../../../types/routeFilter';
 import { getRouteTypeLabel } from '../../../types/rawTranzyApi';
+import { getTransportTypeColor, getTransportTypeTextColor, getTransportTypeMuiColor } from '../../../utils/route/routeColorUtils';
 import { HeartToggle } from '../controls/HeartToggle';
 import { useFavoritesStore } from '../../../stores/favoritesStore';
 
 interface RouteListProps {
   routes: EnhancedRoute[];
 }
-
-const getRouteTypeColor = (routeType: number): 'primary' | 'secondary' | 'default' => {
-  switch (routeType) {
-    case 0: return 'secondary'; // Tram
-    case 3: return 'primary';   // Bus
-    case 11: return 'default';  // Trolleybus
-    default: return 'default';
-  }
-};
-
-// Helper function to determine text color based on background color
-const getContrastColor = (hexColor: string): string => {
-  // Convert hex to RGB
-  const r = parseInt(hexColor.slice(1, 3), 16);
-  const g = parseInt(hexColor.slice(3, 5), 16);
-  const b = parseInt(hexColor.slice(5, 7), 16);
-  
-  // Calculate luminance
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  
-  // Return white for dark backgrounds, black for light backgrounds
-  return luminance > 0.5 ? '#000000' : '#ffffff';
-};
 
 export const RouteList: FC<RouteListProps> = ({ routes }) => {
   const { toggleFavorite } = useFavoritesStore();
@@ -86,10 +64,10 @@ const RouteCard: FC<RouteCardProps> = ({ route, onToggleFavorite }) => {
       }}>
         {/* Header with route badge, name, and favorite toggle */}
         <Stack direction="row" alignItems="center" spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: 1.5 }}>
-          {/* Circular route badge with route color */}
+          {/* Circular route badge with transportation type color */}
           <Avatar sx={{ 
-            bgcolor: route.route_color ? `#${route.route_color}` : 'primary.main',
-            color: route.route_color ? getContrastColor(`#${route.route_color}`) : 'primary.contrastText',
+            bgcolor: route.route_color || getTransportTypeColor(route.route_type),
+            color: 'white',
             width: { xs: 40, sm: 48 }, 
             height: { xs: 40, sm: 48 },
             fontSize: { xs: '1rem', sm: '1.1rem' },
@@ -152,7 +130,7 @@ const RouteCard: FC<RouteCardProps> = ({ route, onToggleFavorite }) => {
           <Chip 
             label={getRouteTypeLabel(route.route_type)} 
             size="small" 
-            color={getRouteTypeColor(route.route_type)}
+            color={getTransportTypeMuiColor(route.route_type)}
             sx={{ 
               fontSize: '0.7rem',
               height: { xs: 20, sm: 24 },

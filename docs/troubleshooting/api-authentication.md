@@ -59,6 +59,13 @@ Visit `/debug.html` when dev server is running to test:
 - Data retrieval
 - Authentication status
 
+### Postman Collection Testing
+**Problem**: Need to validate API integration after code changes
+**Solution**: Run automated Postman collection tests
+1. Set `POSTMAN_API_KEY` environment variable
+2. Enable Postman power in MCP config
+3. Collection automatically tests all endpoints with proper timeouts
+
 ### Browser Console
 Check for error messages:
 ```javascript

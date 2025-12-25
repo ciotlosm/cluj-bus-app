@@ -10,6 +10,13 @@
 
 ## Storage Problems
 
+### Route Shapes localStorage Failure (FIXED)
+**Problem**: "Shapes store empty" with stack overflow and QuotaExceededError
+**Root Cause**: Large shape data (13.1MB) caused stack overflow in compression and exceeded localStorage limits
+**Solution**: Fixed compression with chunked processing + gzip compression (13.1MB → 2.0MB, 6.6x reduction)
+**Technical Fix**: Replaced `String.fromCharCode(...array)` with chunked approach to avoid stack overflow
+**Status**: ✅ RESOLVED - Compression now handles large datasets without errors
+
 ### Storage Quota Exceeded
 **Problem**: "QuotaExceededError: The quota has been exceeded"
 **Solution**: Clear browser data or restart browser. Cache now auto-manages size.

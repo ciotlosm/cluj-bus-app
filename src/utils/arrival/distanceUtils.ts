@@ -78,7 +78,7 @@ export function calculateDistanceViaStops(
   return {
     totalDistance,
     method: 'stop_segments',
-    confidence: intermediateStops.length > 0 ? 'medium' : 'low'
+    confidence: 'medium' // stop_segments method is inherently medium confidence
   };
 }
 

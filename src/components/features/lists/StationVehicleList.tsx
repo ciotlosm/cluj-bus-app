@@ -6,7 +6,7 @@ import type { FC } from 'react';
 import { memo, useState } from 'react';
 import { 
   Card, CardContent, Typography, Chip, Stack, Box, Avatar, IconButton,
-  Collapse, List, ListItem, ListItemText
+  Collapse, List, ListItem, ListItemText, Tooltip
 } from '@mui/material';
 import { 
   AccessibleForward as WheelchairIcon,
@@ -18,6 +18,7 @@ import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTi
 import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import { determineTargetStopRelation } from '../../../utils/arrival/arrivalUtils';
+import { generateConfidenceDebugInfo, formatConfidenceDebugTooltip } from '../../../utils/debug/confidenceDebugUtils';
 import { useTripStore } from '../../../stores/tripStore';
 import { useStationStore } from '../../../stores/stationStore';
 import type { StationVehicle } from '../../../types/stationFilter';
@@ -232,18 +233,60 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         {/* Arrival time information */}
         {arrivalTime && (
           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
-            <Chip
-              icon={<ArrivalIcon />}
-              label={formatArrivalTime(arrivalTime)}
-              color={arrivalTime.statusMessage.includes('Departed') ? 'default' : 'success'}
-              variant="filled"
-              size="small"
-              sx={{ 
-                fontWeight: 'medium',
-                fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                '& .MuiChip-icon': { color: 'inherit' }
-              }}
-            />
+            {(() => {
+              // Generate debug info for low confidence arrivals
+              const debugInfo = arrivalTime?.confidence === 'low' 
+                ? generateConfidenceDebugInfo({ vehicle, route, trip, arrivalTime }) 
+                : null;
+              
+              const chip = (
+                <Chip
+                  icon={<ArrivalIcon />}
+                  label={formatArrivalTime(arrivalTime)}
+                  color={arrivalTime.statusMessage.includes('Departed') ? 'default' : 'success'}
+                  variant="filled"
+                  size="small"
+                  sx={{ 
+                    fontWeight: 'medium',
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    '& .MuiChip-icon': { color: 'inherit' },
+                    cursor: debugInfo ? 'help' : 'default'
+                  }}
+                />
+              );
+
+              // Only show tooltip for low confidence arrivals (or all in development)
+              const shouldShowTooltip = debugInfo || (process.env.NODE_ENV === 'development' && arrivalTime);
+              
+              if (shouldShowTooltip) {
+                const tooltipContent = debugInfo 
+                  ? formatConfidenceDebugTooltip(debugInfo)
+                  : `Development Mode\nConfidence: ${arrivalTime?.confidence}\nStatus: ${arrivalTime?.statusMessage}`;
+                
+                return (
+                  <Tooltip
+                    title={tooltipContent}
+                    placement="top"
+                    arrow
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          fontSize: '0.75rem',
+                          maxWidth: 400,
+                          whiteSpace: 'pre-line',
+                          fontFamily: 'monospace',
+                          backgroundColor: 'rgba(0, 0, 0, 0.9)'
+                        }
+                      }
+                    }}
+                  >
+                    {chip}
+                  </Tooltip>
+                );
+              }
+
+              return chip;
+            })()}
           </Box>
         )}
 

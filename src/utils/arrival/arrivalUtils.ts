@@ -159,15 +159,24 @@ export function determineTargetStopRelation(
 }
 
 /**
- * Check if vehicle is off-route based on route_id and distance threshold
+ * Check if vehicle is off-route based on route_id, trip_id, timestamp age, and distance threshold
  */
 export function isVehicleOffRoute(
   vehicle: TranzyVehicleResponse,
   routeShape?: RouteShape
 ): boolean {
-  // No route ID means off-route
-  if (!vehicle.route_id) {
+  // No route ID or trip ID means off-route
+  if (!vehicle.route_id || !vehicle.trip_id) {
     return true;
+  }
+  
+  // Check if timestamp is older than 30 minutes (stale data)
+  const vehicleTimestamp = new Date(vehicle.timestamp);
+  const now = new Date();
+  const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+  
+  if (vehicleTimestamp < thirtyMinutesAgo) {
+    return true; // Stale data, consider off-route
   }
   
   // If we have route shape, check distance threshold
@@ -178,6 +187,6 @@ export function isVehicleOffRoute(
     return projection.distanceToShape > ARRIVAL_CONFIG.OFF_ROUTE_THRESHOLD;
   }
   
-  // No route shape available, assume on-route if has route_id
+  // No route shape available, assume on-route if has route_id and fresh timestamp
   return false;
 }

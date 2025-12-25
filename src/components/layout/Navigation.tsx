@@ -30,10 +30,6 @@ export const Navigation: FC<NavigationProps> = ({ value, onChange }) => {
           label="Routes"
           icon={<BusIcon />}
         />
-        <BottomNavigationAction
-          label="Settings"
-          icon={<SettingsIcon />}
-        />
       </BottomNavigation>
     </Paper>
   );

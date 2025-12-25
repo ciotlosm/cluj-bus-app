@@ -72,7 +72,7 @@ class ContextErrorBoundary extends Component<
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState(0); // 0 = stations, 1 = routes, 2 = settings
+  const [currentView, setCurrentView] = useState(0); // 0 = stations, 1 = routes
   
   // Auto-request location on app start and foreground return
   useAutoLocation();

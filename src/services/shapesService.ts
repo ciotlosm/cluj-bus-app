@@ -9,9 +9,10 @@ import { API_CONFIG } from '../utils/core/constants';
 
 export const shapesService = {
   /**
-   * Get shape points for a specific shape_id
+   * Get all shapes in bulk (no shape_id parameter)
+   * Used for bulk caching strategy with enhanced error handling
    */
-  async getShapePoints(shapeId: string): Promise<TranzyShapeResponse[]> {
+  async getAllShapes(): Promise<TranzyShapeResponse[]> {
     try {
       // Get API credentials from app context
       const { apiKey, agencyId } = getApiConfig();
@@ -21,14 +22,29 @@ export const shapesService = {
           'X-API-Key': apiKey,
           'X-Agency-Id': agencyId.toString()
         },
-        params: {
-          shape_id: shapeId
-        }
+        // Add timeout for better error handling
+        timeout: 30000, // 30 seconds
+        // No shape_id parameter - fetches all shapes
       });
+      
+      // Validate response is an array
+      if (!Array.isArray(response.data)) {
+        throw new Error('Invalid response format: expected array of shapes');
+      }
       
       return response.data;
     } catch (error) {
-      throw handleApiError(error, `Failed to fetch shape points for shape_id: ${shapeId}`);
+      // Enhanced error handling with network error detection
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED' || error.code === 'NETWORK_ERROR') {
+          throw new Error('Network timeout - check your connection and try again');
+        }
+        if (!error.response) {
+          throw new Error('Network error - unable to reach server');
+        }
+      }
+      
+      throw handleApiError(error, 'Failed to fetch all shapes');
     }
   }
 };
