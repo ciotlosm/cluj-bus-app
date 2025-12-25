@@ -4,8 +4,7 @@
 import { useEffect } from 'react';
 import type { FC } from 'react';
 import { 
-  Chip, 
-  Divider
+  Chip
 } from '@mui/material';
 import {
   DirectionsBus,
@@ -129,18 +128,15 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
 
       {/* Favorites filter - only show if user has favorite routes */}
       {hasFavoriteRoutes && (
-        <>
-          <Divider orientation="vertical" flexItem sx={{ height: 24, mx: 0.5 }} />
-          <Chip
-            icon={<Favorite />}
-            label="Favorites"
-            variant={filterState.metaFilters.favorites ? 'filled' : 'outlined'}
-            color={filterState.metaFilters.favorites ? 'error' : 'default'}
-            onClick={handleFavoritesToggle}
-            clickable
-            size="small"
-          />
-        </>
+        <Chip
+          icon={<Favorite />}
+          label="Favorites"
+          variant={filterState.metaFilters.favorites ? 'filled' : 'outlined'}
+          color={filterState.metaFilters.favorites ? 'error' : 'default'}
+          onClick={handleFavoritesToggle}
+          clickable
+          size="small"
+        />
       )}
     </FilterHeader>
   );
