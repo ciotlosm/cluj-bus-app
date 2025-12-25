@@ -50,17 +50,16 @@ export const FilterHeader: FC<FilterHeaderProps> = ({
           )}
           
           {/* Filter controls - full width on mobile, wrapping allowed */}
-          <Stack 
-            direction="row" 
-            spacing={1} 
-            alignItems="center"
+          <Box
             sx={{ 
+              display: 'flex',
               flexWrap: 'wrap',
-              gap: 1
+              gap: 1,
+              alignItems: 'center'
             }}
           >
             {children}
-          </Stack>
+          </Box>
         </Stack>
       </Box>
       
