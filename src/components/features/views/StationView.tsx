@@ -7,8 +7,7 @@ import {
   Box, 
   CircularProgress, 
   Alert, 
-  Button,
-  Divider
+  Button
 } from '@mui/material';
 import { useStationStore } from '../../../stores/stationStore';
 import { useStationFilter } from '../../../hooks/useStationFilter';
@@ -75,8 +74,6 @@ export const StationView: FC = () => {
         toggleFavoritesFilter={toggleFavoritesFilter}
         hasFavoriteRoutes={hasFavoriteRoutes}
       />
-      
-      <Divider />
       
       <StationList 
         stations={filteredStations} 

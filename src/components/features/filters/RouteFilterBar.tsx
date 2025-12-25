@@ -1,14 +1,11 @@
-// RouteFilterBar - Chip-based filtering interface for routes
+// RouteFilterBar - Chip-based filtering interface using unified FilterHeader
 // Implements toggleable transport type selection and favorites filter
 
 import { useEffect } from 'react';
 import type { FC } from 'react';
 import { 
-  Box, 
   Chip, 
-  Typography, 
-  Divider,
-  Paper
+  Divider
 } from '@mui/material';
 import {
   DirectionsBus,
@@ -19,6 +16,7 @@ import {
 import type { RouteFilterState, TransportTypeKey } from '../../../types/routeFilter';
 import { getTransportTypeOptions } from '../../../types/rawTranzyApi';
 import { useFavoritesStore } from '../../../stores/favoritesStore';
+import { FilterHeader } from '../headers/FilterHeader';
 
 interface RouteFilterBarProps {
   /** Current filter state */
@@ -106,57 +104,44 @@ export const RouteFilterBar: FC<RouteFilterBarProps> = ({
   };
 
   return (
-    <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-      {/* Route count display */}
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {routeCount} route{routeCount !== 1 ? 's' : ''} found
-      </Typography>
+    <FilterHeader
+      count={{
+        value: routeCount,
+        label: 'route'
+      }}
+    >
+      {/* Transport type chips */}
+      {transportOptions.map(({ key, label }) => {
+        const IconComponent = TRANSPORT_TYPE_ICONS[key];
+        return (
+          <Chip
+            key={key}
+            icon={<IconComponent />}
+            label={label}
+            variant={filterState.transportTypes[key] ? 'filled' : 'outlined'}
+            color={filterState.transportTypes[key] ? 'primary' : 'default'}
+            onClick={() => handleTransportTypeToggle(key)}
+            clickable
+            size="small"
+          />
+        );
+      })}
 
-      {/* Grouped filter chips in a single row */}
-      <Paper 
-        variant="outlined" 
-        sx={{ 
-          p: 1.5, 
-          display: 'flex', 
-          gap: 1, 
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          bgcolor: 'background.default'
-        }}
-      >
-        {/* Transport type chips */}
-        {transportOptions.map(({ key, label }) => {
-          const IconComponent = TRANSPORT_TYPE_ICONS[key];
-          return (
-            <Chip
-              key={key}
-              icon={<IconComponent />}
-              label={label}
-              variant={filterState.transportTypes[key] ? 'filled' : 'outlined'}
-              color={filterState.transportTypes[key] ? 'primary' : 'default'}
-              onClick={() => handleTransportTypeToggle(key)}
-              clickable
-              size="small"
-            />
-          );
-        })}
-
-        {/* Favorites filter - only show if user has favorite routes */}
-        {hasFavoriteRoutes && (
-          <>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Chip
-              icon={<Favorite />}
-              label="Favorites"
-              variant={filterState.metaFilters.favorites ? 'filled' : 'outlined'}
-              color={filterState.metaFilters.favorites ? 'error' : 'default'}
-              onClick={handleFavoritesToggle}
-              clickable
-              size="small"
-            />
-          </>
-        )}
-      </Paper>
-    </Box>
+      {/* Favorites filter - only show if user has favorite routes */}
+      {hasFavoriteRoutes && (
+        <>
+          <Divider orientation="vertical" flexItem sx={{ height: 24, mx: 0.5 }} />
+          <Chip
+            icon={<Favorite />}
+            label="Favorites"
+            variant={filterState.metaFilters.favorites ? 'filled' : 'outlined'}
+            color={filterState.metaFilters.favorites ? 'error' : 'default'}
+            onClick={handleFavoritesToggle}
+            clickable
+            size="small"
+          />
+        </>
+      )}
+    </FilterHeader>
   );
 };

@@ -16,6 +16,8 @@ import {
 } from '@mui/icons-material';
 import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTime } from '../../../utils/vehicle/vehicleFormatUtils';
 import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
+import { groupVehiclesForDisplay } from '../../../utils/station/vehicleGroupingUtils';
+import { VEHICLE_DISPLAY } from '../../../utils/core/constants';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import { determineTargetStopRelation } from '../../../utils/arrival/arrivalUtils';
 import { generateConfidenceDebugInfo, formatConfidenceDebugTooltip } from '../../../utils/debug/confidenceDebugUtils';
@@ -23,13 +25,20 @@ import { useTripStore } from '../../../stores/tripStore';
 import { useStationStore } from '../../../stores/stationStore';
 import type { StationVehicle } from '../../../types/stationFilter';
 
+// VehicleDisplayState interface removed as it's not used in the current implementation
+// The component uses direct state variables instead
+
 interface StationVehicleListProps {
   vehicles: StationVehicle[];
   expanded: boolean;
   station: any; // The station these vehicles are being displayed for
+  stationRouteCount?: number; // Number of routes serving this station
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station }) => {
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount }) => {
+  // State for expansion functionality
+  const [showingAll, setShowingAll] = useState(false);
+  
   // Don't render when collapsed (performance optimization)
   if (!expanded) return null;
 
@@ -45,9 +54,32 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
   // Sort vehicles by arrival time using existing utility
   const sortedVehicles = sortStationVehiclesByArrival(vehicles);
 
+  // Determine if grouping should be applied based on route count and vehicle count
+  const shouldApplyGrouping = (stationRouteCount || 1) > 1 && 
+                             sortedVehicles.length > VEHICLE_DISPLAY.VEHICLE_DISPLAY_THRESHOLD;
+
+  // Apply grouping logic if needed
+  const groupingResult = shouldApplyGrouping 
+    ? groupVehiclesForDisplay(sortedVehicles, {
+        maxVehicles: VEHICLE_DISPLAY.VEHICLE_DISPLAY_THRESHOLD,
+        routeCount: stationRouteCount || 1
+      })
+    : {
+        displayed: sortedVehicles,
+        hidden: [],
+        groupingApplied: false
+      };
+
+  // Determine which vehicles to display based on expansion state
+  const vehiclesToDisplay = showingAll 
+    ? sortedVehicles 
+    : groupingResult.displayed;
+
+  const hiddenVehicleCount = showingAll ? 0 : groupingResult.hidden.length;
+
   return (
     <Stack spacing={2} sx={{ p: 2 }}>
-      {sortedVehicles.map(({ vehicle, route, trip, arrivalTime }) => (
+      {vehiclesToDisplay.map(({ vehicle, route, trip, arrivalTime }) => (
         <VehicleCard 
           key={vehicle.id}
           vehicle={vehicle}
@@ -57,6 +89,22 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
           station={station}
         />
       ))}
+      
+      {/* Show more/less button when grouping is applied */}
+      {groupingResult.groupingApplied && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
+          <Chip
+            label={showingAll 
+              ? "Show less" 
+              : `Show ${hiddenVehicleCount} more vehicle${hiddenVehicleCount !== 1 ? 's' : ''}`
+            }
+            onClick={() => setShowingAll(!showingAll)}
+            variant="outlined"
+            color="primary"
+            sx={{ cursor: 'pointer' }}
+          />
+        </Box>
+      )}
     </Stack>
   );
 });
@@ -117,11 +165,13 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
   const headsign = trip?.trip_headsign || 'Unknown Destination';
 
   return (
-    <Card sx={{ 
-      backgroundColor: 'background.paper',
-      borderRadius: 2,
-      boxShadow: 1
-    }}>
+    <Card 
+      variant="vehicle"
+      sx={{ 
+        borderRadius: 2,
+        boxShadow: 1
+      }}
+    >
       <CardContent sx={{ 
         p: { xs: 1.5, sm: 2 }, 
         '&:last-child': { pb: { xs: 1.5, sm: 2 } } 
@@ -268,7 +318,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                     title={tooltipContent}
                     placement="top"
                     arrow
-                    componentsProps={{
+                    slotProps={{
                       tooltip: {
                         sx: {
                           fontSize: '0.75rem',
@@ -326,7 +376,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
           <Collapse in={stopsExpanded} timeout="auto" unmountOnExit>
             <List dense sx={{ mt: 1 }}>
               {tripStops.length > 0 ? (
-                tripStops.map((stop, index) => (
+                tripStops.map((stop) => (
                   <ListItem key={stop.stopId} sx={{ py: 0.5, px: 0 }}>
                     <Box 
                       sx={{ 
@@ -361,16 +411,18 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                   </ListItem>
                 ))
               ) : (
-                <ListItem sx={{ py: 0.5, px: 0 }}>
-                  <ListItemText 
-                    primary="No stop data available"
-                    primaryTypographyProps={{ 
-                      variant: 'body2',
-                      color: 'text.secondary',
-                      fontStyle: 'italic'
-                    }}
-                  />
-                </ListItem>
+                  <ListItem sx={{ py: 0.5, px: 0 }}>
+                    <ListItemText 
+                      primary="No stop data available"
+                      slotProps={{ 
+                        primary: { 
+                          variant: 'body2',
+                          color: 'text.secondary',
+                          fontStyle: 'italic'
+                        }
+                      }}
+                    />
+                  </ListItem>
               )}
             </List>
           </Collapse>

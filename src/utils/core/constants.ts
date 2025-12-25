@@ -67,3 +67,15 @@ export const ARRIVAL_CONFIG = {
   // Off-route threshold for distance from route shape (meters)
   OFF_ROUTE_THRESHOLD: 200
 } as const;
+
+/**
+ * Vehicle display optimization constants
+ * Configuration for station vehicle list display logic (Requirements 1.4, 4.1)
+ */
+export const VEHICLE_DISPLAY = {
+  // Maximum vehicles to show before applying grouping logic
+  VEHICLE_DISPLAY_THRESHOLD: 5,
+  
+  // Maximum vehicles per trip status in grouped mode
+  MAX_VEHICLES_PER_TRIP_STATUS: 1,
+} as const;

@@ -5,6 +5,13 @@ import type { FC, ReactNode } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { useConfigStore } from '../../stores/configStore';
 
+// Extend Material-UI Paper component to support custom variants (Card extends Paper)
+declare module '@mui/material/Paper' {
+  interface PaperPropsVariantOverrides {
+    vehicle: true;
+  }
+}
+
 interface ThemeProviderProps {
   children: ReactNode;
 }
@@ -14,9 +21,24 @@ export const ThemeProvider: FC<ThemeProviderProps> = ({ children }) => {
   
   const theme = createTheme({
     palette: {
-      mode: themeMode === 'auto' ? 'light' : (themeMode || 'light'),
+      mode: themeMode === 'auto' ? 'light' : themeMode || 'light',
       primary: {
         main: '#1976d2',
+      },
+    },
+    components: {
+      // Custom component variants for different card types
+      MuiPaper: {
+        variants: [
+          {
+            props: { variant: 'vehicle' },
+            style: ({ theme }) => ({
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.08)' // Slightly more visible in dark mode
+                : 'rgba(255, 255, 255, 0.8)',  // Lighter in light mode
+            }),
+          },
+        ],
       },
     },
   });

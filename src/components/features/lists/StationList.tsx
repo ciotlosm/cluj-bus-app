@@ -248,6 +248,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                   vehicles={vehicles}
                   expanded={isExpanded}
                   station={station}
+                  stationRouteCount={routeIds.length}
                 />
               </Collapse>
             </CardContent>
