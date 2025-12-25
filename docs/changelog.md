@@ -2,6 +2,39 @@
 
 ## Recent Updates (December 2024)
 
+### December 25, 2024 - Console Logging Improvements
+- **🔇 DUPLICATE LOGS**: Fixed duplicate console messages from React StrictMode double-execution
+- **📦 COMPRESSION**: Improved compression logging to skip minimal ratios (≤1.1) and reduce noise
+- **🚫 SPAM REDUCTION**: Eliminated redundant "2.0 MB → 2.0 MB" compression messages
+- **⚡ PERFORMANCE**: Added initialization guards to prevent race conditions
+
+### December 25, 2024 - CRITICAL: Fixed Route Shapes Compression Stack Overflow
+- **🚨 MAJOR BUG FIX**: Fixed stack overflow error in shape data compression (13.1MB datasets)
+- **📦 COMPRESSION**: Successfully compresses 13.1MB → 2.0MB (6.6x reduction) using chunked processing
+- **🔧 TECHNICAL**: Replaced `String.fromCharCode(...array)` with chunked approach to handle large arrays
+- **✅ RESOLVED**: No more QuotaExceededError or stack overflow when storing route shapes
+
+### December 25, 2024 - Code Cleanup: Removed Unused Shape Utilities
+- **🧹 CLEANUP**: Removed unused `routeShapeUtils.ts` file (73 lines of dead code)
+- **Code Quality**: Eliminated `fetchRouteShapesForTrips()` and `fetchRouteShapesForVehicles()` functions with zero usage
+- **Architecture**: Shape fetching now handled exclusively by centralized `shapeStore.ts`
+
+### December 24, 2024 - CRITICAL: Enabled Route Shape Loading for Accurate Arrival Times
+- **🚨 MAJOR IMPROVEMENT**: Fixed missing route shape loading in station filtering system
+- **📍 ROUTE SHAPES**: Now automatically loads and uses route shapes for accurate distance calculations
+- **🎯 HIGH CONFIDENCE**: Arrival times now use precise route-based calculations instead of fallback methods
+- **⚡ ASYNC LOADING**: Updated filtering system to handle asynchronous route shape loading
+
+### December 24, 2024 - CRITICAL: Fixed Nonsensical Confidence Logic
+- **🚨 MAJOR BUG FIX**: Fixed backwards confidence logic where direct routes (no intermediate stops) were marked as low confidence
+- **🎯 LOGICAL FIX**: Stop-segments method now consistently returns medium confidence regardless of intermediate stop count
+- **📈 IMPROVED ACCURACY**: Direct vehicle-to-stop calculations now properly show medium confidence instead of incorrectly low confidence
+
+### December 24, 2024 - Debug Tooltips for Low Confidence Arrivals
+- **🔍 DEBUG TOOLTIPS**: Added debug tooltips for arrival times marked with "(est.)" to explain why confidence is low
+- **📊 DETAILED INFO**: Shows calculation method, confidence reason, and specific issues (missing route data, GPS quality, etc.)
+- **🛠️ TROUBLESHOOTING**: Helps identify why arrival times are uncertain (route shape issues, vehicle positioning, etc.)
+
 ### December 24, 2024 - Station Filtering Fix
 - **🚫 FILTER EMPTY STATIONS**: Stations with no active vehicles are now properly filtered out instead of showing "No active vehicles serving this station"
 
