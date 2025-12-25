@@ -168,8 +168,10 @@ export const StatusDetailDialog: FC<StatusDetailDialogProps> = ({
       // Improve accessibility and focus management
       aria-labelledby="status-dialog-title"
       aria-describedby="status-dialog-content"
-      // Disable restore focus to prevent the aria-hidden warning
+      // Proper focus management to prevent aria-hidden warnings
       disableRestoreFocus={true}
+      disableEnforceFocus={false}
+      disableAutoFocus={false}
       keepMounted={false}
     >
       <DialogTitle id="status-dialog-title">
