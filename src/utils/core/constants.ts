@@ -21,11 +21,17 @@ export const CACHE_DURATIONS = {
   // Route data is more stable (5 minutes)
   ROUTES: 5 * 60 * 1000,
   
-  // Stop times data is fairly stable (10 minutes)
-  STOP_TIMES: 10 * 60 * 1000,
+  // Stop times data is stable (24 hours)
+  STOP_TIMES:  24 * 60 * 60 * 1000,
+  
+  // Trip data is stable (24 hours) - trip schedules rarely change
+  TRIPS: 24 * 60 * 60 * 1000,
   
   // Route-to-station mapping cache (5 minutes)
   ROUTE_MAPPING: 5 * 60 * 1000,
+  
+  // Shape data is very stable (24 hours) - route geometry rarely changes
+  SHAPES: 24 * 60 * 60 * 1000,
 } as const;
 
 /**
@@ -46,11 +52,11 @@ export const PERFORMANCE = {
 export const ARRIVAL_CONFIG = {
   // Average bus speed for time calculations (km/h)
   // Reduced from 25 to 18 for more realistic urban conditions
-  AVERAGE_SPEED: 18,
+  AVERAGE_SPEED: 35,
   
   // Dwell time per intermediate stop (seconds)
   // Increased from 30 to 60 for more realistic stop times
-  DWELL_TIME: 60,
+  DWELL_TIME: 30,
   
   // Proximity threshold for "at stop" status (meters)
   PROXIMITY_THRESHOLD: 50,

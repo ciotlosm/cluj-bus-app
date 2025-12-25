@@ -106,51 +106,74 @@ export function useStationFilter(): StationFilterResult {
     loadData();
   }, [stopTimes.length, trips.length, tripLoading, tripError, loadStopTimes, loadTrips, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
   
-  const filteredStations = useMemo((): FilteredStation[] => {
-    // Early return if no stations available
-    if (stops.length === 0) {
-      return [];
-    }
+  const [filteredStations, setFilteredStations] = useState<FilteredStation[]>([]);
+  
+  // Async filtering effect
+  useEffect(() => {
+    const filterAsync = async () => {
+      // Early return if no stations available
+      if (stops.length === 0) {
+        setFilteredStations([]);
+        return;
+      }
 
-    // Choose filtering strategy based on isFiltering flag
-    if (!isFiltering) {
-      // Show all stations sorted by distance
-      return filterStations(
-        stops,
-        currentPosition,
-        stopTimes,
-        vehicles,
-        allRoutes,
-        favoriteRouteIds,
-        favoritesStoreAvailable,
-        favoritesFilterEnabled,
-        hasFavoriteRoutes,
-        undefined, // maxResults undefined = all stations
-        SECONDARY_STATION_THRESHOLD,
-        trips // NEW: trip data for headsign
-      );
-    }
-    
-    // Smart filtering is enabled - need location
-    if (!currentPosition) {
-      return []; // No location available for smart filtering
-    }
-    
-    // Show only nearby relevant stations (max 2 results)
-    return filterStations(
-      stops,
-      currentPosition,
-      stopTimes,
-      vehicles,
-      allRoutes,
-      favoriteRouteIds,
-      favoritesStoreAvailable,
-      favoritesFilterEnabled,
-      hasFavoriteRoutes,
-      2, // maxResults = 2 for smart filtering
-      SECONDARY_STATION_THRESHOLD,
-      trips // NEW: trip data for headsign
-    );
+      // Wait for trips to be loaded before filtering to avoid fallback calculations
+      if (trips.length === 0 && !tripError) {
+        setFilteredStations([]);
+        return;
+      }
+
+      try {
+        let result: FilteredStation[];
+        
+        // Choose filtering strategy based on isFiltering flag
+        if (!isFiltering) {
+          // Show all stations sorted by distance
+          result = await filterStations(
+            stops,
+            currentPosition,
+            stopTimes,
+            vehicles,
+            allRoutes,
+            favoriteRouteIds,
+            favoritesStoreAvailable,
+            favoritesFilterEnabled,
+            hasFavoriteRoutes,
+            undefined, // maxResults undefined = all stations
+            SECONDARY_STATION_THRESHOLD,
+            trips // NEW: trip data for headsign
+          );
+        } else {
+          // Smart filtering is enabled - need location
+          if (!currentPosition) {
+            result = []; // No location available for smart filtering
+          } else {
+            // Show only nearby relevant stations (max 2 results)
+            result = await filterStations(
+              stops,
+              currentPosition,
+              stopTimes,
+              vehicles,
+              allRoutes,
+              favoriteRouteIds,
+              favoritesStoreAvailable,
+              favoritesFilterEnabled,
+              hasFavoriteRoutes,
+              2, // maxResults = 2 for smart filtering
+              SECONDARY_STATION_THRESHOLD,
+              trips // NEW: trip data for headsign
+            );
+          }
+        }
+        
+        setFilteredStations(result);
+      } catch (error) {
+        console.error('Error filtering stations:', error);
+        setFilteredStations([]);
+      }
+    };
+
+    filterAsync();
   }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, isFiltering, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
   
   const toggleFiltering = useCallback(() => setIsFiltering(prev => !prev), []);

@@ -209,15 +209,6 @@ export const getStationVehicles = (
         // Use existing utility to check if vehicle is off-route
         const isOffRoute = isVehicleOffRoute(vehicle, routeShape);
         
-        if (process.env.NODE_ENV === 'development' && isOffRoute) {
-          console.log(`🚫 Filtering out off-route vehicle ${vehicle.id}:`, {
-            routeId: vehicle.route_id,
-            tripId: vehicle.trip_id,
-            shapeId: trip?.shape_id,
-            hasRouteShape: !!routeShape
-          });
-        }
-        
         return !isOffRoute;
       });
 
