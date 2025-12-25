@@ -78,7 +78,8 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
   const hiddenVehicleCount = showingAll ? 0 : groupingResult.hidden.length;
 
   return (
-    <Stack spacing={2} sx={{ p: 2 }}>
+    <Stack spacing={2} sx={{ pt: 2
+     }}>
       {vehiclesToDisplay.map(({ vehicle, route, trip, arrivalTime }) => (
         <VehicleCard 
           key={vehicle.id}
