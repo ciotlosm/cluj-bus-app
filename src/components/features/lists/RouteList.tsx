@@ -95,7 +95,7 @@ const RouteCard: FC<RouteCardProps> = ({ route, onToggleFavorite }) => {
         <Stack direction="row" alignItems="center" spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: 1.5 }}>
           {/* Circular route badge with transportation type color */}
           <Avatar sx={{ 
-            bgcolor: route.route_color || getTransportTypeColor(route.route_type),
+            bgcolor: 'primary.main',
             color: 'white',
             width: { xs: 40, sm: 48 }, 
             height: { xs: 40, sm: 48 },

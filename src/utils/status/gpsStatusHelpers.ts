@@ -30,7 +30,7 @@ export const getGpsColor = (
   if (permissionState === 'denied' || status === 'disabled' || status === 'unavailable') {
     return 'error';
   }
-  if (status === 'available' && accuracy === 'high') {
+  if (status === 'available' && (accuracy === 'high' || accuracy === 'balanced')) {
     return 'success';
   }
   return 'warning';

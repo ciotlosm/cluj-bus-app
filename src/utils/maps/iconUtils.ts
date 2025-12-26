@@ -229,22 +229,25 @@ export function createUserLocationIcon(options: IconOptions): Icon {
 export function createDirectionArrow(options: DirectionArrowOptions): DivIcon {
   const { color, bearing } = options;
   
-  // Create SVG arrow with blue fill and black stroke
+  // Create SVG arrow with blue fill and black stroke, white middle
   const svgContent = `
-    <svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="6,1 11,10 6,8 1,10" 
+    <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="8,2 13,12 8,10 3,12" 
                fill="#3182CE" 
                stroke="#000000" 
-               stroke-width="1" 
+               stroke-width="1.5" 
                stroke-linejoin="round"/>
+      <polygon points="8,3 11.5,10.5 8,9 4.5,10.5" 
+               fill="white" 
+               stroke="none"/>
     </svg>
   `;
   
   return new DivIcon({
     html: `
       <div style="
-        width: 12px; 
-        height: 12px; 
+        width: 16px; 
+        height: 16px; 
         transform: rotate(${bearing}deg);
         filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
       ">
@@ -252,8 +255,8 @@ export function createDirectionArrow(options: DirectionArrowOptions): DivIcon {
       </div>
     `,
     className: 'direction-arrow',
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   });
 }
 
