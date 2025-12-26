@@ -41,8 +41,8 @@ const getRouteShapeColor = (
   colorScheme: MapColorScheme,
   isHighlighted: boolean
 ): string => {
-  // Always use consistent purple for all route shapes
-  return '#7C3AED'; // Purple
+  // Always use consistent lighter purple for all route shapes
+  return '#8B5CF6'; // Lighter purple
 };
 
 // Calculate direction arrow positions along the route

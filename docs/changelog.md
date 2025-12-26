@@ -7,6 +7,10 @@
 - **⚡ NETLIFY CONFIG**: Added API proxy redirects before SPA redirect in netlify.toml
 - **🛠️ ERROR HANDLING**: Added response validation to prevent .map() errors on non-array data
 - **📱 STARTUP UX**: Fixed station view showing context error instead of "Please configure API key" message
+- **🎨 VISUAL CONSISTENCY**: All route bubbles in favorites view now use same blue color as station view route bubbles
+- **🟢 GPS STATUS**: Balanced GPS accuracy now shows green instead of yellow for better UX
+- **🗺️ MAP ARROWS**: Direction arrows on map are now bigger with white centers for better visibility
+- **💜 ROUTE SHAPES**: Route shapes now use slightly lighter purple color for improved readability
 
 ### December 26, 2024 - Enhanced Favorites Filtering
 - **✨ FAVORITES PRIORITY**: Favorites now always appear first in route lists regardless of active filters
