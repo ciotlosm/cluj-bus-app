@@ -36,7 +36,6 @@ export {
 export type {
   ClusterPoint,
   Cluster,
-  ViewportBounds,
 } from './performanceUtils';
 
 // Map constants and configuration
