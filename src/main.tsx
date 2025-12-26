@@ -2,6 +2,8 @@
 // Single file for app initialization
 
 import { StrictMode, useState, Component } from 'react';
+// Leaflet CSS for map components
+import 'leaflet/dist/leaflet.css';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppLayout } from './components/layout/AppLayout';

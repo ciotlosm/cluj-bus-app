@@ -52,7 +52,7 @@ export const PERFORMANCE = {
 export const ARRIVAL_CONFIG = {
   // Average bus speed for time calculations (km/h)
   // Reduced from 25 to 18 for more realistic urban conditions
-  AVERAGE_SPEED: 35,
+  AVERAGE_SPEED: 25,
   
   // Dwell time per intermediate stop (seconds)
   // Increased from 30 to 60 for more realistic stop times

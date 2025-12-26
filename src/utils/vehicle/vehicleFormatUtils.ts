@@ -5,13 +5,14 @@
  * Format vehicle timestamp for display
  * 
  * @param timestamp - ISO timestamp string
- * @returns Formatted time string (HH:MM) or 'Unknown' if invalid
+ * @returns Formatted time string (HH:MM) in 24-hour format or 'Unknown' if invalid
  */
 export function formatTimestamp(timestamp: string): string {
   try {
     return new Date(timestamp).toLocaleTimeString([], { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      hour12: false
     });
   } catch {
     return 'Unknown';

@@ -54,20 +54,6 @@ export function calculateVehicleArrivalTime(
   // Generate status message
   const statusMessage = generateStatusMessage(status, estimatedMinutes);
 
-  // Debug logging for status determination (development only)
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🚌 Vehicle ${vehicle.id} status calculation:`, {
-      vehicleId: vehicle.id,
-      routeId: vehicle.route_id,
-      tripId: vehicle.trip_id,
-      targetStopId: targetStop.stop_id,
-      estimatedMinutes: Math.round(estimatedMinutes * 10) / 10,
-      status,
-      statusMessage,
-      confidence: distanceResult.confidence
-    });
-  }
-
   return {
     vehicleId: vehicle.id, // Keep as number - matches API type
     estimatedMinutes,

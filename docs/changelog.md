@@ -2,6 +2,31 @@
 
 ## Recent Updates (December 2024)
 
+### December 26, 2024 - Enhanced Favorites Filtering
+- **✨ FAVORITES PRIORITY**: Favorites now always appear first in route lists regardless of active filters
+- **🔄 SMART FILTERING**: Favorites bypass transport type filters (e.g., favorite bus shows when filtering by tram)
+- **🎯 IMPROVED UX**: Users can see their favorite routes alongside filtered results for better accessibility
+
+### December 26, 2024 - Map Dialog Title Improvement
+- **🎨 DIALOG TITLE**: Added circular route badge and headsign display matching vehicle card design
+- **🎯 USER FOCUS**: Shows route number in bubble format with destination for better visual consistency
+
+### December 26, 2024 - Map Visual Consistency
+- **🎨 VEHICLE ICONS**: Changed bus icon color from yellow to station bubble blue (#3182CE)
+- **🗺️ ROUTE SHAPES**: All route shapes now use consistent purple (#7C3AED) instead of varied colors
+- **🎯 DIRECTION ARROWS**: Route direction arrows now use blue interior (#3182CE) with black border for visibility
+- **✨ VISUAL UNITY**: Improved map readability with cohesive blue/purple color scheme
+
+### December 26, 2024 - Interactive Map Controls
+- **🗺️ MAP CONTROLS**: Added interactive map mode controls (Vehicle Tracking, Route Overview, Station Centered)
+- **🎯 SMART VIEWPORT**: Route Overview fits entire route with minimal wasted space, Station Centered focuses on target station
+- **🚌 VEHICLE TRACKING**: Re-clicking Vehicle Tracking centers map on vehicle position
+- **🔒 VIEWPORT LOCK**: Map only changes position/zoom when clicking control buttons, not automatically
+
+### December 26, 2024 - Departed Bus Next Station Fix
+- **🐛 BUG FIX**: Fixed departed buses showing wrong next station in vehicle tracking
+- **♻️ CODE REUSE**: Replaced complex logic with existing `estimateVehicleProgressWithStops` utility
+
 ### December 25, 2024 - Off-Route Vehicle Display Fix
 - **🐛 BUG FIX**: Fixed off-route vehicles appearing in station lists despite filtering
 - **🔧 TECHNICAL**: Added trip-level validation to ensure vehicles actually stop at displayed stations

@@ -5,19 +5,19 @@
  */
 
 import type { FC } from 'react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, 
   DialogTitle, 
   DialogContent, 
-  DialogActions, 
-  Button, 
   IconButton,
   Typography,
-  Box
+  Box,
+  Avatar
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import type { Map as LeafletMap } from 'leaflet';
 import { VehicleLayer } from './VehicleLayer';
 import { RouteShapeLayer } from './RouteShapeLayer';
 import { StationLayer } from './StationLayer';
@@ -27,6 +27,11 @@ import { MapMode, VehicleColorStrategy } from '../../../types/interactiveMap';
 import { fetchRouteShapesForTrips } from '../../../services/routeShapeService';
 import { projectPointToShape, calculateDistanceAlongShape } from '../../../utils/arrival/distanceUtils';
 import { determineNextStop } from '../../../utils/arrival/vehiclePositionUtils';
+import { 
+  calculateRouteOverviewViewport,
+  calculateStationCenteredViewport,
+  calculateVehicleTrackingViewport
+} from '../../../utils/maps/viewportUtils';
 import type { RouteShape, ProjectionResult } from '../../../types/arrivalTime';
 import type { DebugVisualizationData } from '../../../types/interactiveMap';
 import { DEFAULT_MAP_COLORS, MAP_DEFAULTS } from '../../../types/interactiveMap';
@@ -40,6 +45,24 @@ import type {
 
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
+
+// ============================================================================
+// Map Controller Component
+// ============================================================================
+
+interface MapControllerProps {
+  onMapReady: (map: LeafletMap) => void;
+}
+
+const MapController: FC<MapControllerProps> = ({ onMapReady }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    onMapReady(map);
+  }, [map, onMapReady]);
+  
+  return null;
+};
 
 interface VehicleMapDialogProps {
   open: boolean;
@@ -72,15 +95,23 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   const [showStations, setShowStations] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
   const [showUserLocation, setShowUserLocation] = useState(false);
-
+  
+  // Map mode and viewport management
+  const [currentMode, setCurrentMode] = useState<MapMode>(MapMode.VEHICLE_TRACKING);
+  const mapRef = useRef<LeafletMap | null>(null);
+  
   // Find the target vehicle and trip
   const targetVehicle = vehicleId ? vehicles.find(v => v.id === vehicleId) : null;
   const vehicleTrip = targetVehicle ? trips.find(trip => trip.trip_id === targetVehicle.trip_id) : null;
 
+  // Handle map instance ready
+  const handleMapReady = (map: LeafletMap) => {
+    mapRef.current = map;
+  };
+
   // Load route shapes when dialog opens and we have trip data
   useEffect(() => {
     if (open && vehicleTrip && vehicleTrip.shape_id) {
-      console.log(`Requesting route shape for trip ${vehicleTrip.trip_id} with shape_id: ${vehicleTrip.shape_id}`);
       setLoadingShapes(true);
       fetchRouteShapesForTrips([vehicleTrip])
         .then(shapes => {
@@ -88,7 +119,6 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
           // Validate that we got the correct shape
           const requestedShape = shapes.get(vehicleTrip.shape_id);
           if (requestedShape) {
-            console.log(`Found requested shape ${vehicleTrip.shape_id} with ${requestedShape.points.length} points`);
             
             // Use the raw shape data - should now be filtered correctly by the API
             const singleShape = new Map([[vehicleTrip.shape_id, requestedShape]]);
@@ -191,6 +221,69 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
     }
   }
 
+  // Handle mode changes with viewport updates
+  const handleModeChange = (newMode: MapMode) => {
+    if (!mapRef.current || !targetVehicle) return;
+    
+    setCurrentMode(newMode);
+    
+    switch (newMode) {
+      case MapMode.VEHICLE_TRACKING: {
+        const viewport = calculateVehicleTrackingViewport(
+          { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
+          mapRef.current.getZoom()
+        );
+        mapRef.current.setView([viewport.center.lat, viewport.center.lon], viewport.zoom);
+        break;
+      }
+      
+      case MapMode.ROUTE_OVERVIEW: {
+        const viewport = calculateRouteOverviewViewport(
+          displayRouteShapes,
+          filteredStations,
+          mapRef.current.getContainer().clientWidth,
+          mapRef.current.getContainer().clientHeight
+        );
+        if (viewport) {
+          // Use Leaflet's fitBounds for more accurate viewport fitting
+          const bounds: [[number, number], [number, number]] = [
+            [viewport.bounds.south, viewport.bounds.west],
+            [viewport.bounds.north, viewport.bounds.east]
+          ];
+          mapRef.current.fitBounds(bounds, { 
+            padding: [20, 20], // 20px padding instead of percentage
+            maxZoom: 16 // Prevent over-zooming
+          });
+        }
+        break;
+      }
+      
+      case MapMode.STATION_CENTERED: {
+        // Use target station if available, otherwise use first filtered station
+        const stationToCenter = targetStationId 
+          ? stations.find(s => s.stop_id === targetStationId) || filteredStations[0]
+          : filteredStations[0];
+          
+        if (stationToCenter) {
+          const viewport = calculateStationCenteredViewport(
+            stationToCenter,
+            mapRef.current.getZoom()
+          );
+          mapRef.current.setView([viewport.center.lat, viewport.center.lon], viewport.zoom);
+        }
+        break;
+      }
+    }
+  };
+
+  // Determine the vehicle's next stop (used by both debug and regular rendering)
+  const nextStop = targetVehicle ? determineNextStop(
+    targetVehicle, 
+    trips, 
+    stopTimes, 
+    stations
+  ) : null;
+
   // Create debug data using REAL distance calculations
   const debugData: DebugVisualizationData | null = debugMode && displayRouteShapes.size > 0 && filteredStations.length > 0 ? (() => {
     try {
@@ -237,13 +330,11 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       // Get vehicle projection for debug data
       const vehicleProjection = projectPointToShape(vehiclePosition, routeShape);
       
-      // NEW: Determine the vehicle's next stop using GPS-based logic
-      const nextStop = determineNextStop(
-        targetVehicle, 
-        trips, 
-        stopTimes, 
-        stations
-      );
+      console.log('Debug: Next stop determination');
+      console.log('Vehicle trip ID:', targetVehicle.trip_id);
+      console.log('Vehicle position:', vehiclePosition);
+      console.log('Available stations for trip:', filteredStations.map(s => ({ id: s.stop_id, name: s.stop_name })));
+      console.log('Determined next stop:', nextStop ? { id: nextStop.stop_id, name: nextStop.stop_name } : 'None');
       
       let nextStationPosition: { lat: number; lon: number } | undefined;
       let nextStationProjection: ProjectionResult | undefined;
@@ -296,13 +387,6 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       return null;
     }
   })() : null;
-  // Get vehicle label for dialog title
-  const vehicleLabel = targetVehicle.label || `Vehicle ${vehicleId}`;
-  const routeInfo = filteredRoutes[0];
-  const dialogTitle = routeInfo 
-    ? `${vehicleLabel} - Route ${routeInfo.route_short_name} (${routeInfo.route_long_name})`
-    : `${vehicleLabel} - Live Tracking`;
-  
   // Center map on vehicle location
   const mapCenter = { lat: targetVehicle.latitude, lon: targetVehicle.longitude };
 
@@ -334,9 +418,27 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
           pb: 1
         }}
       >
-        <Typography variant="h6" component="div">
-          {dialogTitle}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Circular route badge */}
+          {filteredRoutes[0] && (
+            <Avatar sx={{ 
+              bgcolor: 'primary.main', 
+              width: 40, 
+              height: 40,
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              flexShrink: 0
+            }}>
+              {filteredRoutes[0].route_short_name}
+            </Avatar>
+          )}
+          
+          {/* Headsign */}
+          <Typography variant="h6" component="div">
+            {vehicleTrip?.trip_headsign || 'Live Tracking'}
+          </Typography>
+        </Box>
+        
         <IconButton
           edge="end"
           color="inherit"
@@ -378,6 +480,9 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
             zoomControl={true}
             scrollWheelZoom={true}
           >
+            {/* Map controller for viewport management */}
+            <MapController onMapReady={handleMapReady} />
+
             {/* Base tile layer */}
             <TileLayer
               url={MAP_DEFAULTS.TILE_URL}
@@ -411,6 +516,8 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
             {showStations && (
               <StationLayer
                 stations={filteredStations}
+                targetStationId={targetStationId}
+                nextStationId={nextStop?.stop_id}
                 colorScheme={DEFAULT_MAP_COLORS}
               />
             )}
@@ -427,13 +534,13 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
 
           {/* Map controls overlay */}
           <MapControls
-            mode={MapMode.VEHICLE_TRACKING}
+            mode={currentMode}
             showVehicles={showVehicles}
             showRouteShapes={showRouteShapes}
             showStations={showStations}
             showUserLocation={showUserLocation}
             debugMode={debugMode}
-            onModeChange={() => {}} // No mode changes in vehicle dialog
+            onModeChange={handleModeChange}
             onVehiclesToggle={setShowVehicles}
             onRouteShapesToggle={setShowRouteShapes}
             onStationsToggle={setShowStations}
@@ -442,12 +549,6 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
           />
         </Box>
       </DialogContent>
-      
-      <DialogActions sx={{ p: 1 }}>
-        <Button onClick={onClose} variant="contained">
-          Close
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 });

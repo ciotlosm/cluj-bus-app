@@ -23,6 +23,9 @@ import { determineTargetStopRelation } from '../../../utils/arrival/arrivalUtils
 import { generateConfidenceDebugInfo, formatConfidenceDebugTooltip } from '../../../utils/debug/confidenceDebugUtils';
 import { useTripStore } from '../../../stores/tripStore';
 import { useStationStore } from '../../../stores/stationStore';
+import { useVehicleStore } from '../../../stores/vehicleStore';
+import { useRouteStore } from '../../../stores/routeStore';
+import { VehicleMapDialog } from '../maps/VehicleMapDialog';
 import type { StationVehicle } from '../../../types/stationFilter';
 
 // VehicleDisplayState interface removed as it's not used in the current implementation
@@ -137,10 +140,15 @@ interface VehicleCardProps {
 
 const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
   
   // Get real stop data from stores
   const { stopTimes, trips } = useTripStore();
   const { stops } = useStationStore();
+  
+  // Get all data needed for the map dialog
+  const { vehicles } = useVehicleStore();
+  const { routes } = useRouteStore();
   
   // Get actual stops for this vehicle's trip
   const tripStopTimes = getTripStopSequence(vehicle, stopTimes);
@@ -385,7 +393,11 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
               </Typography>
             </Box>
             
-            <IconButton size="small" color="primary">
+            <IconButton 
+              size="small" 
+              color="primary"
+              onClick={() => setMapDialogOpen(true)}
+            >
               <MapIcon />
             </IconButton>
           </Stack>
@@ -445,6 +457,19 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
           </Collapse>
         </Box>
       </CardContent>
+      
+      {/* Vehicle Map Dialog */}
+      <VehicleMapDialog
+        open={mapDialogOpen}
+        onClose={() => setMapDialogOpen(false)}
+        vehicleId={vehicle.id}
+        targetStationId={station?.stop_id || null}
+        vehicles={vehicles}
+        routes={routes}
+        stations={stops}
+        trips={trips}
+        stopTimes={stopTimes}
+      />
     </Card>
   );
 });

@@ -1,16 +1,15 @@
 /**
  * Vehicle Position Utilities
- * Simplified logic for determining vehicle position relative to stops using raw API data
+ * Reuses existing vehicle progress estimation logic
  */
 
-import { calculateDistance } from '../location/distanceUtils.ts';
-import { projectPointToShape } from './distanceUtils.ts';
-import { ARRIVAL_CONFIG } from '../core/constants.ts';
-import type { TranzyVehicleResponse, TranzyStopResponse, TranzyTripResponse, TranzyStopTimeResponse, Coordinates, RouteShape } from '../../types/arrivalTime.ts';
+import { getTripStopSequence } from './tripUtils.ts';
+import { estimateVehicleProgressWithStops } from './vehicleProgressUtils.ts';
+import type { TranzyVehicleResponse, TranzyStopResponse, TranzyTripResponse, TranzyStopTimeResponse } from '../../types/arrivalTime.ts';
 
 /**
- * Determine the next stop for a vehicle using raw API data
- * Simplified implementation using stop times and trip data
+ * Determine the next stop for a vehicle using existing vehicle progress estimation
+ * Reuses the same logic as the vehicle card stop list
  */
 export function determineNextStop(
   vehicle: TranzyVehicleResponse,
@@ -20,16 +19,21 @@ export function determineNextStop(
 ): TranzyStopResponse | null {
   if (!vehicle.trip_id) return null;
   
-  // Get stop times for this trip, sorted by sequence
-  const tripStopTimes = stopTimes
-    .filter(st => st.trip_id === vehicle.trip_id)
-    .sort((a, b) => a.stop_sequence - b.stop_sequence);
-
+  // Get trip stop sequence using existing utility
+  const tripStopTimes = getTripStopSequence(vehicle, stopTimes);
   if (tripStopTimes.length === 0) return null;
 
-  // For now, assume the first stop in sequence is the next stop
-  // This is a simplified implementation that can be enhanced later with vehicle position analysis
-  const nextStopTime = tripStopTimes[0];
-  return stops.find(s => s.stop_id === nextStopTime.stop_id) || null;
+  // Use existing vehicle progress estimation logic
+  const vehicleProgress = estimateVehicleProgressWithStops(vehicle, tripStopTimes, stops);
+  
+  // If we have a clear segment, return the next stop
+  if (vehicleProgress.segmentBetweenStops) {
+    const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
+    return stops.find(s => s.stop_id === nextStopId) || null;
+  }
+  
+  // Fallback: return the first stop in the trip sequence
+  const firstStopTime = tripStopTimes[0];
+  return stops.find(s => s.stop_id === firstStopTime.stop_id) || null;
 }
 

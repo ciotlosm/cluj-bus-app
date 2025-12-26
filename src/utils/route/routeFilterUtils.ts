@@ -7,10 +7,11 @@ import { TRANSPORT_TYPE_MAP } from '../../types/routeFilter';
 /**
  * Filter enhanced routes based on the provided filter state
  * Implements combined filter logic with transport type and favorites filter
+ * Favorites are always included regardless of other active filters
  * 
  * @param routes - Array of enhanced routes to filter
  * @param filterState - Current filter state with transport types and meta filters
- * @returns Array of routes matching the filter criteria
+ * @returns Array of routes matching the filter criteria, sorted with favorites first
  */
 export function filterRoutes(
   routes: EnhancedRoute[], 
@@ -21,13 +22,18 @@ export function filterRoutes(
     return [];
   }
 
-  return routes.filter(route => {
-    // Step 1: Apply favorites filter (if active)
-    if (filterState.metaFilters.favorites && !route.isFavorite) {
-      return false;
+  const filteredRoutes = routes.filter(route => {
+    // Step 1: Always include favorites (they bypass all other filters)
+    if (route.isFavorite) {
+      return true;
     }
     
-    // Step 2: Apply transport type filter
+    // Step 2: Apply favorites filter (if active, only show favorites)
+    if (filterState.metaFilters.favorites) {
+      return false; // Non-favorites are excluded when favorites filter is active
+    }
+    
+    // Step 3: Apply transport type filter to non-favorites
     // If no transport types are selected, show all transport types
     const { bus, tram, trolleybus } = filterState.transportTypes;
     const hasActiveTransportFilters = bus || tram || trolleybus;
@@ -48,15 +54,19 @@ export function filterRoutes(
     // Route passes all filter constraints
     return true;
   });
+
+  // Sort filtered routes with favorites first
+  return sortRoutesWithFavoritesFirst(filteredRoutes);
 }
 
 /**
  * Filter routes by transport types only
  * Utility function for transport type filtering without meta filters
+ * Favorites are always included regardless of transport type filters
  * 
  * @param routes - Array of enhanced routes to filter
  * @param transportTypes - Transport type filters object
- * @returns Array of routes matching the selected transport types
+ * @returns Array of routes matching the selected transport types, sorted with favorites first
  */
 export function filterRoutesByTransportType(
   routes: EnhancedRoute[], 
@@ -70,17 +80,26 @@ export function filterRoutesByTransportType(
   const { bus, tram, trolleybus } = transportTypes;
   const hasActiveTransportFilters = bus || tram || trolleybus;
   
-  if (!hasActiveTransportFilters) {
-    return routes;
+  let filteredRoutes = routes;
+  
+  if (hasActiveTransportFilters) {
+    filteredRoutes = routes.filter(route => {
+      // Always include favorites regardless of transport type filters
+      if (route.isFavorite) {
+        return true;
+      }
+      
+      // Apply transport type filter to non-favorites
+      return (
+        (bus && route.route_type === TRANSPORT_TYPE_MAP.bus) ||
+        (tram && route.route_type === TRANSPORT_TYPE_MAP.tram) ||
+        (trolleybus && route.route_type === TRANSPORT_TYPE_MAP.trolleybus)
+      );
+    });
   }
 
-  return routes.filter(route => {
-    return (
-      (bus && route.route_type === TRANSPORT_TYPE_MAP.bus) ||
-      (tram && route.route_type === TRANSPORT_TYPE_MAP.tram) ||
-      (trolleybus && route.route_type === TRANSPORT_TYPE_MAP.trolleybus)
-    );
-  });
+  // Sort filtered routes with favorites first
+  return sortRoutesWithFavoritesFirst(filteredRoutes);
 }
 
 /**
@@ -153,4 +172,30 @@ export function isValidFilterState(filterState: any): filterState is RouteFilter
   }
   
   return true;
+}
+
+/**
+ * Sort routes with favorites appearing first in the list
+ * Maintains original order within favorite and non-favorite groups
+ * 
+ * @param routes - Array of enhanced routes to sort
+ * @returns Array of routes sorted with favorites first
+ */
+export function sortRoutesWithFavoritesFirst(routes: EnhancedRoute[]): EnhancedRoute[] {
+  if (!Array.isArray(routes)) {
+    return [];
+  }
+
+  return routes.sort((a, b) => {
+    // Favorites first: if one is favorite and other is not, favorite comes first
+    if (a.isFavorite && !b.isFavorite) {
+      return -1;
+    }
+    if (!a.isFavorite && b.isFavorite) {
+      return 1;
+    }
+    
+    // Both are favorites or both are not favorites - maintain original order
+    return 0;
+  });
 }

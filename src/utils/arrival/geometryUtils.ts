@@ -151,6 +151,21 @@ export function calculateRoutePosition(
 }
 
 /**
+ * Calculate bearing (direction) from one point to another in degrees
+ */
+export function calculateBearing(start: Coordinates, end: Coordinates): number {
+  const lat1 = start.lat * Math.PI / 180;
+  const lat2 = end.lat * Math.PI / 180;
+  const deltaLon = (end.lon - start.lon) * Math.PI / 180;
+
+  const y = Math.sin(deltaLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+
+  const bearing = Math.atan2(y, x) * 180 / Math.PI;
+  return (bearing + 360) % 360; // Normalize to 0-360 degrees
+}
+
+/**
  * Calculate confidence for segment identification
  */
 export function calculateSegmentConfidence(

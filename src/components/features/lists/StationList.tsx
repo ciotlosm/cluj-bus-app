@@ -149,18 +149,24 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                   
                   {/* Distance and station type chips */}
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                    <Chip
-                      icon={<LocationIcon />}
-                      label={`${formatDistance(distance)}`}
-                      color="default"
-                      variant="filled"
-                      size="small"
-                      sx={{ 
-                        bgcolor: 'grey.200',
-                        color: 'grey.800',
-                        '& .MuiChip-icon': { color: 'grey.800' }
-                      }}
-                    />
+                    <Tooltip 
+                      title={`Station ID: ${station.stop_id} | GPS: ${station.stop_lat}, ${station.stop_lon}`}
+                      placement="top"
+                    >
+                      <Chip
+                        icon={<LocationIcon />}
+                        label={`${formatDistance(distance)}`}
+                        color="default"
+                        variant="filled"
+                        size="small"
+                        sx={{ 
+                          bgcolor: 'grey.200',
+                          color: 'grey.800',
+                          '& .MuiChip-icon': { color: 'grey.800' },
+                          cursor: 'help'
+                        }}
+                      />
+                    </Tooltip>
                     
                     {/* Station type indicator - blue circle for closest */}
                     {stationType === 'primary' && (
@@ -172,6 +178,18 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                           bgcolor: 'primary.main',
                           flexShrink: 0
                         }}
+                      />
+                    )}
+                    
+                    {/* Favorite indicator - inline with distance */}
+                    {matchesFavorites && (
+                      <FavoriteOutlineIcon 
+                        fontSize="small" 
+                        sx={{ 
+                          color: 'error.main',
+                          width: 16,
+                          height: 16
+                        }} 
                       />
                     )}
                     
@@ -244,24 +262,8 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                   )}
                 </Box>
                 
-                {/* GPS coordinates tooltip, favorite indicator, and expand button */}
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Tooltip 
-                    title={`Station ID: ${station.stop_id} | GPS: ${station.stop_lat}, ${station.stop_lon}`}
-                    placement="left"
-                  >
-                    <IconButton size="small" color="default">
-                      <LocationIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  
-                  {/* Favorite indicator - hollow heart icon */}
-                  {matchesFavorites && (
-                    <IconButton size="small" color="error">
-                      <FavoriteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                  
+                {/* Expand button only */}
+                <Box display="flex" alignItems="center">
                   <IconButton 
                     size="small"
                     onClick={() => toggleStationExpansion(station.stop_id)}

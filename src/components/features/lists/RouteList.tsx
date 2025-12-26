@@ -9,7 +9,8 @@ import {
   Chip, 
   Box,
   Stack,
-  Avatar
+  Avatar,
+  Divider
 } from '@mui/material';
 import type { EnhancedRoute } from '../../../types/routeFilter';
 import { getRouteTypeLabel } from '../../../types/rawTranzyApi';
@@ -32,9 +33,37 @@ export const RouteList: FC<RouteListProps> = ({ routes }) => {
     );
   }
 
+  // Group routes into favorites and non-favorites
+  const favoriteRoutes = routes.filter(route => route.isFavorite);
+  const nonFavoriteRoutes = routes.filter(route => !route.isFavorite);
+  const hasBothTypes = favoriteRoutes.length > 0 && nonFavoriteRoutes.length > 0;
+
   return (
     <Stack spacing={2} sx={{ p: 2 }}>
-      {routes.map((route) => (
+      {/* Render favorite routes first */}
+      {favoriteRoutes.map((route) => (
+        <RouteCard 
+          key={route.route_id}
+          route={route}
+          onToggleFavorite={toggleFavorite}
+        />
+      ))}
+      
+      {/* Add subtle separator if we have both favorites and non-favorites */}
+      {hasBothTypes && (
+        <Divider 
+          sx={{ 
+            my: 1,
+            opacity: 0.3,
+            '&::before, &::after': {
+              borderColor: 'text.disabled'
+            }
+          }} 
+        />
+      )}
+      
+      {/* Render non-favorite routes */}
+      {nonFavoriteRoutes.map((route) => (
         <RouteCard 
           key={route.route_id}
           route={route}
