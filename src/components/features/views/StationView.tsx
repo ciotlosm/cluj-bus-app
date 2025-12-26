@@ -10,6 +10,7 @@ import {
   Button
 } from '@mui/material';
 import { useStationStore } from '../../../stores/stationStore';
+import { useConfigStore } from '../../../stores/configStore';
 import { useStationFilter } from '../../../hooks/useStationFilter';
 import { StationViewHeader } from '../headers/StationViewHeader';
 import { StationList } from '../lists/StationList';
@@ -17,6 +18,7 @@ import { StationEmptyState } from '../states/StationEmptyState';
 
 export const StationView: FC = () => {
   const { loadStops } = useStationStore();
+  const { apiKey, agency_id } = useConfigStore();
   const { 
     filteredStations, 
     loading, 
@@ -32,8 +34,18 @@ export const StationView: FC = () => {
   } = useStationFilter();
 
   useEffect(() => {
-    loadStops();
-  }, [loadStops]);
+    if (apiKey && agency_id) {
+      loadStops();
+    }
+  }, [apiKey, agency_id, loadStops]);
+
+  if (!apiKey || !agency_id) {
+    return (
+      <Alert severity="info" sx={{ m: 2 }}>
+        Please configure your API key and agency in settings
+      </Alert>
+    );
+  }
 
   if (loading) {
     return (
