@@ -2,6 +2,15 @@
 
 ## Recent Updates (January 2025)
 
+### January 6, 2025 - Station View Simplification
+- **🎯 SIMPLIFIED**: Removed nearby filter toggle - station view now always shows nearby stations only
+- **🧹 CLEANUP**: Removed station count display from header for cleaner UI
+- **📱 UX**: Stations auto-expand by default for better mobile experience
+
+### January 6, 2025 - Route Filter Enhancement  
+- **🔄 EXPAND**: Clicking route filter on collapsed station now automatically expands it
+- **✅ TESTS**: Added comprehensive test coverage for route filter expansion behavior
+
 ### January 6, 2025 - API Key Validation Feedback
 - **✅ VALIDATION**: Added real-time API key validation using existing agencyService
 - **💬 FEEDBACK**: Success alert shows "Configuration validated and saved successfully" 

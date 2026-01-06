@@ -25,44 +25,30 @@ import {
 import type { FilteredStation, StationUtilities } from '../../../types/stationFilter';
 import { StationVehicleList } from './StationVehicleList';
 import { useRouteStore } from '../../../stores/routeStore';
+import { useFavoritesStore } from '../../../stores/favoritesStore';
 
 interface StationListProps {
   stations: FilteredStation[];
   utilities: StationUtilities;
-  isFiltering: boolean;
 }
 
-export const StationList: FC<StationListProps> = memo(({ stations, utilities, isFiltering }) => {
+export const StationList: FC<StationListProps> = memo(({ stations, utilities }) => {
   const { formatDistance, getStationTypeColor, getStationTypeLabel } = utilities;
   const { routes } = useRouteStore();
+  const { isFavorite } = useFavoritesStore();
   
-  // Expansion state management per station
+  // Expansion state management per station - auto-expand all stations
   const [expandedStations, setExpandedStations] = useState<Set<number>>(() => {
-    // Auto-expand logic: when smart filtering is ON (nearby only), auto-expand all stations
-    if (isFiltering) {
-      return new Set(stations.map(fs => fs.station.stop_id));
-    }
-    return new Set(); // When filtering is OFF (show all), collapse all by default
+    return new Set(stations.map(fs => fs.station.stop_id));
   });
 
   // Route filter state management per station - Map<stationId, selectedRouteId | null>
   const [routeFilters, setRouteFilters] = useState<Map<number, number | null>>(new Map());
 
-  // Update expansion state when filtering mode changes
-  const handleFilteringChange = useCallback(() => {
-    if (isFiltering) {
-      // Smart filtering ON -> Auto-expand all stations
-      setExpandedStations(new Set(stations.map(fs => fs.station.stop_id)));
-    } else {
-      // Smart filtering OFF -> Collapse all stations
-      setExpandedStations(new Set());
-    }
-  }, [isFiltering, stations]);
-
-  // Update expansion when filtering mode or stations change
+  // Update expansion state when stations change - auto-expand all
   useEffect(() => {
-    handleFilteringChange();
-  }, [handleFilteringChange]);
+    setExpandedStations(new Set(stations.map(fs => fs.station.stop_id)));
+  }, [stations]);
 
   // Toggle expansion for individual station - memoized to prevent unnecessary re-renders
   const toggleStationExpansion = useCallback((stationId: number) => {
@@ -228,37 +214,50 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                           maxWidth: '100%'
                         }}
                       >
-                        {stationRoutes.slice(0, 8).map((route) => (
-                          <Avatar
-                            key={route.route_id}
-                            onClick={() => handleRouteFilter(station.stop_id, route.route_id)}
-                            sx={{
-                              width: 32,
-                              height: 32,
-                              fontSize: '0.75rem',
-                              fontWeight: 'bold',
-                              bgcolor: selectedRouteId === route.route_id 
-                                ? 'primary.main' 
-                                : (route.route_color ? `#${route.route_color}` : 'grey.400'),
-                              color: 'white',
-                              minWidth: 32,
-                              flexShrink: 0,
-                              cursor: 'pointer',
-                              opacity: selectedRouteId === null || selectedRouteId === route.route_id ? 1 : 0.6,
-                              transition: 'all 0.2s ease-in-out',
-                              '&:hover': {
-                                transform: 'scale(1.1)',
-                                opacity: 1,
-                                boxShadow: 2
-                              },
-                              border: selectedRouteId === route.route_id ? '2px solid' : '1px solid transparent',
-                              borderColor: selectedRouteId === route.route_id ? 'primary.dark' : 'transparent',
-                              boxShadow: selectedRouteId === route.route_id ? 2 : 0
-                            }}
-                          >
-                            {route.route_short_name}
-                          </Avatar>
-                        ))}
+                        {stationRoutes.slice(0, 8).map((route) => {
+                          const isRouteSelected = selectedRouteId === route.route_id;
+                          const isRouteFavorite = isFavorite(route.route_id.toString());
+                          
+                          return (
+                            <Avatar
+                              key={route.route_id}
+                              onClick={() => handleRouteFilter(station.stop_id, route.route_id)}
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                bgcolor: isRouteSelected 
+                                  ? 'primary.main' 
+                                  : (route.route_color ? `#${route.route_color}` : 'grey.400'),
+                                color: 'white',
+                                minWidth: 32,
+                                flexShrink: 0,
+                                cursor: 'pointer',
+                                opacity: selectedRouteId === null || isRouteSelected ? 1 : 0.6,
+                                transition: 'all 0.2s ease-in-out',
+                                '&:hover': {
+                                  transform: 'scale(1.1)',
+                                  opacity: 1,
+                                  boxShadow: 2
+                                },
+                                border: isRouteSelected 
+                                  ? '2px solid' 
+                                  : isRouteFavorite 
+                                    ? '2px solid #f44336' 
+                                    : '1px solid transparent',
+                                borderColor: isRouteSelected 
+                                  ? 'primary.dark' 
+                                  : isRouteFavorite 
+                                    ? '#f44336' 
+                                    : 'transparent',
+                                boxShadow: isRouteSelected ? 2 : 0
+                              }}
+                            >
+                              {route.route_short_name}
+                            </Avatar>
+                          );
+                        })}
                         {stationRoutes.length > 8 && (
                           <Typography 
                             variant="caption" 

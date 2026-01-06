@@ -1,4 +1,4 @@
-// StationView - Clean view component with smart filtering
+// StationView - Clean view component always showing nearby stations
 // Orchestrates header, list, and empty state components
 
 import { useEffect } from 'react';
@@ -23,9 +23,6 @@ export const StationView: FC = () => {
     filteredStations, 
     loading, 
     error, 
-    isFiltering, 
-    totalStations, 
-    toggleFiltering, 
     retryFiltering,
     utilities,
     favoritesFilterEnabled,
@@ -78,10 +75,6 @@ export const StationView: FC = () => {
   return (
     <Box>
       <StationViewHeader
-        isFiltering={isFiltering}
-        toggleFiltering={toggleFiltering}
-        filteredCount={filteredStations.length}
-        totalCount={totalStations}
         favoritesFilterEnabled={favoritesFilterEnabled}
         toggleFavoritesFilter={toggleFavoritesFilter}
         hasFavoriteRoutes={hasFavoriteRoutes}
@@ -90,14 +83,10 @@ export const StationView: FC = () => {
       <StationList 
         stations={filteredStations} 
         utilities={utilities}
-        isFiltering={isFiltering}
       />
       
       <StationEmptyState
         filteredCount={filteredStations.length}
-        totalCount={totalStations}
-        isFiltering={isFiltering}
-        onShowAll={toggleFiltering}
       />
     </Box>
   );

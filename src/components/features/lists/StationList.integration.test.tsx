@@ -97,11 +97,10 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
-        isFiltering={true}
       />
     );
 
-    // Station should be expanded by default when filtering is true
+    // Station should be expanded by default
     expect(screen.getByText('Test Station')).toBeInTheDocument();
     
     // Should show all vehicles initially (no filter)
@@ -129,7 +128,6 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation, station2]} 
         utilities={mockUtilities}
-        isFiltering={true}
       />
     );
 
@@ -155,7 +153,6 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
-        isFiltering={true}
       />
     );
 
@@ -182,19 +179,11 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
-        isFiltering={false} // Start collapsed
       />
     );
 
-    // Station should be collapsed initially
+    // Station should be expanded by default (always nearby mode)
     expect(screen.getByText('Test Station')).toBeInTheDocument();
-    
-    // Expand the station by clicking the expand button (ExpandMoreIcon)
-    const expandButton = screen.getByTestId('ExpandMoreIcon').closest('button');
-    expect(expandButton).toBeDefined();
-    fireEvent.click(expandButton!);
-    
-    // Now vehicles should be visible
     expect(screen.getAllByText('Downtown')).toHaveLength(2);
     
     // Apply route filter - get the first route 24 bubble
@@ -212,12 +201,21 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
-        isFiltering={false} // Start collapsed
       />
     );
 
-    // Station should be collapsed initially - vehicles not visible
+    // Station should be expanded by default (always nearby mode)
     expect(screen.getByText('Test Station')).toBeInTheDocument();
+    expect(screen.getAllByText('Downtown')).toHaveLength(2);
+    expect(screen.getByText('Airport')).toBeInTheDocument();
+    
+    // Manually collapse the station first by clicking expand button
+    const expandButtons = screen.getAllByTestId('ExpandMoreIcon');
+    const expandButton = expandButtons[0].closest('button');
+    expect(expandButton).toBeDefined();
+    fireEvent.click(expandButton!);
+    
+    // Now vehicles should be hidden
     expect(screen.queryByText('Downtown')).not.toBeInTheDocument();
     expect(screen.queryByText('Airport')).not.toBeInTheDocument();
     

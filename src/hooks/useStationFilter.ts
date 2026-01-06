@@ -1,6 +1,7 @@
 /**
  * Station Filtering Hook
  * Main hook for location-based station filtering with favorites integration and vehicle data
+ * Always shows nearby stations only
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -20,12 +21,27 @@ import {
 } from '../utils/station/stationFilterStrategies';
 import { CACHE_DURATIONS } from '../utils/core/constants';
 import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
-import type { StationFilterResult, FilteredStation } from '../types/stationFilter';
+import type { FilteredStation } from '../types/stationFilter';
+
+interface StationFilterResult {
+  filteredStations: FilteredStation[];
+  loading: boolean;
+  error: string | null;
+  retryFiltering: () => void;
+  favoritesFilterEnabled: boolean;
+  toggleFavoritesFilter: () => void;
+  hasFavoriteRoutes: boolean;
+  utilities: {
+    formatDistance: typeof formatDistance;
+    getStationTypeColor: typeof getStationTypeColor;
+    getStationTypeLabel: typeof getStationTypeLabel;
+  };
+}
 
 export function useStationFilter(): StationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
-  const { stopTimes, trips, loading: tripLoading, error: tripError, loadStopTimes, loadTrips, getTripById } = useTripStore();
+  const { stopTimes, trips, loading: tripLoading, error: tripError, loadStopTimes, loadTrips } = useTripStore();
   const { vehicles, loading: vehicleLoading, error: vehicleError, loadVehicles } = useVehicleStore();
   const { 
     routes: allRoutes, 
@@ -50,7 +66,6 @@ export function useStationFilter(): StationFilterResult {
     favoritesStoreAvailable = false;
   }
   
-  const [isFiltering, setIsFiltering] = useState(true);
   const [favoritesFilterEnabled, setFavoritesFilterEnabled] = useState(true);
   
   // Check if user has favorite routes configured
@@ -108,7 +123,7 @@ export function useStationFilter(): StationFilterResult {
   
   const [filteredStations, setFilteredStations] = useState<FilteredStation[]>([]);
   
-  // Async filtering effect
+  // Async filtering effect - always shows nearby stations only
   useEffect(() => {
     const filterAsync = async () => {
       // Early return if no stations available
@@ -126,9 +141,11 @@ export function useStationFilter(): StationFilterResult {
       try {
         let result: FilteredStation[];
         
-        // Choose filtering strategy based on isFiltering flag
-        if (!isFiltering) {
-          // Show all stations sorted by distance
+        // Always use nearby filtering - need location
+        if (!currentPosition) {
+          result = []; // No location available for nearby filtering
+        } else {
+          // Show only nearby relevant stations (max 2 results)
           result = await filterStations(
             stops,
             currentPosition,
@@ -139,31 +156,10 @@ export function useStationFilter(): StationFilterResult {
             favoritesStoreAvailable,
             favoritesFilterEnabled,
             hasFavoriteRoutes,
-            undefined, // maxResults undefined = all stations
+            2, // maxResults = 2 for nearby filtering
             SECONDARY_STATION_THRESHOLD,
-            trips // NEW: trip data for headsign
+            trips
           );
-        } else {
-          // Smart filtering is enabled - need location
-          if (!currentPosition) {
-            result = []; // No location available for smart filtering
-          } else {
-            // Show only nearby relevant stations (max 2 results)
-            result = await filterStations(
-              stops,
-              currentPosition,
-              stopTimes,
-              vehicles,
-              allRoutes,
-              favoriteRouteIds,
-              favoritesStoreAvailable,
-              favoritesFilterEnabled,
-              hasFavoriteRoutes,
-              2, // maxResults = 2 for smart filtering
-              SECONDARY_STATION_THRESHOLD,
-              trips // NEW: trip data for headsign
-            );
-          }
         }
         
         setFilteredStations(result);
@@ -174,9 +170,8 @@ export function useStationFilter(): StationFilterResult {
     };
 
     filterAsync();
-  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, isFiltering, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
+  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
   
-  const toggleFiltering = useCallback(() => setIsFiltering(prev => !prev), []);
   const toggleFavoritesFilter = useCallback(() => {
     // Only allow toggling if favorites store is available
     if (favoritesStoreAvailable) {
@@ -185,15 +180,13 @@ export function useStationFilter(): StationFilterResult {
       console.warn('Cannot toggle favorites filter: favorites store unavailable');
     }
   }, [favoritesStoreAvailable]);
+  
   const retryFiltering = useCallback(() => {}, []); // No-op for simple implementation
   
   return {
     filteredStations,
     loading: locationLoading || stationLoading || tripLoading || vehicleLoading || routeLoading,
     error: locationError || stationError || tripError || vehicleError || routeError,
-    isFiltering,
-    totalStations: stops.length,
-    toggleFiltering,
     retryFiltering,
     // Favorites filtering
     favoritesFilterEnabled: favoritesStoreAvailable ? favoritesFilterEnabled : false,

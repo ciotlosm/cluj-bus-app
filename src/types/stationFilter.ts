@@ -54,9 +54,6 @@ export interface StationFilterResult {
   filteredStations: FilteredStation[];
   loading: boolean;
   error: string | null;
-  isFiltering: boolean;
-  totalStations: number;
-  toggleFiltering: () => void;
   retryFiltering: () => void;
   utilities: StationUtilities;
   // Favorites filtering
