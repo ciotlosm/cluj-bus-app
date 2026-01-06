@@ -2,6 +2,21 @@
 
 ## Recent Updates (January 2025)
 
+### January 6, 2025 - Favorite Route Visual Enhancement
+- **🎨 FEATURE**: Unselected favorite route bubbles now show faint grey+red background with subtle red border
+- **🎨 THEME**: Added custom favorite route colors to Material-UI theme (grey.A100, A200, A400)
+- **📱 UX**: Improved visual distinction for favorite routes in station view
+
+### January 6, 2025 - Station Proximity Logic Update
+- **🎯 ENHANCED**: Changed station filtering to show unlimited stations within 100m of closest station
+- **🧹 REMOVED**: Eliminated "Nearby" chip and secondary station type classification
+- **📍 IMPROVED**: All stations within proximity threshold now displayed without artificial limits
+
+### January 6, 2025 - Station View Cleanup
+- **🧹 REMOVED**: Cleaned up favorites filter references from station filtering system
+- **🔧 FIX**: Removed missing checkStationFavoritesMatch import causing build errors
+- **🎨 UI**: Removed favorite route indicators (red borders) from station route bubbles
+
 ### January 6, 2025 - Station View Simplification
 - **🎯 SIMPLIFIED**: Removed nearby filter toggle - station view now always shows nearby stations only
 - **🧹 CLEANUP**: Removed station count display from header for cleaner UI

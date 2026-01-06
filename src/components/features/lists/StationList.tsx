@@ -19,7 +19,6 @@ import {
 import { 
   LocationOn as LocationIcon,
   ExpandMore as ExpandMoreIcon,
-  FavoriteBorder as FavoriteOutlineIcon,
   DirectionsBus as BusStopIcon
 } from '@mui/icons-material';
 import type { FilteredStation, StationUtilities } from '../../../types/stationFilter';
@@ -37,17 +36,19 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
   const { routes } = useRouteStore();
   const { isFavorite } = useFavoritesStore();
   
-  // Expansion state management per station - auto-expand all stations
+  // Expansion state management per station - collapse all when multiple stations
   const [expandedStations, setExpandedStations] = useState<Set<number>>(() => {
-    return new Set(stations.map(fs => fs.station.stop_id));
+    // If there's only 1 station, expand it by default. If multiple stations, collapse all
+    return stations.length === 1 ? new Set(stations.map(fs => fs.station.stop_id)) : new Set();
   });
 
   // Route filter state management per station - Map<stationId, selectedRouteId | null>
   const [routeFilters, setRouteFilters] = useState<Map<number, number | null>>(new Map());
 
-  // Update expansion state when stations change - auto-expand all
+  // Update expansion state when stations change - collapse all when multiple stations
   useEffect(() => {
-    setExpandedStations(new Set(stations.map(fs => fs.station.stop_id)));
+    // If there's only 1 station, expand it by default. If multiple stations, collapse all
+    setExpandedStations(stations.length === 1 ? new Set(stations.map(fs => fs.station.stop_id)) : new Set());
   }, [stations]);
 
   // Toggle expansion for individual station - memoized to prevent unnecessary re-renders
@@ -97,7 +98,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
   return (
     <Stack spacing={1.5} sx={{ p: { xs: 1, sm: 2 } }}>
       {stations.map((filteredStation) => {
-        const { station, distance, stationType, matchesFavorites, vehicles, routeIds } = filteredStation;
+        const { station, distance, stationType, vehicles, routeIds } = filteredStation;
         const isExpanded = expandedStations.has(station.stop_id);
         const selectedRouteId = routeFilters.get(station.stop_id);
         
@@ -177,28 +178,6 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
                         }}
                       />
                     )}
-                    
-                    {/* Favorite indicator - inline with distance */}
-                    {matchesFavorites && (
-                      <FavoriteOutlineIcon 
-                        fontSize="small" 
-                        sx={{ 
-                          color: 'error.main',
-                          width: 16,
-                          height: 16
-                        }} 
-                      />
-                    )}
-                    
-                    {/* Station type chip for secondary stations */}
-                    {stationType === 'secondary' && (
-                      <Chip
-                        label={getStationTypeLabel(stationType)}
-                        size="small"
-                        color={getStationTypeColor(stationType)}
-                        variant="filled"
-                      />
-                    )}
                   </Stack>
                   
                   {/* Route bubbles - mobile optimized */}
@@ -216,7 +195,18 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
                       >
                         {stationRoutes.slice(0, 8).map((route) => {
                           const isRouteSelected = selectedRouteId === route.route_id;
-                          const isRouteFavorite = isFavorite(route.route_id.toString());
+                          const isRouteFavorite = isFavorite(String(route.route_id));
+                          
+                          // Determine background color based on selection and favorite status
+                          let backgroundColor;
+                          if (isRouteSelected) {
+                            backgroundColor = 'primary.main';
+                          } else if (isRouteFavorite) {
+                            // Faint grey+red for unselected favorite routes
+                            backgroundColor = 'grey.A200';
+                          } else {
+                            backgroundColor = route.route_color ? `#${route.route_color}` : 'grey.400';
+                          }
                           
                           return (
                             <Avatar
@@ -227,10 +217,8 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
                                 height: 32,
                                 fontSize: '0.75rem',
                                 fontWeight: 'bold',
-                                bgcolor: isRouteSelected 
-                                  ? 'primary.main' 
-                                  : (route.route_color ? `#${route.route_color}` : 'grey.400'),
-                                color: 'white',
+                                bgcolor: backgroundColor,
+                                color: isRouteSelected ? 'white' : (isRouteFavorite ? 'error.dark' : 'white'), // Darker red text for favorites
                                 minWidth: 32,
                                 flexShrink: 0,
                                 cursor: 'pointer',
@@ -243,14 +231,10 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
                                 },
                                 border: isRouteSelected 
                                   ? '2px solid' 
-                                  : isRouteFavorite 
-                                    ? '2px solid #f44336' 
-                                    : '1px solid transparent',
+                                  : (isRouteFavorite ? '1px solid' : '1px solid transparent'), // Subtle red border for favorites
                                 borderColor: isRouteSelected 
                                   ? 'primary.dark' 
-                                  : isRouteFavorite 
-                                    ? '#f44336' 
-                                    : 'transparent',
+                                  : (isRouteFavorite ? 'grey.A200' : 'transparent'),
                                 boxShadow: isRouteSelected ? 2 : 0
                               }}
                             >

@@ -25,6 +25,23 @@ export const ThemeProvider: FC<ThemeProviderProps> = ({ children }) => {
       primary: {
         main: '#1976d2',
       },
+      // Custom colors for favorite routes
+      grey: {
+        50: '#fafafa',
+        100: '#f5f5f5',
+        200: '#eeeeee',
+        300: '#e0e0e0',
+        400: '#bdbdbd',
+        500: '#9e9e9e',
+        600: '#757575',
+        700: '#616161',
+        800: '#424242',
+        900: '#212121',
+        // Custom favorite route colors
+        A100: '#f5f0f0', // Faint grey+red background for unselected favorites
+        A200: '#e0b4b4', // Subtle red border for favorites  
+        A400: '#8b4444', // Darker red text for favorites
+      },
     },
     components: {
       // Custom component variants for different card types

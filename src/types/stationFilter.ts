@@ -31,9 +31,7 @@ export interface FilteredStation {
   station: TranzyStopResponse;
   distance: number;
   hasActiveTrips: boolean;
-  stationType: 'primary' | 'secondary' | 'all';
-  matchesFavorites: boolean; // NEW: indicates if station serves favorite routes
-  favoriteRouteCount: number; // NEW: number of favorite routes served
+  stationType: 'primary' | 'all';
   vehicles: StationVehicle[]; // NEW: vehicles serving this station
   routeIds: number[]; // NEW: route IDs serving this station
 }
@@ -43,8 +41,8 @@ export interface FilteredStation {
  */
 export interface StationUtilities {
   formatDistance: (distance: number) => string;
-  getStationTypeColor: (stationType: 'primary' | 'secondary' | 'all') => 'primary' | 'secondary' | 'default';
-  getStationTypeLabel: (stationType: 'primary' | 'secondary' | 'all') => string;
+  getStationTypeColor: (stationType: 'primary' | 'all') => 'primary' | 'default';
+  getStationTypeLabel: (stationType: 'primary' | 'all') => string;
 }
 
 /**
@@ -56,8 +54,4 @@ export interface StationFilterResult {
   error: string | null;
   retryFiltering: () => void;
   utilities: StationUtilities;
-  // Favorites filtering
-  favoritesFilterEnabled: boolean;
-  toggleFavoritesFilter: () => void;
-  hasFavoriteRoutes: boolean;
 }

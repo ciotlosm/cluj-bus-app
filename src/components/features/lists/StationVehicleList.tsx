@@ -12,7 +12,7 @@ import {
   AccessibleForward as WheelchairIcon,
   DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon,
   AccessTime as ArrivalIcon, ExpandMore as ExpandMoreIcon, Map as MapIcon,
-  LocationOn as TargetStationIcon
+  LocationOn as TargetStationIcon, Favorite as FavoriteIcon
 } from '@mui/icons-material';
 import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTime } from '../../../utils/vehicle/vehicleFormatUtils';
 import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
@@ -27,6 +27,7 @@ import { useVehicleStore } from '../../../stores/vehicleStore';
 import { useRouteStore } from '../../../stores/routeStore';
 import { VehicleMapDialog } from '../maps/VehicleMapDialog';
 import type { StationVehicle } from '../../../types/stationFilter';
+import { useFavoritesStore } from '../../../stores/favoritesStore';
 
 // VehicleDisplayState interface removed as it's not used in the current implementation
 // The component uses direct state variables instead
@@ -141,6 +142,10 @@ interface VehicleCardProps {
 const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  
+  // Check if this vehicle's route is a favorite
+  const { isFavorite } = useFavoritesStore();
+  const isRouteFavorite = route && isFavorite(String(route.route_id));
   
   // Get real stop data from stores
   const { stopTimes, trips } = useTripStore();
@@ -303,6 +308,19 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
               </Typography>
             </Box>
           ))}
+          
+          {/* Favorite route indicator */}
+          {isRouteFavorite && (
+            <Box display="flex" alignItems="center" sx={{ flexShrink: 0 }}>
+              <FavoriteIcon 
+                fontSize="small" 
+                sx={{ 
+                  color: 'error.main',
+                  fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                }} 
+              />
+            </Box>
+          )}
         </Stack>
 
         {/* Arrival time information */}

@@ -99,34 +99,3 @@ export function getStationRouteIds(
 
   return Array.from(routeIds);
 }
-
-/**
- * Check if a station serves any of the favorite routes
- * @param station - The station to check
- * @param stopTimes - Array of stop times from trip store
- * @param vehicles - Array of vehicles to get route mapping
- * @param favoriteRouteIds - Set of favorite route IDs
- * @returns Object with match status and count
- */
-export function checkStationFavoritesMatch(
-  station: TranzyStopResponse,
-  stopTimes: TranzyStopTimeResponse[],
-  vehicles: TranzyVehicleResponse[],
-  favoriteRouteIds: Set<string>
-): { matchesFavorites: boolean; favoriteRouteCount: number } {
-  // Handle edge cases
-  if (!station || favoriteRouteIds.size === 0) {
-    return { matchesFavorites: false, favoriteRouteCount: 0 };
-  }
-
-  // Get route IDs for this station
-  const stationRouteIds = getStationRouteIds(station, stopTimes, vehicles);
-  
-  // Count how many favorite routes this station serves
-  const matchingRoutes = stationRouteIds.filter(routeId => favoriteRouteIds.has(routeId));
-  
-  return {
-    matchesFavorites: matchingRoutes.length > 0,
-    favoriteRouteCount: matchingRoutes.length
-  };
-}

@@ -1,7 +1,7 @@
 /**
  * Station Filtering Hook
  * Main hook for location-based station filtering with favorites integration and vehicle data
- * Always shows nearby stations only
+ * Shows all stations within proximity of the closest station
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -10,7 +10,6 @@ import { useStationStore } from '../stores/stationStore';
 import { useTripStore } from '../stores/tripStore';
 import { useVehicleStore } from '../stores/vehicleStore';
 import { useRouteStore } from '../stores/routeStore';
-import { useFavoritesStore } from '../stores/favoritesStore';
 import { 
   formatDistance,
   getStationTypeColor,
@@ -28,9 +27,6 @@ interface StationFilterResult {
   loading: boolean;
   error: string | null;
   retryFiltering: () => void;
-  favoritesFilterEnabled: boolean;
-  toggleFavoritesFilter: () => void;
-  hasFavoriteRoutes: boolean;
   utilities: {
     formatDistance: typeof formatDistance;
     getStationTypeColor: typeof getStationTypeColor;
@@ -49,34 +45,6 @@ export function useStationFilter(): StationFilterResult {
     error: routeError,
     loadRoutes 
   } = useRouteStore();
-  
-  // Safely access favorites store with error handling
-  let favoriteRouteIds: Set<string>;
-  let getFavoriteCount: () => number;
-  let favoritesStoreAvailable = true;
-  
-  try {
-    const favoritesStore = useFavoritesStore();
-    favoriteRouteIds = favoritesStore.favoriteRouteIds;
-    getFavoriteCount = favoritesStore.getFavoriteCount;
-  } catch (error) {
-    console.warn('Favorites store unavailable, disabling favorites filtering:', error);
-    favoriteRouteIds = new Set<string>();
-    getFavoriteCount = () => 0;
-    favoritesStoreAvailable = false;
-  }
-  
-  const [favoritesFilterEnabled, setFavoritesFilterEnabled] = useState(true);
-  
-  // Check if user has favorite routes configured
-  const hasFavoriteRoutes = useMemo(() => {
-    try {
-      return getFavoriteCount() > 0;
-    } catch (error) {
-      console.warn('Error checking favorite routes count:', error);
-      return false;
-    }
-  }, [getFavoriteCount]);
   
   // Auto-load stop times, vehicles, and routes when hook is used
   useEffect(() => {
@@ -123,7 +91,7 @@ export function useStationFilter(): StationFilterResult {
   
   const [filteredStations, setFilteredStations] = useState<FilteredStation[]>([]);
   
-  // Async filtering effect - always shows nearby stations only
+  // Async filtering effect - always shows stations within proximity of closest station
   useEffect(() => {
     const filterAsync = async () => {
       // Early return if no stations available
@@ -141,22 +109,18 @@ export function useStationFilter(): StationFilterResult {
       try {
         let result: FilteredStation[];
         
-        // Always use nearby filtering - need location
+        // Always use proximity filtering - need location
         if (!currentPosition) {
-          result = []; // No location available for nearby filtering
+          result = []; // No location available for proximity filtering
         } else {
-          // Show only nearby relevant stations (max 2 results)
+          // Show all stations within proximity of the closest station (unlimited results)
           result = await filterStations(
             stops,
             currentPosition,
             stopTimes,
             vehicles,
             allRoutes,
-            favoriteRouteIds,
-            favoritesStoreAvailable,
-            favoritesFilterEnabled,
-            hasFavoriteRoutes,
-            2, // maxResults = 2 for nearby filtering
+            1, // Enable proximity filtering
             SECONDARY_STATION_THRESHOLD,
             trips
           );
@@ -170,16 +134,7 @@ export function useStationFilter(): StationFilterResult {
     };
 
     filterAsync();
-  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, favoriteRouteIds, favoritesFilterEnabled, hasFavoriteRoutes, favoritesStoreAvailable]);
-  
-  const toggleFavoritesFilter = useCallback(() => {
-    // Only allow toggling if favorites store is available
-    if (favoritesStoreAvailable) {
-      setFavoritesFilterEnabled(prev => !prev);
-    } else {
-      console.warn('Cannot toggle favorites filter: favorites store unavailable');
-    }
-  }, [favoritesStoreAvailable]);
+  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition]);
   
   const retryFiltering = useCallback(() => {}, []); // No-op for simple implementation
   
@@ -188,10 +143,6 @@ export function useStationFilter(): StationFilterResult {
     loading: locationLoading || stationLoading || tripLoading || vehicleLoading || routeLoading,
     error: locationError || stationError || tripError || vehicleError || routeError,
     retryFiltering,
-    // Favorites filtering
-    favoritesFilterEnabled: favoritesStoreAvailable ? favoritesFilterEnabled : false,
-    toggleFavoritesFilter,
-    hasFavoriteRoutes: favoritesStoreAvailable ? hasFavoriteRoutes : false,
     // Utility functions for UI formatting
     utilities: {
       formatDistance,

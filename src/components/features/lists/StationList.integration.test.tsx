@@ -46,7 +46,6 @@ const mockStation: FilteredStation = {
   },
   distance: 150,
   stationType: 'primary' as const,
-  matchesFavorites: false,
   vehicles: mockVehicles,
   routeIds: [1, 2, 3]
 };

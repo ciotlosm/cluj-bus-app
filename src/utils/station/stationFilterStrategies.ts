@@ -4,7 +4,7 @@
  */
 
 import { sortByDistance, calculateDistance } from '../location/distanceUtils';
-import { hasActiveTrips, checkStationFavoritesMatch } from './tripValidationUtils';
+import { hasActiveTrips } from './tripValidationUtils';
 import { addStationMetadata } from './stationVehicleUtils';
 import { useShapeStore } from '../../stores/shapeStore';
 import type { FilteredStation } from '../../types/stationFilter';
@@ -13,9 +13,9 @@ import type { RouteShape } from '../../types/arrivalTime';
 import { SECONDARY_STATION_THRESHOLD } from '../../types/stationFilter';
 
 /**
- * Unified Station Filtering - Handles both "all stations" and "smart filtering" modes
- * @param maxResults - Maximum number of results (undefined = all stations, 2 = smart filtering)
- * @param proximityThreshold - Distance threshold for secondary station selection (only used when maxResults is limited)
+ * Unified Station Filtering - Handles both "all stations" and "proximity filtering" modes
+ * @param maxResults - Maximum number of results (undefined = all stations, number = proximity filtering)
+ * @param proximityThreshold - Distance threshold for proximity filtering (only used when maxResults is defined)
  */
 export const filterStations = async (
   stops: TranzyStopResponse[],
@@ -23,15 +23,11 @@ export const filterStations = async (
   stopTimes: TranzyStopTimeResponse[],
   vehicles: TranzyVehicleResponse[],
   allRoutes: TranzyRouteResponse[],
-  favoriteRouteIds: Set<string>,
-  favoritesStoreAvailable: boolean,
-  favoritesFilterEnabled: boolean,
-  hasFavoriteRoutes: boolean,
   maxResults?: number,
   proximityThreshold: number = SECONDARY_STATION_THRESHOLD,
   trips: TranzyTripResponse[] = [] // NEW: trip data for headsign
 ): Promise<FilteredStation[]> => {
-  // Early return if no location and smart filtering requested
+  // Early return if no location and proximity filtering requested
   if (!currentPosition && maxResults !== undefined) {
     return [];
   }
@@ -77,26 +73,14 @@ export const filterStations = async (
     }
   }
 
-  // Apply core filtering logic: location + trips + favorites
+  // Apply core filtering logic: location + trips
   const validStations: FilteredStation[] = [];
+  let primaryStation: FilteredStation | null = null;
   
   for (const station of sortedStations) {
     // Skip stations without active trips
     if (!hasActiveTrips(station, stopTimes)) {
       continue;
-    }
-
-    // Apply favorites filter if enabled
-    if (favoritesFilterEnabled && favoritesStoreAvailable && hasFavoriteRoutes) {
-      try {
-        const favoritesMatch = checkStationFavoritesMatch(station, stopTimes, vehicles, favoriteRouteIds);
-        if (!favoritesMatch.matchesFavorites) {
-          continue; // Skip stations that don't match favorites
-        }
-      } catch (error) {
-        console.warn('Error checking favorites match for station:', station.stop_id, error);
-        continue; // Skip station on error
-      }
     }
 
     // Create station with metadata (now with route shapes available)
@@ -105,41 +89,39 @@ export const filterStations = async (
       distance: userLocation ? calculateDistance(userLocation, { lat: station.stop_lat, lon: station.stop_lon }) : 0,
       hasActiveTrips: true,
       stationType: 'all' as const // Will be updated based on position
-    }, stopTimes, vehicles, allRoutes, favoriteRouteIds, favoritesStoreAvailable, trips, stops, routeShapes);
+    }, stopTimes, vehicles, allRoutes, trips, stops, routeShapes);
 
     // Skip stations with no active vehicles - they should be filtered out entirely
     if (stationWithMetadata.vehicles.length === 0) {
       continue;
     }
 
-    validStations.push(stationWithMetadata);
-
-    // For smart filtering, apply proximity logic for secondary station
-    if (maxResults !== undefined && validStations.length === 1) {
-      // First station becomes primary, continue looking for secondary within proximity
-      continue;
-    } else if (maxResults !== undefined && validStations.length === 2) {
-      // Check if this potential secondary station is within proximity threshold of primary
-      const primaryStation = validStations[0];
-      const distanceToPrimary = calculateDistance(
-        { lat: primaryStation.station.stop_lat, lon: primaryStation.station.stop_lon },
-        { lat: station.stop_lat, lon: station.stop_lon }
-      );
-      
-      if (distanceToPrimary > proximityThreshold) {
-        // Remove this station and stop looking for more
-        validStations.pop();
-        break;
+    // For proximity filtering, check distance from primary station
+    if (maxResults !== undefined) {
+      if (primaryStation === null) {
+        // First valid station becomes primary
+        primaryStation = stationWithMetadata;
+        validStations.push(stationWithMetadata);
+      } else {
+        // Check if this station is within proximity threshold of primary
+        const distanceToPrimary = calculateDistance(
+          { lat: primaryStation.station.stop_lat, lon: primaryStation.station.stop_lon },
+          { lat: station.stop_lat, lon: station.stop_lon }
+        );
+        
+        if (distanceToPrimary <= proximityThreshold) {
+          // Station is within proximity, include it
+          validStations.push(stationWithMetadata);
+        }
+        // If outside proximity threshold, skip this station but continue checking others
       }
-      // Secondary station is within proximity, keep it and stop
-      break;
-    } else if (maxResults !== undefined && validStations.length >= maxResults) {
-      // Reached max results for smart filtering
-      break;
+    } else {
+      // No proximity filtering, include all valid stations
+      validStations.push(stationWithMetadata);
     }
   }
 
-  // Update station types based on position
+  // Update station types - only primary station gets special type, rest are 'all'
   return validStations.map((station, index) => ({
     ...station,
     stationType: index === 0 ? 'primary' : 'all' as const

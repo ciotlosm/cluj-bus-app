@@ -12,7 +12,6 @@ import {
 import { useStationStore } from '../../../stores/stationStore';
 import { useConfigStore } from '../../../stores/configStore';
 import { useStationFilter } from '../../../hooks/useStationFilter';
-import { StationViewHeader } from '../headers/StationViewHeader';
 import { StationList } from '../lists/StationList';
 import { StationEmptyState } from '../states/StationEmptyState';
 
@@ -24,10 +23,7 @@ export const StationView: FC = () => {
     loading, 
     error, 
     retryFiltering,
-    utilities,
-    favoritesFilterEnabled,
-    toggleFavoritesFilter,
-    hasFavoriteRoutes
+    utilities
   } = useStationFilter();
 
   useEffect(() => {
@@ -74,12 +70,6 @@ export const StationView: FC = () => {
 
   return (
     <Box>
-      <StationViewHeader
-        favoritesFilterEnabled={favoritesFilterEnabled}
-        toggleFavoritesFilter={toggleFavoritesFilter}
-        hasFavoriteRoutes={hasFavoriteRoutes}
-      />
-      
       <StationList 
         stations={filteredStations} 
         utilities={utilities}

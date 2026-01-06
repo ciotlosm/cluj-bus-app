@@ -7,7 +7,6 @@ import {
   getCachedStationRouteMapping, 
   getRouteIdsForStation 
 } from '../route/routeStationMapping';
-import { checkStationFavoritesMatch } from './tripValidationUtils';
 import { calculateVehicleArrivalTime, sortVehiclesByArrival, isVehicleOffRoute } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
@@ -200,15 +199,13 @@ export const getStationVehicles = (
 };
 
 /**
- * Add metadata (favorites info, vehicles, route IDs) to a station
+ * Add metadata (vehicles, route IDs) to a station
  */
 export const addStationMetadata = (
   station: any,
   stopTimes: TranzyStopTimeResponse[],
   vehicles: TranzyVehicleResponse[],
   allRoutes: TranzyRouteResponse[],
-  favoriteRouteIds: Set<string>,
-  favoritesStoreAvailable: boolean,
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
   routeShapes?: Map<string, RouteShape> // NEW: route shapes for accurate distance calculations
@@ -227,40 +224,9 @@ export const addStationMetadata = (
     console.warn('Failed to get route IDs for station:', stationObj.stop_id, error);
   }
   
-  // Only check favorites if store is available
-  if (!favoritesStoreAvailable || favoriteRouteIds.size === 0) {
-    return {
-      ...station,
-      matchesFavorites: false,
-      favoriteRouteCount: 0,
-      vehicles: stationVehicles,
-      routeIds
-    };
-  }
-  
-  try {
-    const favoritesMatch = checkStationFavoritesMatch(
-      stationObj,
-      stopTimes,
-      vehicles,
-      favoriteRouteIds
-    );
-    
-    return {
-      ...station,
-      matchesFavorites: favoritesMatch.matchesFavorites,
-      favoriteRouteCount: favoritesMatch.favoriteRouteCount,
-      vehicles: stationVehicles,
-      routeIds
-    };
-  } catch (error) {
-    console.warn('Error checking station favorites match:', error);
-    return {
-      ...station,
-      matchesFavorites: false,
-      favoriteRouteCount: 0,
-      vehicles: stationVehicles,
-      routeIds
-    };
-  }
+  return {
+    ...station,
+    vehicles: stationVehicles,
+    routeIds
+  };
 };
