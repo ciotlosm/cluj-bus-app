@@ -88,6 +88,16 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
         newFilters.set(stationId, null);
       } else {
         newFilters.set(stationId, routeId);
+        
+        // Expand the station if it's currently collapsed when applying a route filter
+        setExpandedStations(prevExpanded => {
+          if (!prevExpanded.has(stationId)) {
+            const newExpanded = new Set(prevExpanded);
+            newExpanded.add(stationId);
+            return newExpanded;
+          }
+          return prevExpanded;
+        });
       }
       
       return newFilters;
@@ -126,8 +136,9 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, is
                   width: { xs: 40, sm: 48 }, 
                   height: { xs: 40, sm: 48 },
                   fontSize: { xs: '1rem', sm: '1.2rem' },
-                  flexShrink: 0
-                }}>
+                  flexShrink: 0,
+                  borderRadius: 1
+                }} variant="square">
                   <BusStopIcon />
                 </Avatar>
                 

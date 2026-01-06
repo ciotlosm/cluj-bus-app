@@ -206,4 +206,28 @@ describe('StationList Integration', () => {
     expect(screen.getAllByText('Downtown')).toHaveLength(2);
     expect(screen.queryByText('Airport')).not.toBeInTheDocument();
   });
+
+  it('should expand collapsed station when route filter is clicked', () => {
+    renderWithTheme(
+      <StationList 
+        stations={[mockStation]} 
+        utilities={mockUtilities}
+        isFiltering={false} // Start collapsed
+      />
+    );
+
+    // Station should be collapsed initially - vehicles not visible
+    expect(screen.getByText('Test Station')).toBeInTheDocument();
+    expect(screen.queryByText('Downtown')).not.toBeInTheDocument();
+    expect(screen.queryByText('Airport')).not.toBeInTheDocument();
+    
+    // Click on route filter bubble while station is collapsed
+    const route24Bubbles = screen.getAllByText('24');
+    const routeBubble = route24Bubbles[0];
+    fireEvent.click(routeBubble);
+    
+    // Station should now be expanded and filter should be applied
+    expect(screen.getAllByText('Downtown')).toHaveLength(2); // Route 24 vehicles visible
+    expect(screen.queryByText('Airport')).not.toBeInTheDocument(); // Route 35 filtered out
+  });
 });

@@ -4,8 +4,7 @@ A real-time bus tracking application providing live vehicle locations and schedu
 
 ## ✨ Features
 
-- **🔴 Live Vehicle Tracking** - Real-time bus locations and ETAs
-- **📋 Official Schedules** - Integration with local transit authority timetables
+- **🔴 Live Vehicle Tracking** - Real-time bus locations and ETAs via Tranzy API
 - **🎯 Smart Favorites** - Personalized route tracking based on location
 - **📱 Mobile-First Design** - Responsive interface optimized for mobile devices
 - **⚡ Real-time Updates** - Automatic refresh with live data
@@ -58,7 +57,6 @@ neary/
 ### Environment Setup
 The app uses proxy configuration for API requests:
 - **Tranzy API**: `/api/tranzy` → `https://api.tranzy.ai`
-- **Local Transit API**: `/api/local-transit` → Local transit authority endpoint
 
 ### Key Configuration Files
 - `vite.config.ts` - Build configuration and API proxies
@@ -67,20 +65,13 @@ The app uses proxy configuration for API requests:
 
 ## 📊 Data Sources
 
-### Primary Data Sources
-1. **🔴 Live Vehicle Data** (Highest Priority)
-   - Real-time vehicle positions from Tranzy API
-   - Actual ETAs based on current location and route
+### Primary Data Source
+1. **🔴 Tranzy API** (Real-time Transit Data)
+   - Live vehicle positions and tracking
+   - Route information and schedules
+   - Real-time ETAs based on current vehicle locations
 
-2. **📋 Official Local Transit Schedules** (High Priority)
-   - Runtime fetched from local transit authority website
-   - Official timetables for accurate departure times
-
-3. **⏱️ API Fallback Data** (Low Priority)
-   - Tranzy API schedule data when available
-   - Used as last resort for timing information
-
-### Route Mapping
+### Data Processing
 - **Route Labels**: User-facing route numbers (e.g., "42")
 - **Route IDs**: Internal API identifiers (e.g., "40")
 - **Mapping**: Route Label "42" ↔ Tranzy Route ID "40"
@@ -93,13 +84,12 @@ The app uses proxy configuration for API requests:
 - **Real-time Updates**: Live vehicle tracking with ETA calculations
 
 ### Confidence Indicators
-- **🔴 LIVE**: Real-time vehicle tracking data
-- **📋 OFFICIAL**: Local transit authority official schedule data
-- **⏱️ ESTIMATED**: API fallback or calculated timing
+- **🔴 LIVE**: Real-time vehicle tracking data from Tranzy API
+- **⏱️ ESTIMATED**: Calculated timing based on available data
 
 ### Error Handling
-- **Graceful Fallbacks**: Multiple data sources ensure reliability
-- **Network Resilience**: Handles API failures and network issues
+- **Graceful Fallbacks**: Handles API failures and network issues
+- **Network Resilience**: Retry logic for reliable data fetching
 - **User Feedback**: Clear error messages and loading states
 
 ## 🧪 Testing

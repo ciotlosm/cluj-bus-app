@@ -40,15 +40,19 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
     setNetworkStatus
   } = useStatusStore();
 
-  // Handle GPS icon click - show detailed info and request location if needed
+  // Handle GPS icon click - always trigger GPS update and show detailed info
   const handleGpsClick = () => {
-    setDialogType('gps');
-    setDialogOpen(true);
+    // Close dialog first to avoid confusion during update
+    setDialogOpen(false);
     
-    // Also request location if it's not available
-    if (!currentPosition) {
-      requestLocation();
-    }
+    // Always request location update when GPS icon is clicked
+    requestLocation();
+    
+    // Open dialog after a brief delay to show updated status
+    setTimeout(() => {
+      setDialogType('gps');
+      setDialogOpen(true);
+    }, 100);
     
     onGpsClick?.(); // Call parent handler if provided
   };

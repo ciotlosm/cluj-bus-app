@@ -23,6 +23,7 @@ import {
   getApiStatusText,
   getApiRecommendations
 } from '../../../utils/status/apiStatusHelpers';
+import { formatTimeAgo } from '../../../utils/vehicle/vehicleFormatUtils';
 
 interface GpsState {
   status: 'available' | 'unavailable' | 'disabled';
@@ -80,9 +81,11 @@ export const StatusDetailDialog: FC<StatusDetailDialogProps> = ({
             <strong>Permission Status:</strong> {permissionState || 'Unknown'}
           </Typography>
           {lastUpdated && (
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              <strong>Last Updated:</strong> {new Date(lastUpdated).toLocaleString()}
-            </Typography>
+            <>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                <strong>Last Updated:</strong> {formatTimeAgo(lastUpdated)} ({new Date(lastUpdated).toLocaleString()})
+              </Typography>
+            </>
           )}
         </Box>
 

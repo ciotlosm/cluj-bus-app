@@ -18,18 +18,28 @@ import { useConfigStore } from '../../../stores/configStore';
 import { ThemeToggle } from '../../theme/ThemeToggle';
 
 export const SettingsView: FC = () => {
-  const { apiKey, agency_id, theme, setApiKey, setAgency, error, loading, clearError } = useConfigStore();
+  const { 
+    apiKey, 
+    agency_id, 
+    theme, 
+    setApiKey, 
+    setAgency, 
+    validateAndSave,
+    error, 
+    success,
+    loading, 
+    clearError,
+    clearSuccess
+  } = useConfigStore();
   const [localApiKey, setLocalApiKey] = useState(apiKey || '');
   const [localAgencyId, setLocalAgencyId] = useState(agency_id?.toString() || '');
 
-  const handleSave = () => {
-    if (localApiKey.trim()) {
-      setApiKey(localApiKey.trim());
-    }
-    
+  const handleSave = async () => {
+    const trimmedApiKey = localApiKey.trim();
     const agencyIdNum = parseInt(localAgencyId);
-    if (!isNaN(agencyIdNum)) {
-      setAgency(agencyIdNum);
+    
+    if (trimmedApiKey && !isNaN(agencyIdNum) && agencyIdNum > 0) {
+      await validateAndSave(trimmedApiKey, agencyIdNum);
     }
   };
 
@@ -50,6 +60,24 @@ export const SettingsView: FC = () => {
           }
         >
           {error}
+        </Alert>
+      )}
+      
+      {success && (
+        <Alert 
+          severity="success" 
+          sx={{ mb: 2 }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={clearSuccess}
+            >
+              Dismiss
+            </Button>
+          }
+        >
+          {success}
         </Alert>
       )}
       
@@ -91,7 +119,7 @@ export const SettingsView: FC = () => {
           }
           startIcon={loading ? <CircularProgress size={16} /> : undefined}
         >
-          {loading ? 'Saving...' : 'Save Configuration'}
+          {loading ? 'Validating...' : 'Validate & Save Configuration'}
         </Button>
       </Box>
 

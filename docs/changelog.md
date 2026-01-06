@@ -1,5 +1,15 @@
 # Changelog
 
+## Recent Updates (January 2025)
+
+### January 6, 2025 - API Key Validation Feedback
+- **✅ VALIDATION**: Added real-time API key validation using existing agencyService
+- **💬 FEEDBACK**: Success alert shows "Configuration validated and saved successfully" 
+- **🔄 BUTTON**: Changed button text to "Validate & Save Configuration" with "Validating..." state
+
+### January 6, 2025 - Station Icon UI Update
+- **🔲 DESIGN**: Changed station icon (with bus icon inside) from circular to square design
+
 ## Recent Updates (December 2024)
 
 ### December 26, 2024 - Documentation Accuracy Fixes

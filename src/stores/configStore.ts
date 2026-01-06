@@ -15,6 +15,7 @@ interface ConfigStore {
   // Simple loading and error states
   loading: boolean;
   error: string | null;
+  success: string | null;
   
   // Actions
   setApiKey: (key: string) => void;
@@ -24,11 +25,13 @@ interface ConfigStore {
   setTheme: (theme: 'light' | 'dark' | 'auto') => void;
   toggleTheme: () => void;
   clearError: () => void;
+  clearSuccess: () => void;
+  validateAndSave: (apiKey: string, agencyId: number) => Promise<void>;
 }
 
 export const useConfigStore = create<ConfigStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Raw config data
       apiKey: null,
       agency_id: null,
@@ -39,34 +42,69 @@ export const useConfigStore = create<ConfigStore>()(
       // Simple states
       loading: false,
       error: null,
+      success: null,
       
       // Actions
       setApiKey: (key: string) => {
-        set({ loading: true, error: null });
-        // Simulate validation - in real app, you might validate the API key
-        setTimeout(() => {
-          set({ apiKey: key, loading: false, error: null });
-        }, 100);
+        set({ apiKey: key, error: null, success: null });
       },
+      
       setAgency: (agency_id: number) => {
-        set({ loading: true, error: null });
-        // Simulate validation
-        setTimeout(() => {
-          set({ agency_id, loading: false, error: null });
-        }, 100);
+        set({ agency_id, error: null, success: null });
       },
+      
+      validateAndSave: async (apiKey: string, agencyId: number) => {
+        set({ loading: true, error: null, success: null });
+        
+        try {
+          // Temporarily set the config to test it
+          const originalApiKey = get().apiKey;
+          const originalAgencyId = get().agency_id;
+          
+          set({ apiKey, agency_id: agencyId });
+          
+          // Test the API key by calling existing agencyService
+          const { agencyService } = await import('../services/agencyService');
+          await agencyService.getAgencies();
+          
+          // If we get here, the API call succeeded
+          set({ 
+            loading: false, 
+            success: 'Configuration validated and saved successfully'
+          });
+        } catch (error) {
+          // Restore original values on error
+          const originalApiKey = get().apiKey;
+          const originalAgencyId = get().agency_id;
+          
+          let errorMessage = 'Failed to validate configuration';
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          
+          set({ 
+            loading: false, 
+            error: errorMessage,
+            success: null
+          });
+        }
+      },
+      
       setHomeLocation: (lat: number, lon: number) => 
-        set({ home_location: { lat, lon }, error: null }),
+        set({ home_location: { lat, lon }, error: null, success: null }),
       setWorkLocation: (lat: number, lon: number) => 
-        set({ work_location: { lat, lon }, error: null }),
+        set({ work_location: { lat, lon }, error: null, success: null }),
       setTheme: (theme: 'light' | 'dark' | 'auto') => 
-        set({ theme, error: null }),
+        set({ theme, error: null, success: null }),
       toggleTheme: () => 
         set((state) => ({ 
           theme: state.theme === 'dark' ? 'light' : 'dark', 
-          error: null 
+          error: null,
+          success: null
         })),
       clearError: () => set({ error: null }),
+      clearSuccess: () => set({ success: null }),
     }),
     {
       name: 'config-store',
