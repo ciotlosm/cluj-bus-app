@@ -22,6 +22,7 @@ import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import { determineTargetStopRelation } from '../../../utils/arrival/arrivalUtils';
 import { generateConfidenceDebugInfo, formatConfidenceDebugTooltip } from '../../../utils/debug/confidenceDebugUtils';
 import { useTripStore } from '../../../stores/tripStore';
+import { useStopTimeStore } from '../../../stores/stopTimeStore';
 import { useStationStore } from '../../../stores/stationStore';
 import { useVehicleStore } from '../../../stores/vehicleStore';
 import { useRouteStore } from '../../../stores/routeStore';
@@ -38,9 +39,10 @@ interface StationVehicleListProps {
   station: any; // The station these vehicles are being displayed for
   stationRouteCount?: number; // Number of routes serving this station
   selectedRouteId?: number | null; // NEW: route filter
+  vehicleRefreshTimestamp?: number | null; // Timestamp when vehicle data was last refreshed
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount, selectedRouteId }) => {
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount, selectedRouteId, vehicleRefreshTimestamp }) => {
   // State for expansion functionality
   const [showingAll, setShowingAll] = useState(false);
   
@@ -108,6 +110,7 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
           trip={trip}
           arrivalTime={arrivalTime}
           station={station}
+          vehicleRefreshTimestamp={vehicleRefreshTimestamp}
         />
       ))}
       
@@ -137,9 +140,10 @@ interface VehicleCardProps {
   trip: any;
   arrivalTime?: any;
   station: any;
+  vehicleRefreshTimestamp?: number | null;
 }
 
-const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station }) => {
+const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   
@@ -148,7 +152,8 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
   const isRouteFavorite = route && isFavorite(String(route.route_id));
   
   // Get real stop data from stores
-  const { stopTimes, trips } = useTripStore();
+  const { stopTimes } = useStopTimeStore();
+  const { trips } = useTripStore();
   const { stops } = useStationStore();
   
   // Get all data needed for the map dialog
@@ -244,16 +249,32 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
           {/* Timestamp - compact */}
           <Box display="flex" alignItems="center" gap={0.5} sx={{ flexShrink: 0 }}>
             <TimeIcon fontSize="small" color="action" />
-            <Typography 
-              variant="caption" 
-              color="text.secondary"
-              sx={{ 
-                fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {formatTimestamp(vehicle.timestamp)}
-            </Typography>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+                sx={{ 
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  whiteSpace: 'nowrap',
+                  display: 'block'
+                }}
+              >
+                {formatTimestamp(vehicle.timestamp)}
+              </Typography>
+              {vehicleRefreshTimestamp && (
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    whiteSpace: 'nowrap',
+                    display: 'block'
+                  }}
+                >
+                  {formatTimestamp(new Date(vehicleRefreshTimestamp).toISOString())}
+                </Typography>
+              )}
+            </Box>
           </Box>
         </Stack>
 

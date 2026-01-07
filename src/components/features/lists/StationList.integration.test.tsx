@@ -96,6 +96,7 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
+        vehicleRefreshTimestamp={Date.now()}
       />
     );
 
@@ -127,6 +128,7 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation, station2]} 
         utilities={mockUtilities}
+        vehicleRefreshTimestamp={Date.now()}
       />
     );
 
@@ -152,6 +154,7 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
+        vehicleRefreshTimestamp={Date.now()}
       />
     );
 
@@ -178,6 +181,7 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
+        vehicleRefreshTimestamp={Date.now()}
       />
     );
 
@@ -200,6 +204,7 @@ describe('StationList Integration', () => {
       <StationList 
         stations={[mockStation]} 
         utilities={mockUtilities}
+        vehicleRefreshTimestamp={Date.now()}
       />
     );
 

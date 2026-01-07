@@ -2,6 +2,23 @@
 
 ## Recent Updates (January 2025)
 
+### January 7, 2025 - Manual Refresh System Bug Fixes & Improvements
+- **🐛 FIX**: Fixed manual refresh button spinning indefinitely due to service name mismatches
+- **🔧 FIX**: Corrected service imports in stopTimeStore (trip→tripService) and shapeStore (shapes→shapesService)  
+- **⚡ SIMPLIFIED**: Removed loading state tracking from data freshness monitor (background refresh only)
+- **🧹 CLEANUP**: Fixed syntax errors in storeUtils.ts and removed unused loading subscriptions
+- **🎯 UX**: Station expansion state now preserved during background data refreshes
+- **📊 FEATURE**: Vehicle cards show both vehicle timestamp and refresh timestamp in consistent HH:MM format
+- **🎨 UI**: Replaced ugly countdown box with subtle circular progress ring around refresh button
+- **✨ ANIMATION**: Improved progress ring animation smoothness with proper CSS transitions
+- **🔄 UNIFIED**: Manual refresh now triggers automatic refresh service and resets timer (single system)
+- **⚡ RESPONSIVE**: Button disabled duration reduced - only disables during actual manual refresh (not automatic)
+- **📋 TOOLTIP**: Dynamic tooltip shows real-time refresh progress and which stores are being refreshed
+- **🎯 SIMPLIFIED**: All automatic refreshes (startup, timer, foreground, network) now use unified triggerManualRefresh mechanism
+- **🧹 REMOVED**: Eliminated unused prioritizeVehicles functionality and priority-based refresh ordering
+- **⚡ SIMPLIFIED**: Unified refreshVehicleData to use same progress tracking as refreshAllStores (vehiclesOnly option)
+- **🧹 CLEANUP**: Removed duplicate error handling and state management from useManualRefresh hook
+
 ### January 6, 2025 - Favorite Route Visual Enhancement
 - **🎨 FEATURE**: Unselected favorite route bubbles now show faint grey+red background with subtle red border
 - **🎨 THEME**: Added custom favorite route colors to Material-UI theme (grey.A100, A200, A400)

@@ -218,7 +218,7 @@ describe('Shape Store Integration', () => {
       expect(clearedState.shapes.size).toBe(0);
       expect(clearedState.error).toBeNull();
       expect(clearedState.lastUpdated).toBeNull();
-      expect(clearedState.dataHash).toBeNull();
+      // Note: dataHash was removed in simplified version
     });
   });
 });

@@ -3,7 +3,7 @@
 // Includes performance optimizations with memoization and optimized callbacks
 
 import type { FC } from 'react';
-import { useState, useCallback, useEffect, memo } from 'react';
+import { useState, useCallback, useEffect, memo, useRef } from 'react';
 import { 
   Stack, 
   Typography, 
@@ -29,9 +29,10 @@ import { useFavoritesStore } from '../../../stores/favoritesStore';
 interface StationListProps {
   stations: FilteredStation[];
   utilities: StationUtilities;
+  vehicleRefreshTimestamp?: number | null;
 }
 
-export const StationList: FC<StationListProps> = memo(({ stations, utilities }) => {
+export const StationList: FC<StationListProps> = memo(({ stations, utilities, vehicleRefreshTimestamp }) => {
   const { formatDistance, getStationTypeColor, getStationTypeLabel } = utilities;
   const { routes } = useRouteStore();
   const { isFavorite } = useFavoritesStore();
@@ -45,10 +46,27 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
   // Route filter state management per station - Map<stationId, selectedRouteId | null>
   const [routeFilters, setRouteFilters] = useState<Map<number, number | null>>(new Map());
 
-  // Update expansion state when stations change - collapse all when multiple stations
+  // Update expansion state when stations change - preserve user choices during data refreshes
+  const prevStationIdsRef = useRef<Set<number>>(new Set());
+  
   useEffect(() => {
-    // If there's only 1 station, expand it by default. If multiple stations, collapse all
-    setExpandedStations(stations.length === 1 ? new Set(stations.map(fs => fs.station.stop_id)) : new Set());
+    // Get current station IDs
+    const currentStationIds = new Set(stations.map(fs => fs.station.stop_id));
+    const prevStationIds = prevStationIdsRef.current;
+    
+    // Check if the actual stations changed (not just data refresh)
+    const stationsChanged = currentStationIds.size !== prevStationIds.size || 
+      [...currentStationIds].some(id => !prevStationIds.has(id)) ||
+      [...prevStationIds].some(id => !currentStationIds.has(id));
+    
+    // Only reset expansion state if stations actually changed, not during data refresh
+    if (stationsChanged) {
+      // If there's only 1 station, expand it by default. If multiple stations, collapse all
+      setExpandedStations(stations.length === 1 ? new Set(stations.map(fs => fs.station.stop_id)) : new Set());
+    }
+    
+    // Update the ref for next comparison
+    prevStationIdsRef.current = currentStationIds;
   }, [stations]);
 
   // Toggle expansion for individual station - memoized to prevent unnecessary re-renders
@@ -278,6 +296,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities }) 
                   station={station}
                   stationRouteCount={routeIds.length}
                   selectedRouteId={selectedRouteId}
+                  vehicleRefreshTimestamp={vehicleRefreshTimestamp}
                 />
               </Collapse>
             </CardContent>

@@ -88,6 +88,7 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
     <>
       <Box 
         className={className}
+        data-testid="status-indicator"
         sx={{ 
           display: 'flex', 
           alignItems: 'center',

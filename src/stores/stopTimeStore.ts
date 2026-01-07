@@ -1,16 +1,16 @@
-// StationStore - Clean state management with raw API data
+// StopTimeStore - Clean state management with raw API data
 // No cross-store dependencies, simple loading and error states
 // Enhanced with refresh functionality and local storage persistence
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TranzyStopResponse } from '../types/rawTranzyApi';
+import type { TranzyStopTimeResponse } from '../types/rawTranzyApi';
 import { CACHE_DURATIONS } from '../utils/core/constants';
 import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
-interface StationStore {
+interface StopTimeStore {
   // Raw API data - no transformations
-  stops: TranzyStopResponse[];
+  stopTimes: TranzyStopTimeResponse[];
   
   // Simple loading and error states
   loading: boolean;
@@ -20,9 +20,9 @@ interface StationStore {
   lastUpdated: number | null;
   
   // Actions
-  loadStops: () => Promise<void>;
+  loadStopTimes: () => Promise<void>;
   refreshData: () => Promise<void>;
-  clearStops: () => void;
+  clearStopTimes: () => void;
   clearError: () => void;
   
   // Performance helper: check if data is fresh
@@ -35,26 +35,24 @@ interface StationStore {
 
 // Create shared utilities for this store
 const refreshMethod = createRefreshMethod(
-  'station',
-  'stops', 
-  () => import('../services/stationService'),
-  'getStops'
+  'trip',
+  'stopTimes', 
+  () => import('../services/tripService'),
+  'getStopTimes'
 );
 const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.STOP_TIMES);
 
-export const useStationStore = create<StationStore>()(
+export const useStopTimeStore = create<StopTimeStore>()(
   persist(
     (set, get) => ({
       // Raw API data
-      stops: [],
-      
-      // Simple states
+      stopTimes: [],
       loading: false,
       error: null,
       lastUpdated: null,
       
       // Actions
-      loadStops: async () => {
+      loadStopTimes: async () => {
         // Performance optimization: avoid duplicate requests if already loading
         const currentState = get();
         if (currentState.loading) {
@@ -62,7 +60,7 @@ export const useStationStore = create<StationStore>()(
         }
         
         // Check if cached data is fresh
-        if (currentState.stops.length > 0 && currentState.isDataFresh()) {
+        if (currentState.stopTimes.length > 0 && currentState.isDataFresh()) {
           return; // Use cached data
         }
         
@@ -70,22 +68,19 @@ export const useStationStore = create<StationStore>()(
         
         try {
           // Import service dynamically to avoid circular dependencies
-          const { stationService } = await import('../services/stationService');
-          const stops = await stationService.getStops();
+          const { tripService } = await import('../services/tripService');
+          const stopTimes = await tripService.getStopTimes();
           
           set({ 
-            stops, 
+            stopTimes, 
             loading: false, 
             error: null, 
             lastUpdated: Date.now() 
           });
-          
-          // Persist to storage after successful load
-          get().persistToStorage();
         } catch (error) {
           set({ 
             loading: false, 
-            error: error instanceof Error ? error.message : 'Failed to load stops'
+            error: error instanceof Error ? error.message : 'Failed to load stop times'
           });
         }
       },
@@ -94,7 +89,7 @@ export const useStationStore = create<StationStore>()(
         await refreshMethod(get, set, () => get().persistToStorage());
       },
       
-      clearStops: () => set({ stops: [], error: null, lastUpdated: null }),
+      clearStopTimes: () => set({ stopTimes: [], error: null, lastUpdated: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default 24 hours for general data)
@@ -114,10 +109,10 @@ export const useStationStore = create<StationStore>()(
       },
     }),
     {
-      name: 'station-store',
-      // Simple storage for station data
+      name: 'stop-time-store',
+      // Simple storage for stop time data
       partialize: (state) => ({
-        stops: state.stops,
+        stopTimes: state.stopTimes,
         lastUpdated: state.lastUpdated,
         error: state.error
       }),

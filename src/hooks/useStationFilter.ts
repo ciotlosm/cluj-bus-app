@@ -7,6 +7,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useStationStore } from '../stores/stationStore';
+import { useStopTimeStore } from '../stores/stopTimeStore';
 import { useTripStore } from '../stores/tripStore';
 import { useVehicleStore } from '../stores/vehicleStore';
 import { useRouteStore } from '../stores/routeStore';
@@ -37,7 +38,8 @@ interface StationFilterResult {
 export function useStationFilter(): StationFilterResult {
   const { currentPosition, loading: locationLoading, error: locationError } = useLocationStore();
   const { stops, loading: stationLoading, error: stationError } = useStationStore();
-  const { stopTimes, trips, loading: tripLoading, error: tripError, loadStopTimes, loadTrips } = useTripStore();
+  const { stopTimes, loading: stopTimeLoading, error: stopTimeError, loadStopTimes } = useStopTimeStore();
+  const { trips, loading: tripLoading, error: tripError, loadTrips } = useTripStore();
   const { vehicles, loading: vehicleLoading, error: vehicleError, loadVehicles } = useVehicleStore();
   const { 
     routes: allRoutes, 
@@ -59,8 +61,8 @@ export function useStationFilter(): StationFilterResult {
       
       const { apiKey, agencyId } = getApiConfig();
       
-      // Load stop times if not already loaded (trip store updated to use context)
-      if (stopTimes.length === 0 && !tripLoading && !tripError) {
+      // Load stop times if not already loaded (stop time store updated to use context)
+      if (stopTimes.length === 0 && !stopTimeLoading && !stopTimeError) {
         loadStopTimes();
       }
       
@@ -87,7 +89,7 @@ export function useStationFilter(): StationFilterResult {
     };
     
     loadData();
-  }, [stopTimes.length, trips.length, tripLoading, tripError, loadStopTimes, loadTrips, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
+  }, [stopTimes.length, trips.length, stopTimeLoading, tripLoading, stopTimeError, tripError, loadStopTimes, loadTrips, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
   
   const [filteredStations, setFilteredStations] = useState<FilteredStation[]>([]);
   

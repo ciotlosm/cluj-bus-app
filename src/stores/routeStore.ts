@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import type { TranzyRouteResponse } from '../types/rawTranzyApi';
 import { CACHE_DURATIONS } from '../utils/core/constants';
+import { createStorageMethods, createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface RouteStore {
   // Raw API data - no transformations
@@ -19,12 +20,27 @@ interface RouteStore {
   
   // Actions
   loadRoutes: () => Promise<void>;
+  refreshData: () => Promise<void>;
   clearRoutes: () => void;
   clearError: () => void;
   
   // Performance helper: check if data is fresh
   isDataFresh: (maxAgeMs?: number) => boolean;
+  
+  // Local storage integration
+  persistToStorage: () => void;
+  loadFromStorage: () => void;
 }
+
+// Create shared utilities for this store
+const storageMethods = createStorageMethods('routes', 'routes');
+const refreshMethod = createRefreshMethod(
+  'route',
+  'routes', 
+  () => import('../services/routeService'),
+  'getRoutes'
+);
+const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.ROUTES);
 
 export const useRouteStore = create<RouteStore>((set, get) => ({
   // Raw API data
@@ -54,12 +70,19 @@ export const useRouteStore = create<RouteStore>((set, get) => ({
         error: null, 
         lastUpdated: Date.now() 
       });
+      
+      // Persist to storage after successful load
+      storageMethods.persistToStorage(get);
     } catch (error) {
       set({ 
         loading: false, 
         error: error instanceof Error ? error.message : 'Failed to load routes'
       });
     }
+  },
+  
+  async refreshData() {
+    await refreshMethod(get, set, () => storageMethods.persistToStorage(get));
   },
   
   clearRoutes() {
@@ -72,8 +95,15 @@ export const useRouteStore = create<RouteStore>((set, get) => ({
   
   // Performance helper: check if data is fresh (default from constants)
   isDataFresh: (maxAgeMs = CACHE_DURATIONS.ROUTES) => {
-    const { lastUpdated } = get();
-    if (!lastUpdated) return false;
-    return (Date.now() - lastUpdated) < maxAgeMs;
+    return freshnessChecker(get, maxAgeMs);
+  },
+  
+  // Local storage integration methods
+  persistToStorage: () => {
+    storageMethods.persistToStorage(get);
+  },
+  
+  loadFromStorage: () => {
+    storageMethods.loadFromStorage(set);
   },
 }));

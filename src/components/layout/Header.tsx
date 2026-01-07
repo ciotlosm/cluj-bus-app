@@ -5,6 +5,7 @@ import type { FC } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import { StatusIndicator } from '../features/status/StatusIndicator';
+import { ManualRefreshButton } from '../features/controls/ManualRefreshButton';
 
 interface HeaderProps {
   title?: string;
@@ -38,13 +39,15 @@ export const Header: FC<HeaderProps> = ({
           {title}
         </Typography>
         
-        {/* Status Indicator positioned in top right area */}
+        {/* Status Indicator and Manual Refresh Button positioned in top right area */}
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center',
+          gap: 1,
           mr: onSettingsClick ? 1 : 0 // Add margin if settings button is present
         }}>
           <StatusIndicator />
+          <ManualRefreshButton />
         </Box>
         
         {onSettingsClick && (

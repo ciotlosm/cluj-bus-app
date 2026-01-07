@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import type { TranzyVehicleResponse } from '../types/rawTranzyApi';
 import { CACHE_DURATIONS } from '../utils/core/constants';
+import { createStorageMethods, createRefreshMethod, createInitialLoadMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface VehicleStore {
   // Raw API data - no transformations
@@ -19,12 +20,33 @@ interface VehicleStore {
   
   // Actions
   loadVehicles: () => Promise<void>;
+  refreshData: () => Promise<void>;
   clearVehicles: () => void;
   clearError: () => void;
   
   // Performance helper: check if data is fresh
   isDataFresh: (maxAgeMs?: number) => boolean;
+  
+  // Local storage integration
+  persistToStorage: () => void;
+  loadFromStorage: () => void;
 }
+
+// Create shared utilities for this store
+const storageMethods = createStorageMethods('vehicles', 'vehicles');
+const refreshMethod = createRefreshMethod(
+  'vehicle',
+  'vehicles', 
+  () => import('../services/vehicleService'),
+  'getVehicles'
+);
+const initialLoadMethod = createInitialLoadMethod(
+  'vehicle',
+  'vehicles', 
+  () => import('../services/vehicleService'),
+  'getVehicles'
+);
+const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.VEHICLES);
 
 export const useVehicleStore = create<VehicleStore>((set, get) => ({
   // Raw API data
@@ -37,31 +59,11 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
   
   // Actions
   loadVehicles: async () => {
-    // Performance optimization: avoid duplicate requests if already loading
-    const currentState = get();
-    if (currentState.loading) {
-      return;
-    }
-    
-    set({ loading: true, error: null });
-    
-    try {
-      // Import service dynamically to avoid circular dependencies
-      const { vehicleService } = await import('../services/vehicleService');
-      const vehicles = await vehicleService.getVehicles();
-      
-      set({ 
-        vehicles, 
-        loading: false, 
-        error: null, 
-        lastUpdated: Date.now() 
-      });
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error instanceof Error ? error.message : 'Failed to load vehicles'
-      });
-    }
+    await initialLoadMethod(get, set, () => storageMethods.persistToStorage(get));
+  },
+  
+  refreshData: async () => {
+    await refreshMethod(get, set, () => storageMethods.persistToStorage(get));
   },
   
   clearVehicles: () => set({ vehicles: [], error: null, lastUpdated: null }),
@@ -69,8 +71,15 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
   
   // Performance helper: check if data is fresh (default from constants)
   isDataFresh: (maxAgeMs = CACHE_DURATIONS.VEHICLES) => {
-    const { lastUpdated } = get();
-    if (!lastUpdated) return false;
-    return (Date.now() - lastUpdated) < maxAgeMs;
+    return freshnessChecker(get, maxAgeMs);
+  },
+  
+  // Local storage integration methods
+  persistToStorage: () => {
+    storageMethods.persistToStorage(get);
+  },
+  
+  loadFromStorage: () => {
+    storageMethods.loadFromStorage(set);
   },
 }));

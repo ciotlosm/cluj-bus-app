@@ -1,7 +1,8 @@
 // RouteView - Core view component for routes with filtering capability
 // Displays filtered route data with loading, error, and success states
+// Requirement 7.6, 7.7: Handle first load scenarios with proper user feedback
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FC } from 'react';
 import { 
   Box, 
@@ -15,11 +16,12 @@ import { useConfigStore } from '../../../stores/configStore';
 import { RouteList } from '../lists/RouteList';
 import { RouteFilterBar } from '../filters/RouteFilterBar';
 import { useRouteFilter } from '../../../hooks/useRouteFilter';
+import { FirstTimeLoadingState } from '../states/FirstTimeLoadingState';
 import { DEFAULT_FILTER_STATE } from '../../../types/routeFilter';
 import type { RouteFilterState } from '../../../types/routeFilter';
 
 export const RouteView: FC = () => {
-  const { routes, loading, error, loadRoutes } = useRouteStore();
+  const { routes, loading, error } = useRouteStore();
   const { apiKey, agency_id } = useConfigStore();
   
   // Local state for filter management
@@ -28,11 +30,8 @@ export const RouteView: FC = () => {
   // Use the custom hook for route enhancement and filtering
   const { filteredRoutes } = useRouteFilter(routes, filterState);
 
-  useEffect(() => {
-    if (apiKey && agency_id) {
-      loadRoutes();
-    }
-  }, [apiKey, agency_id, loadRoutes]);
+  // Note: Data loading is handled by automaticRefreshService on app startup
+  // No need to trigger loading here - it creates duplicate requests
 
   /**
    * Handle filter state changes from RouteFilterBar
@@ -41,6 +40,26 @@ export const RouteView: FC = () => {
     setFilterState(newFilterState);
   };
 
+  if (!apiKey || !agency_id) {
+    return (
+      <Alert severity="info" sx={{ m: 2 }}>
+        Please configure your API key and agency in settings
+      </Alert>
+    );
+  }
+
+  // Show first-time loading state when cache is empty and data is loading
+  // Requirement 7.6: Display loading states when cache is empty on first load
+  if (loading && routes.length === 0) {
+    return (
+      <FirstTimeLoadingState 
+        message="Loading route information..."
+        subMessage="Getting available transit routes"
+      />
+    );
+  }
+
+  // Show regular loading state for subsequent loads
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
@@ -58,25 +77,13 @@ export const RouteView: FC = () => {
           <Button 
             color="inherit" 
             size="small" 
-            onClick={() => {
-              if (apiKey && agency_id) {
-                loadRoutes();
-              }
-            }}
+            onClick={() => window.location.reload()}
           >
-            Retry
+            Reload App
           </Button>
         }
       >
         {error}
-      </Alert>
-    );
-  }
-
-  if (!apiKey || !agency_id) {
-    return (
-      <Alert severity="info" sx={{ m: 2 }}>
-        Please configure your API key and agency in settings
       </Alert>
     );
   }

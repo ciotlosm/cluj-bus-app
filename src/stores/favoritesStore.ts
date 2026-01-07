@@ -1,13 +1,17 @@
 // FavoritesStore - Clean state management for favorite routes
-// Uses Set for O(1) lookups with localStorage persistence
+// Simple array-based storage with shared utilities for consistency
 // Graceful handling of localStorage failures with in-memory fallback
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface FavoritesStore {
-  // Core state - Set for O(1) lookups
-  favoriteRouteIds: Set<string>;
+  // Core state - Simple array for easy serialization
+  favoriteRouteIds: string[];
+  
+  // Performance optimization: track last update time
+  lastUpdated: number | null;
   
   // Actions
   addFavorite: (routeId: string) => void;
@@ -15,38 +19,49 @@ interface FavoritesStore {
   toggleFavorite: (routeId: string) => void;
   isFavorite: (routeId: string) => boolean;
   clearFavorites: () => void;
+  refreshData: () => Promise<void>;
   
   // Utilities
   getFavoriteCount: () => number;
   getFavoriteRouteIds: () => string[];
+  
+  // Performance helper: check if data is fresh
+  isDataFresh: (maxAgeMs?: number) => boolean;
+  
+  // Local storage integration
+  persistToStorage: () => void;
+  loadFromStorage: () => void;
 }
 
-// Persistence state interface for JSON serialization
-interface FavoritesPersistedState {
-  favoriteRouteIds: string[];
-}
+// Create shared utilities for this store
+const freshnessChecker = createFreshnessChecker(24 * 60 * 60 * 1000); // 24 hours - favorites don't expire often
 
 export const useFavoritesStore = create<FavoritesStore>()(
   persist(
     (set, get) => ({
       // Core state
-      favoriteRouteIds: new Set<string>(),
+      favoriteRouteIds: [],
+      lastUpdated: Date.now(), // Initialize with current time
       
       // Actions
       addFavorite: (routeId: string) => {
         set((state) => {
-          const newFavorites = new Set(state.favoriteRouteIds);
-          newFavorites.add(routeId);
-          return { favoriteRouteIds: newFavorites };
+          // Avoid duplicates
+          if (state.favoriteRouteIds.includes(routeId)) {
+            return state;
+          }
+          return { 
+            favoriteRouteIds: [...state.favoriteRouteIds, routeId],
+            lastUpdated: Date.now()
+          };
         });
       },
       
       removeFavorite: (routeId: string) => {
-        set((state) => {
-          const newFavorites = new Set(state.favoriteRouteIds);
-          newFavorites.delete(routeId);
-          return { favoriteRouteIds: newFavorites };
-        });
+        set((state) => ({
+          favoriteRouteIds: state.favoriteRouteIds.filter(id => id !== routeId),
+          lastUpdated: Date.now()
+        }));
       },
       
       toggleFavorite: (routeId: string) => {
@@ -60,73 +75,56 @@ export const useFavoritesStore = create<FavoritesStore>()(
       
       isFavorite: (routeId: string) => {
         const { favoriteRouteIds } = get();
-        return favoriteRouteIds.has(routeId);
+        return favoriteRouteIds.includes(routeId);
       },
       
       clearFavorites: () => {
-        set({ favoriteRouteIds: new Set<string>() });
+        set({ 
+          favoriteRouteIds: [],
+          lastUpdated: Date.now()
+        });
+      },
+      
+      refreshData: async () => {
+        // Favorites don't need external refresh - they're user-managed
+        // This method exists for API consistency but is a no-op
+        set({ lastUpdated: Date.now() });
       },
       
       // Utilities
       getFavoriteCount: () => {
         const { favoriteRouteIds } = get();
-        return favoriteRouteIds.size;
+        return favoriteRouteIds.length;
       },
       
       getFavoriteRouteIds: () => {
         const { favoriteRouteIds } = get();
-        return Array.from(favoriteRouteIds);
+        return [...favoriteRouteIds]; // Return copy to prevent mutations
+      },
+      
+      // Performance helper: check if data is fresh
+      isDataFresh: (maxAgeMs = 24 * 60 * 60 * 1000) => {
+        return freshnessChecker(get, maxAgeMs);
+      },
+      
+      // Local storage integration methods
+      persistToStorage: () => {
+        // Persistence is handled automatically by zustand persist middleware
+        // This method exists for API consistency but doesn't need implementation
+      },
+      
+      loadFromStorage: () => {
+        // Loading from storage is handled automatically by zustand persist middleware
+        // This method exists for API consistency but doesn't need implementation
       },
     }),
     {
       name: 'favorites-store',
-      
-      // Custom storage transformation: Set ↔ Array for JSON serialization
-      storage: {
-        getItem: (name: string) => {
-          try {
-            const item = localStorage.getItem(name);
-            if (!item) return null;
-            
-            const parsed = JSON.parse(item);
-            // Transform Array back to Set
-            if (parsed.state?.favoriteRouteIds && Array.isArray(parsed.state.favoriteRouteIds)) {
-              parsed.state.favoriteRouteIds = new Set(parsed.state.favoriteRouteIds);
-            }
-            return parsed;
-          } catch (error) {
-            // Graceful handling of localStorage failures
-            console.warn('Failed to load favorites from localStorage:', error);
-            return null;
-          }
-        },
-        
-        setItem: (name: string, value: any) => {
-          try {
-            // Transform Set to Array for JSON serialization
-            const serializable = {
-              ...value,
-              state: {
-                ...value.state,
-                favoriteRouteIds: Array.from(value.state.favoriteRouteIds)
-              }
-            };
-            localStorage.setItem(name, JSON.stringify(serializable));
-          } catch (error) {
-            // Graceful handling of localStorage failures - continue with in-memory state
-            console.warn('Failed to save favorites to localStorage:', error);
-          }
-        },
-        
-        removeItem: (name: string) => {
-          try {
-            localStorage.removeItem(name);
-          } catch (error) {
-            // Graceful handling of localStorage failures
-            console.warn('Failed to remove favorites from localStorage:', error);
-          }
-        },
-      },
+      // Simple storage - no custom serialization needed
+      partialize: (state) => ({
+        favoriteRouteIds: state.favoriteRouteIds,
+        lastUpdated: state.lastUpdated,
+      }),
     }
   )
 );

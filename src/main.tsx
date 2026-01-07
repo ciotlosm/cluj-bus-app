@@ -1,7 +1,7 @@
 // Clean main entry point - minimal setup
 // Single file for app initialization
 
-import { StrictMode, useState, Component } from 'react';
+import { StrictMode, useState, Component, useEffect } from 'react';
 // Leaflet CSS for map components
 import 'leaflet/dist/leaflet.css';
 import type { ErrorInfo, ReactNode } from 'react';
@@ -15,6 +15,7 @@ import { ThemeProvider } from './components/theme/ThemeProvider';
 import { useAutoLocation } from './hooks/useAutoLocation';
 import { useShapeInitialization } from './hooks/useShapeInitialization';
 import { setupAppContext } from './context/contextInitializer';
+import { automaticRefreshService } from './services/automaticRefreshService';
 
 // Error boundary for context initialization failures
 interface ErrorBoundaryState {
@@ -81,6 +82,18 @@ function App() {
   
   // Initialize shape store with cache-first loading strategy
   useShapeInitialization();
+
+  // Initialize automatic refresh service on app start
+  useEffect(() => {
+    automaticRefreshService.initialize().catch(error => {
+      console.warn('Failed to initialize automatic refresh service:', error);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      automaticRefreshService.destroy();
+    };
+  }, []);
 
   const getViewTitle = () => {
     switch (currentView) {
