@@ -1,5 +1,5 @@
-// Data Freshness Monitor - Utility for tracking data freshness across all stores
-// Provides reactive monitoring and status calculation for manual refresh feature
+// Data Freshness Monitor - Event-based staleness checking for UI updates
+// Eliminates periodic timers, checks staleness on refresh triggers and view changes
 // Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
 
 import { useVehicleStore } from '../../stores/vehicleStore';
@@ -9,24 +9,7 @@ import { useShapeStore } from '../../stores/shapeStore';
 import { useStopTimeStore } from '../../stores/stopTimeStore';
 import { useTripStore } from '../../stores/tripStore';
 import { manualRefreshService } from '../../services/manualRefreshService';
-
-/**
- * Freshness thresholds based on design requirements
- * Vehicles: 5 minutes, General data: 24 hours
- */
-export const FRESHNESS_THRESHOLDS = {
-  VEHICLES: 5 * 60 * 1000,      // 5 minutes
-  GENERAL_DATA: 24 * 60 * 60 * 1000, // 24 hours
-} as const;
-
-/**
- * Auto refresh intervals for monitoring
- */
-export const AUTO_REFRESH_INTERVALS = {
-  VEHICLES: 60 * 1000,          // 1 minute when in foreground
-  STARTUP_DELAY: 2000,          // 2 seconds after app start
-  FRESHNESS_CHECK: 30 * 1000,   // 30 seconds for time-based staleness detection
-} as const;
+import { AUTO_REFRESH_CYCLE, STALENESS_THRESHOLDS } from './constants';
 
 /**
  * Interface for store timestamps read from all stores
@@ -46,26 +29,23 @@ export interface StoreTimestamps {
 export interface DataFreshnessStatus {
   status: 'fresh' | 'stale';
   vehicleDataAge: number;
-  generalDataAge: number;
+  staticDataAge: number;
   isRefreshing: boolean;
   nextVehicleRefresh: number; // seconds until next auto-refresh
 }
 
 /**
- * Data Freshness Monitor class
- * Operates as a pure status calculator without modifying any data
+ * Event-based Data Freshness Monitor
+ * No periodic timers - checks staleness on demand and via events
  */
 export class DataFreshnessMonitor {
   private subscribers: Set<(status: DataFreshnessStatus) => void> = new Set();
   private unsubscribeFunctions: (() => void)[] = [];
-  private periodicCheckInterval: NodeJS.Timeout | null = null;
   private lastVehicleRefresh: number = Date.now();
-  private refreshStartTime: number | null = null;
-  private readonly MAX_REFRESH_TIME = 15000; // 15 seconds max refresh time (reduced from 30)
 
   constructor() {
     this.setupStoreSubscriptions();
-    this.startPeriodicCheck();
+    // No periodic timer - event-based only
   }
 
   /**
@@ -93,10 +73,10 @@ export class DataFreshnessMonitor {
 
     // Calculate vehicle data age (most critical)
     const vehicleAge = timestamps.vehicles ? now - timestamps.vehicles : Infinity;
-    const isVehicleDataStale = vehicleAge > FRESHNESS_THRESHOLDS.VEHICLES;
+    const isVehicleDataStale = vehicleAge > STALENESS_THRESHOLDS.VEHICLES;
 
-    // Calculate general data age (stations, routes, shapes, stopTimes, trips)
-    const generalDataAges = [
+    // Calculate static data age (stations, routes, shapes, stopTimes, trips)
+    const staticDataAges = [
       timestamps.stations ? now - timestamps.stations : Infinity,
       timestamps.routes ? now - timestamps.routes : Infinity,
       timestamps.shapes ? now - timestamps.shapes : Infinity,
@@ -104,11 +84,11 @@ export class DataFreshnessMonitor {
       timestamps.trips ? now - timestamps.trips : Infinity,
     ];
 
-    const maxGeneralDataAge = Math.max(...generalDataAges);
-    const isGeneralDataStale = maxGeneralDataAge > FRESHNESS_THRESHOLDS.GENERAL_DATA;
+    const maxStaticDataAge = Math.max(...staticDataAges);
+    const isStaticDataStale = maxStaticDataAge > STALENESS_THRESHOLDS.STATIC_DATA;
 
-    // Overall status is stale if either vehicle or general data is stale
-    const status = isVehicleDataStale || isGeneralDataStale ? 'stale' : 'fresh';
+    // Overall status is stale if either vehicle or static data is stale
+    const status = isVehicleDataStale || isStaticDataStale ? 'stale' : 'fresh';
 
     // Check if any store is currently refreshing
     const isRefreshing = this.isAnyStoreRefreshing();
@@ -116,13 +96,13 @@ export class DataFreshnessMonitor {
     // Calculate next vehicle refresh countdown
     const timeSinceLastVehicleRefresh = now - this.lastVehicleRefresh;
     const nextVehicleRefresh = Math.max(0, 
-      Math.ceil((AUTO_REFRESH_INTERVALS.VEHICLES - timeSinceLastVehicleRefresh) / 1000)
+      Math.ceil((AUTO_REFRESH_CYCLE - timeSinceLastVehicleRefresh) / 1000)
     );
 
     return {
       status,
       vehicleDataAge: vehicleAge,
-      generalDataAge: maxGeneralDataAge,
+      staticDataAge: maxStaticDataAge,
       isRefreshing,
       nextVehicleRefresh,
     };
@@ -165,6 +145,23 @@ export class DataFreshnessMonitor {
   }
 
   /**
+   * Manually trigger staleness check
+   * Called on refresh triggers and view changes
+   */
+  checkStaleness(): void {
+    this.notifySubscribers();
+  }
+
+  /**
+   * Update last vehicle refresh time
+   * Called when vehicle refresh completes
+   */
+  updateVehicleRefreshTime(): void {
+    this.lastVehicleRefresh = Date.now();
+    this.notifySubscribers();
+  }
+
+  /**
    * Setup reactive subscriptions to all stores
    * Requirement 3.4: React to store changes for immediate updates
    */
@@ -172,8 +169,7 @@ export class DataFreshnessMonitor {
     // Subscribe to vehicle store changes
     const unsubVehicles = useVehicleStore.subscribe((state, prevState) => {
       if (state.lastUpdated !== prevState.lastUpdated) {
-        this.lastVehicleRefresh = Date.now();
-        this.notifySubscribers();
+        this.updateVehicleRefreshTime();
       }
     });
 
@@ -220,28 +216,12 @@ export class DataFreshnessMonitor {
   }
 
   /**
-   * Start periodic check for time-based staleness detection
-   * Requirement 3.5: 30-second periodic check for staleness
-   */
-  private startPeriodicCheck(): void {
-    this.periodicCheckInterval = setInterval(() => {
-      this.notifySubscribers();
-    }, AUTO_REFRESH_INTERVALS.FRESHNESS_CHECK);
-  }
-
-  /**
-   * Cleanup subscriptions and intervals
+   * Cleanup subscriptions
    */
   destroy(): void {
     // Unsubscribe from all stores
     this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     this.unsubscribeFunctions = [];
-
-    // Clear periodic check
-    if (this.periodicCheckInterval) {
-      clearInterval(this.periodicCheckInterval);
-      this.periodicCheckInterval = null;
-    }
 
     // Clear subscribers
     this.subscribers.clear();

@@ -1,11 +1,11 @@
 // RouteStore - Clean state management with raw API data
-// No cross-store dependencies, simple loading and error states
-// Includes performance optimizations for data sharing across components
+// Standardized with Zustand persist middleware for consistency
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { TranzyRouteResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../utils/core/constants';
-import { createStorageMethods, createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
+import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface RouteStore {
   // Raw API data - no transformations
@@ -26,84 +26,79 @@ interface RouteStore {
   
   // Performance helper: check if data is fresh
   isDataFresh: (maxAgeMs?: number) => boolean;
-  
-  // Local storage integration
-  persistToStorage: () => void;
-  loadFromStorage: () => void;
 }
 
 // Create shared utilities for this store
-const storageMethods = createStorageMethods('routes', 'routes');
 const refreshMethod = createRefreshMethod(
   'route',
   'routes', 
   () => import('../services/routeService'),
   'getRoutes'
 );
-const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.ROUTES);
+const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.STATIC_DATA);
 
-export const useRouteStore = create<RouteStore>((set, get) => ({
-  // Raw API data
-  routes: [],
-  loading: false,
-  error: null,
-  lastUpdated: null,
-  
-  // Actions
-  async loadRoutes() {
-    // Performance optimization: avoid duplicate requests if already loading
-    const currentState = get();
-    if (currentState.loading) {
-      return;
-    }
-    
-    set({ loading: true, error: null });
-    
-    try {
-      // Import service dynamically to avoid circular dependencies
-      const { routeService } = await import('../services/routeService');
-      const routes = await routeService.getRoutes();
+export const useRouteStore = create<RouteStore>()(
+  persist(
+    (set, get) => ({
+      // Raw API data
+      routes: [],
+      loading: false,
+      error: null,
+      lastUpdated: null,
       
-      set({ 
-        routes, 
-        loading: false, 
-        error: null, 
-        lastUpdated: Date.now() 
-      });
+      // Actions
+      loadRoutes: async () => {
+        // Performance optimization: avoid duplicate requests if already loading
+        const currentState = get();
+        if (currentState.loading) {
+          return;
+        }
+        
+        // Check if cached data is fresh
+        if (currentState.routes.length > 0 && currentState.isDataFresh()) {
+          return; // Use cached data
+        }
+        
+        set({ loading: true, error: null });
+        
+        try {
+          // Import service dynamically to avoid circular dependencies
+          const { routeService } = await import('../services/routeService');
+          const routes = await routeService.getRoutes();
+          
+          set({ 
+            routes, 
+            loading: false, 
+            error: null, 
+            lastUpdated: Date.now() 
+          });
+        } catch (error) {
+          set({ 
+            loading: false, 
+            error: error instanceof Error ? error.message : 'Failed to load routes'
+          });
+        }
+      },
       
-      // Persist to storage after successful load
-      storageMethods.persistToStorage(get);
-    } catch (error) {
-      set({ 
-        loading: false, 
-        error: error instanceof Error ? error.message : 'Failed to load routes'
-      });
+      refreshData: async () => {
+        await refreshMethod(get, set);
+      },
+      
+      clearRoutes: () => set({ routes: [], error: null, lastUpdated: null }),
+      clearError: () => set({ error: null }),
+      
+      // Performance helper: check if data is fresh (default from constants)
+      isDataFresh: (maxAgeMs = IN_MEMORY_CACHE_DURATIONS.STATIC_DATA) => {
+        return freshnessChecker(get, maxAgeMs);
+      },
+    }),
+    {
+      name: 'route-store',
+      partialize: (state) => ({
+        routes: state.routes,
+        lastUpdated: state.lastUpdated,
+        error: state.error
+      }),
     }
-  },
-  
-  async refreshData() {
-    await refreshMethod(get, set, () => storageMethods.persistToStorage(get));
-  },
-  
-  clearRoutes() {
-    set({ routes: [], error: null, lastUpdated: null });
-  },
-  
-  clearError() {
-    set({ error: null });
-  },
-  
-  // Performance helper: check if data is fresh (default from constants)
-  isDataFresh: (maxAgeMs = CACHE_DURATIONS.ROUTES) => {
-    return freshnessChecker(get, maxAgeMs);
-  },
-  
-  // Local storage integration methods
-  persistToStorage: () => {
-    storageMethods.persistToStorage(get);
-  },
-  
-  loadFromStorage: () => {
-    storageMethods.loadFromStorage(set);
-  },
-}));
+  )
+);

@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TranzyStopTimeResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../utils/core/constants';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface StopTimeStore {
@@ -40,7 +40,7 @@ const refreshMethod = createRefreshMethod(
   () => import('../services/tripService'),
   'getStopTimes'
 );
-const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.STOP_TIMES);
+const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.STATIC_DATA);
 
 export const useStopTimeStore = create<StopTimeStore>()(
   persist(
@@ -86,14 +86,14 @@ export const useStopTimeStore = create<StopTimeStore>()(
       },
       
       refreshData: async () => {
-        await refreshMethod(get, set, () => get().persistToStorage());
+        await refreshMethod(get, set);
       },
       
       clearStopTimes: () => set({ stopTimes: [], error: null, lastUpdated: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default 24 hours for general data)
-      isDataFresh: (maxAgeMs = CACHE_DURATIONS.STOP_TIMES) => {
+      isDataFresh: (maxAgeMs = IN_MEMORY_CACHE_DURATIONS.STATIC_DATA) => {
         return freshnessChecker(get, maxAgeMs);
       },
       

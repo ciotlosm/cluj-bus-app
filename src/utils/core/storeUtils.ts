@@ -71,68 +71,6 @@ export function isNetworkError(error: unknown): boolean {
 }
 
 /**
- * Creates localStorage persistence methods for a store
- * @param storeName - Name of the store (used for localStorage key)
- * @param dataKey - Key name for the data property in the store state
- * @param options - Optional configuration for Map serialization
- */
-export function createStorageMethods<T>(
-  storeName: string, 
-  dataKey: string,
-  options?: {
-    isMap?: boolean; // Whether the data is a Map that needs serialization
-  }
-) {
-  const storageKey = `neary_cache_${storeName}`;
-  
-  return {
-    persistToStorage: (getState: () => any) => {
-      try {
-        const state = getState();
-        let dataToStore = state[dataKey];
-        
-        // Convert Map to Array for JSON serialization
-        if (options?.isMap && dataToStore instanceof Map) {
-          dataToStore = Array.from(dataToStore);
-        }
-        
-        const storageData = {
-          [dataKey]: dataToStore,
-          lastUpdated: state.lastUpdated,
-          error: state.error
-        };
-        localStorage.setItem(storageKey, JSON.stringify(storageData));
-      } catch (error) {
-        console.warn(`Failed to persist ${storeName} to storage:`, error);
-      }
-    },
-    
-    loadFromStorage: (setState: (updates: any) => void) => {
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          const data = JSON.parse(stored);
-          let loadedData = data[dataKey] || (options?.isMap ? [] : []);
-          
-          // Convert Array back to Map
-          if (options?.isMap && Array.isArray(loadedData)) {
-            loadedData = new Map(loadedData);
-          }
-          
-          setState({
-            [dataKey]: loadedData,
-            lastUpdated: data.lastUpdated || null,
-            error: data.error || null
-          });
-        }
-      } catch (error) {
-        console.warn(`Failed to load ${storeName} from storage:`, error);
-      }
-    }
-  };
-}
-
-/**
  * Creates a generic refresh method for stores with retry logic and error handling
  * This method does NOT set loading states - it refreshes data in the background
  * Loading states are only used for initial loads when no cached data exists
@@ -154,7 +92,7 @@ export function createRefreshMethod<T>(
     processData?: (data: any) => any;
   }
 ) {
-  return async (getState: () => any, setState: (updates: any) => void, persistToStorage: () => void) => {
+  return async (getState: () => any, setState: (updates: any) => void) => {
     const currentState = getState();
     
     // Set sensible defaults
@@ -190,9 +128,6 @@ export function createRefreshMethod<T>(
         error: null, 
         lastUpdated: Date.now() 
       });
-      
-      // Persist to storage after successful refresh
-      persistToStorage();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Failed to refresh ${storeName}`;
       
@@ -212,77 +147,6 @@ export function createRefreshMethod<T>(
           error: errorMessage
         });
       }
-    }
-  };
-}
-
-/**
- * Creates an initial load method that shows loading states when no cached data exists
- * This is the ONLY method that should set loading: true
- */
-export function createInitialLoadMethod<T>(
-  storeName: string,
-  dataKey: string,
-  serviceImport: () => Promise<any>,
-  serviceMethod: string,
-  options?: {
-    useRetry?: boolean;
-    retryConfig?: RetryConfig;
-    processData?: (data: any) => any;
-  }
-) {
-  return async (getState: () => any, setState: (updates: any) => void, persistToStorage: () => void) => {
-    const currentState = getState();
-    
-    // Only show loading if we have no cached data
-    const hasData = currentState[dataKey] && 
-      (Array.isArray(currentState[dataKey]) ? currentState[dataKey].length > 0 : 
-       currentState[dataKey] instanceof Map ? currentState[dataKey].size > 0 : true);
-    
-    if (!hasData) {
-      setState({ loading: true, error: null });
-    }
-    
-    // Set sensible defaults
-    const useRetry = options?.useRetry ?? true;
-    
-    try {
-      const loadOperation = async () => {
-        // Import service dynamically to avoid circular dependencies
-        const serviceModule = await serviceImport();
-        
-        // Get the service
-        const service = serviceModule[`${storeName}Service`];
-        
-        if (!service || typeof service[serviceMethod] !== 'function') {
-          throw new Error(`Service method ${serviceMethod} not found in ${storeName}Service`);
-        }
-        
-        const rawData = await service[serviceMethod]();
-        
-        // Process data if processor provided
-        return options?.processData ? options.processData(rawData) : rawData;
-      };
-      
-      // Use retry logic by default
-      const data = useRetry 
-        ? await retryWithBackoff(loadOperation, `${storeName} initial load`, options?.retryConfig)
-        : await loadOperation();
-      
-      setState({ 
-        [dataKey]: data,
-        loading: false, 
-        error: null, 
-        lastUpdated: Date.now() 
-      });
-      
-      // Persist to storage after successful load
-      persistToStorage();
-    } catch (error) {
-      setState({ 
-        loading: false, 
-        error: error instanceof Error ? error.message : `Failed to load ${storeName}`
-      });
     }
   };
 }

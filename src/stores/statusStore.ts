@@ -21,8 +21,8 @@ interface StatusStore {
 }
 
 export const useStatusStore = create<StatusStore>()((set, get) => ({
-  // Initial state
-  apiStatus: 'offline',
+  // Initial state - start optimistic until proven otherwise
+  apiStatus: 'online',
   networkOnline: navigator.onLine,
   lastApiCheck: null,
   responseTime: null,
@@ -45,12 +45,12 @@ export const useStatusStore = create<StatusStore>()((set, get) => ({
       const state = get();
       const newFailures = state.consecutiveFailures + 1;
       
-      // Determine status based on network and failure count
+      // Hierarchical logic: no network = offline, otherwise determine by failure count
       let newStatus: ApiStatus = 'error';
       if (!currentNetworkStatus) {
         newStatus = 'offline';
       } else if (newFailures < 3) {
-        newStatus = 'offline';
+        newStatus = 'error'; // Show error immediately on API failure when network is available
       }
       
       set({ 
@@ -70,8 +70,14 @@ export const useStatusStore = create<StatusStore>()((set, get) => ({
     const lastCheck = apiStatusTracker.getLastCheckTime();
     const currentNetworkStatus = navigator.onLine;
     
+    // Hierarchical logic: network status overrides API status
+    let finalApiStatus = status;
+    if (!currentNetworkStatus) {
+      finalApiStatus = 'offline';
+    }
+    
     set({ 
-      apiStatus: status,
+      apiStatus: finalApiStatus,
       networkOnline: currentNetworkStatus,
       responseTime,
       lastApiCheck: lastCheck,
@@ -83,10 +89,13 @@ export const useStatusStore = create<StatusStore>()((set, get) => ({
   setNetworkStatus: (online: boolean) => {
     const state = get();
     
-    // Update network status and adjust API status if needed
+    // Hierarchical logic: if network goes offline, API must be offline too
     let newApiStatus = state.apiStatus;
-    if (!online && state.apiStatus === 'online') {
+    if (!online) {
       newApiStatus = 'offline';
+    } else if (online && state.apiStatus === 'offline' && state.consecutiveFailures === 0) {
+      // Network came back online and we haven't had API failures - return to optimistic online
+      newApiStatus = 'online';
     }
     
     set({ 

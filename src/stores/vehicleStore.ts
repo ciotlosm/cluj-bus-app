@@ -1,11 +1,11 @@
 // VehicleStore - Clean state management with raw API data
-// No cross-store dependencies, simple loading and error states
-// Includes performance optimizations for data sharing across components
+// Standardized with Zustand persist middleware for consistency
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { TranzyVehicleResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../utils/core/constants';
-import { createStorageMethods, createRefreshMethod, createInitialLoadMethod, createFreshnessChecker } from '../utils/core/storeUtils';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
+import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface VehicleStore {
   // Raw API data - no transformations
@@ -26,60 +26,80 @@ interface VehicleStore {
   
   // Performance helper: check if data is fresh
   isDataFresh: (maxAgeMs?: number) => boolean;
-  
-  // Local storage integration
-  persistToStorage: () => void;
-  loadFromStorage: () => void;
 }
 
 // Create shared utilities for this store
-const storageMethods = createStorageMethods('vehicles', 'vehicles');
 const refreshMethod = createRefreshMethod(
   'vehicle',
   'vehicles', 
   () => import('../services/vehicleService'),
   'getVehicles'
 );
-const initialLoadMethod = createInitialLoadMethod(
-  'vehicle',
-  'vehicles', 
-  () => import('../services/vehicleService'),
-  'getVehicles'
-);
-const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.VEHICLES);
+const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.VEHICLES);
 
-export const useVehicleStore = create<VehicleStore>((set, get) => ({
-  // Raw API data
-  vehicles: [],
-  
-  // Simple states
-  loading: false,
-  error: null,
-  lastUpdated: null,
-  
-  // Actions
-  loadVehicles: async () => {
-    await initialLoadMethod(get, set, () => storageMethods.persistToStorage(get));
-  },
-  
-  refreshData: async () => {
-    await refreshMethod(get, set, () => storageMethods.persistToStorage(get));
-  },
-  
-  clearVehicles: () => set({ vehicles: [], error: null, lastUpdated: null }),
-  clearError: () => set({ error: null }),
-  
-  // Performance helper: check if data is fresh (default from constants)
-  isDataFresh: (maxAgeMs = CACHE_DURATIONS.VEHICLES) => {
-    return freshnessChecker(get, maxAgeMs);
-  },
-  
-  // Local storage integration methods
-  persistToStorage: () => {
-    storageMethods.persistToStorage(get);
-  },
-  
-  loadFromStorage: () => {
-    storageMethods.loadFromStorage(set);
-  },
-}));
+export const useVehicleStore = create<VehicleStore>()(
+  persist(
+    (set, get) => ({
+      // Raw API data
+      vehicles: [],
+      
+      // Simple states
+      loading: false,
+      error: null,
+      lastUpdated: null,
+      
+      // Actions
+      loadVehicles: async () => {
+        // Performance optimization: avoid duplicate requests if already loading
+        const currentState = get();
+        if (currentState.loading) {
+          return;
+        }
+        
+        // Check if cached data is fresh
+        if (currentState.vehicles.length > 0 && currentState.isDataFresh()) {
+          return; // Use cached data
+        }
+        
+        set({ loading: true, error: null });
+        
+        try {
+          // Import service dynamically to avoid circular dependencies
+          const { vehicleService } = await import('../services/vehicleService');
+          const vehicles = await vehicleService.getVehicles();
+          
+          set({ 
+            vehicles, 
+            loading: false, 
+            error: null, 
+            lastUpdated: Date.now() 
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load vehicles';
+          set({ loading: false, error: errorMessage });
+          console.error('Error loading vehicles:', error);
+        }
+      },
+      
+      refreshData: async () => {
+        await refreshMethod(get, set);
+      },
+      
+      clearVehicles: () => set({ vehicles: [], error: null, lastUpdated: null }),
+      clearError: () => set({ error: null }),
+      
+      // Performance helper: check if data is fresh
+      isDataFresh: (maxAgeMs = IN_MEMORY_CACHE_DURATIONS.VEHICLES) => {
+        return freshnessChecker(get, maxAgeMs);
+      },
+    }),
+    {
+      name: 'vehicle-store',
+      partialize: (state) => ({
+        vehicles: state.vehicles,
+        lastUpdated: state.lastUpdated,
+        error: state.error
+      }),
+    }
+  )
+);

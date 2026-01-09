@@ -2,13 +2,11 @@
 // Requirements: 7.1, 7.2, 7.3, 7.4, 7.5
 
 import { useStatusStore } from '../stores/statusStore';
-import { RefreshOrchestrator } from '../utils/core/refreshOrchestrator';
 import { manualRefreshService } from './manualRefreshService';
-import { AUTO_REFRESH_INTERVALS } from '../utils/core/dataFreshnessMonitor';
+import { AUTO_REFRESH_CYCLE } from '../utils/core/constants';
 
 interface AutoRefreshConfig {
   vehicleRefreshInterval: number;
-  startupDelay: number;
   enableBackgroundRefresh: boolean;
 }
 
@@ -21,8 +19,7 @@ class AutomaticRefreshService {
 
   constructor(config: Partial<AutoRefreshConfig> = {}) {
     this.config = {
-      vehicleRefreshInterval: AUTO_REFRESH_INTERVALS.VEHICLES,
-      startupDelay: AUTO_REFRESH_INTERVALS.STARTUP_DELAY,
+      vehicleRefreshInterval: AUTO_REFRESH_CYCLE,
       enableBackgroundRefresh: false,
       ...config
     };
@@ -42,13 +39,8 @@ class AutomaticRefreshService {
 
     this.hasInitializedStartup = true;
 
-    // Load cached data immediately for all stores
-    await this.loadCachedDataOnStartup();
-
-    // Start background refresh after delay
-    setTimeout(() => {
-      this.startBackgroundRefresh();
-    }, this.config.startupDelay);
+    // Start background refresh immediately (components handle their own cache loading)
+    this.startBackgroundRefresh();
 
     // Start vehicle refresh timer if in foreground
     if (this.isAppInForeground) {
@@ -57,52 +49,27 @@ class AutomaticRefreshService {
   }
 
   /**
-   * Load cached data immediately on startup
-   * Requirement 7.1: Display cached data immediately and fetch fresh data in background
-   */
-  private async loadCachedDataOnStartup(): Promise<void> {
-    try {
-      // Import stores dynamically to avoid circular dependencies
-      const [
-        { useVehicleStore },
-        { useStationStore },
-        { useRouteStore }
-      ] = await Promise.all([
-        import('../stores/vehicleStore'),
-        import('../stores/stationStore'),
-        import('../stores/routeStore')
-      ]);
-
-      // Load cached data from localStorage for all stores
-      // This ensures immediate display of cached data on startup
-      useVehicleStore.getState().loadFromStorage();
-      useStationStore.getState().loadFromStorage();
-      useRouteStore.getState().loadFromStorage();
-      
-      console.log('Cached data loaded for all stores on startup');
-    } catch (error) {
-      console.warn('Error during startup cache loading:', error);
-    }
-  }
-
-  /**
    * Start background refresh with network connectivity check
    * Requirements 7.3, 7.4: Fetch fresh data when network is available
    */
   private async startBackgroundRefresh(): Promise<void> {
-    if (!RefreshOrchestrator.isNetworkAvailable()) {
+    if (!manualRefreshService.isNetworkAvailable()) {
       // Network not available, wait for connectivity
       return;
     }
 
     try {
-      // Use the same unified refresh mechanism as manual refresh
-      // This ensures button state synchronization and proper timer management
-      await this.triggerManualRefresh();
+      // Single refresh call - no duplicate calls needed
+      await manualRefreshService.refreshData();
     } catch (error) {
       console.warn('Background refresh failed:', error);
     }
   }
+
+  /**
+   * Remove unused loadCachedDataOnStartup method
+   * Components now handle their own cache loading via Zustand persist
+   */
 
   /**
    * Start automatic vehicle refresh timer
@@ -216,7 +183,7 @@ class AutomaticRefreshService {
    * Requirement 7.5: Automatic refresh for stale data when network becomes available
    */
   private async refreshStaleDataOnForeground(): Promise<void> {
-    if (!RefreshOrchestrator.isNetworkAvailable()) {
+    if (!manualRefreshService.isNetworkAvailable()) {
       return;
     }
 
@@ -268,9 +235,7 @@ class AutomaticRefreshService {
       this.stopVehicleRefreshTimer();
       
       // Trigger the same refresh logic used by automatic refresh
-      await manualRefreshService.refreshAllStores({ 
-        skipIfFresh: false // Don't skip for manual refresh
-      });
+      await manualRefreshService.refreshData();
       
       // Restart timer (resets the countdown)
       if (this.isAppInForeground) {

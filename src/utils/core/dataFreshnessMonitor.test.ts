@@ -4,17 +4,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { 
   DataFreshnessMonitor, 
-  FRESHNESS_THRESHOLDS,
-  AUTO_REFRESH_INTERVALS,
   getDataFreshnessMonitor,
   destroyDataFreshnessMonitor
 } from './dataFreshnessMonitor';
+import { STALENESS_THRESHOLDS, AUTO_REFRESH_CYCLE } from './constants';
+import { manualRefreshService } from '../../services/manualRefreshService';
 
 // Mock all store modules
 vi.mock('../../stores/vehicleStore', () => ({
   useVehicleStore: {
     getState: vi.fn(() => ({ lastUpdated: null, loading: false })),
     subscribe: vi.fn(() => vi.fn()) // Return unsubscribe function
+  }
+}));
+
+// Mock manual refresh service
+vi.mock('../../services/manualRefreshService', () => ({
+  manualRefreshService: {
+    isRefreshInProgress: vi.fn(() => false)
   }
 }));
 
@@ -89,7 +96,7 @@ describe('DataFreshnessMonitor', () => {
 
       expect(status.status).toBe('stale');
       expect(status.vehicleDataAge).toBe(Infinity);
-      expect(status.generalDataAge).toBe(Infinity);
+      expect(status.staticDataAge).toBe(Infinity);
       expect(status.isRefreshing).toBe(false);
     });
 
@@ -127,8 +134,8 @@ describe('DataFreshnessMonitor', () => {
       const status = monitor.calculateFreshness();
 
       expect(status.status).toBe('fresh');
-      expect(status.vehicleDataAge).toBeLessThan(FRESHNESS_THRESHOLDS.VEHICLES);
-      expect(status.generalDataAge).toBeLessThan(FRESHNESS_THRESHOLDS.GENERAL_DATA);
+      expect(status.vehicleDataAge).toBeLessThan(STALENESS_THRESHOLDS.VEHICLES);
+      expect(status.staticDataAge).toBeLessThan(STALENESS_THRESHOLDS.STATIC_DATA);
     });
 
     it('should return stale status when vehicle data exceeds 5 minute threshold', () => {
@@ -165,7 +172,7 @@ describe('DataFreshnessMonitor', () => {
       const status = monitor.calculateFreshness();
 
       expect(status.status).toBe('stale');
-      expect(status.vehicleDataAge).toBeGreaterThan(FRESHNESS_THRESHOLDS.VEHICLES);
+      expect(status.vehicleDataAge).toBeGreaterThan(STALENESS_THRESHOLDS.VEHICLES);
     });
 
     it('should return stale status when general data exceeds 24 hour threshold', () => {
@@ -202,14 +209,11 @@ describe('DataFreshnessMonitor', () => {
       const status = monitor.calculateFreshness();
 
       expect(status.status).toBe('stale');
-      expect(status.generalDataAge).toBeGreaterThan(FRESHNESS_THRESHOLDS.GENERAL_DATA);
+      expect(status.staticDataAge).toBeGreaterThan(STALENESS_THRESHOLDS.STATIC_DATA);
     });
 
     it('should detect when stores are refreshing', () => {
-      vi.mocked(useVehicleStore.getState).mockReturnValue({ 
-        lastUpdated: Date.now(), 
-        loading: true 
-      });
+      vi.mocked(manualRefreshService.isRefreshInProgress).mockReturnValue(true);
 
       monitor = new DataFreshnessMonitor();
       const status = monitor.calculateFreshness();
@@ -277,13 +281,12 @@ describe('DataFreshnessMonitor', () => {
 
   describe('constants', () => {
     it('should have correct freshness thresholds', () => {
-      expect(FRESHNESS_THRESHOLDS.VEHICLES).toBe(5 * 60 * 1000); // 5 minutes
-      expect(FRESHNESS_THRESHOLDS.GENERAL_DATA).toBe(24 * 60 * 60 * 1000); // 24 hours
+      expect(STALENESS_THRESHOLDS.VEHICLES).toBe(5 * 60 * 1000); // 5 minutes
+      expect(STALENESS_THRESHOLDS.STATIC_DATA).toBe(24 * 60 * 60 * 1000); // 24 hours
     });
 
     it('should have correct auto refresh intervals', () => {
-      expect(AUTO_REFRESH_INTERVALS.VEHICLES).toBe(60 * 1000); // 1 minute
-      expect(AUTO_REFRESH_INTERVALS.FRESHNESS_CHECK).toBe(30 * 1000); // 30 seconds
+      expect(AUTO_REFRESH_CYCLE).toBe(60 * 1000); // 1 minute
     });
   });
 });

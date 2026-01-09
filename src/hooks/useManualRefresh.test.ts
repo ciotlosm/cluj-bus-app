@@ -31,14 +31,15 @@ describe('useManualRefresh', () => {
   });
 
   describe('Basic Functionality', () => {
-    it('should provide refresh functions', () => {
+    it('should provide refresh function', () => {
       const { result } = renderHook(() => useManualRefresh());
 
-      expect(typeof result.current.refreshAll).toBe('function');
-      expect(typeof result.current.refreshVehicles).toBe('function');
+      expect(typeof result.current.refresh).toBe('function');
+      expect(typeof result.current.isRefreshing).toBe('boolean');
+      expect(typeof result.current.canRefresh).toBe('boolean');
     });
 
-    it('should call manualRefreshService.refreshAllStores', async () => {
+    it('should call manualRefreshService.refreshData', async () => {
       const mockResult = {
         success: true,
         errors: [],
@@ -46,37 +47,16 @@ describe('useManualRefresh', () => {
         skippedStores: []
       };
 
-      vi.mocked(manualRefreshService.refreshAllStores).mockResolvedValue(mockResult);
+      vi.mocked(manualRefreshService.refreshData).mockResolvedValue(mockResult);
 
       const { result } = renderHook(() => useManualRefresh());
 
       let refreshResult;
       await act(async () => {
-        refreshResult = await result.current.refreshAll();
+        refreshResult = await result.current.refresh();
       });
 
-      expect(manualRefreshService.refreshAllStores).toHaveBeenCalledWith(undefined);
-      expect(refreshResult).toEqual(mockResult);
-    });
-
-    it('should call manualRefreshService.refreshVehicleData', async () => {
-      const mockResult = {
-        success: true,
-        errors: [],
-        refreshedStores: ['vehicles'],
-        skippedStores: []
-      };
-
-      vi.mocked(manualRefreshService.refreshVehicleData).mockResolvedValue(mockResult);
-
-      const { result } = renderHook(() => useManualRefresh());
-
-      let refreshResult;
-      await act(async () => {
-        refreshResult = await result.current.refreshVehicles();
-      });
-
-      expect(manualRefreshService.refreshVehicleData).toHaveBeenCalled();
+      expect(manualRefreshService.refreshData).toHaveBeenCalledWith(undefined);
       expect(refreshResult).toEqual(mockResult);
     });
 
@@ -87,19 +67,19 @@ describe('useManualRefresh', () => {
         refreshedStores: [],
         skippedStores: []
       };
-      vi.mocked(manualRefreshService.refreshAllStores).mockResolvedValue(mockErrorResult);
+      vi.mocked(manualRefreshService.refreshData).mockResolvedValue(mockErrorResult);
 
       const { result } = renderHook(() => useManualRefresh());
 
       let refreshResult;
       await act(async () => {
-        refreshResult = await result.current.refreshAll();
+        refreshResult = await result.current.refresh();
       });
 
       expect(refreshResult).toEqual(mockErrorResult);
     });
 
-    it('should pass options to refreshAllStores', async () => {
+    it('should pass options to refreshData', async () => {
       const mockResult = {
         success: true,
         errors: [],
@@ -107,17 +87,17 @@ describe('useManualRefresh', () => {
         skippedStores: ['stations']
       };
 
-      vi.mocked(manualRefreshService.refreshAllStores).mockResolvedValue(mockResult);
+      vi.mocked(manualRefreshService.refreshData).mockResolvedValue(mockResult);
 
       const { result } = renderHook(() => useManualRefresh());
 
-      const options = { skipIfFresh: true };
+      const options = {};
 
       await act(async () => {
-        await result.current.refreshAll(options);
+        await result.current.refresh(options);
       });
 
-      expect(manualRefreshService.refreshAllStores).toHaveBeenCalledWith(options);
+      expect(manualRefreshService.refreshData).toHaveBeenCalledWith(options);
     });
   });
 });

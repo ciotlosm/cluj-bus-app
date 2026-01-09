@@ -7,8 +7,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mockLoadFromStorage = vi.fn();
 const mockRefreshData = vi.fn();
 const mockIsDataFresh = vi.fn(() => false);
-const mockRefreshAllStores = vi.fn(() => Promise.resolve({ success: true, errors: [], refreshedStores: [], skippedStores: [] }));
-const mockRefreshVehicleData = vi.fn(() => Promise.resolve({ success: true, errors: [], refreshedStores: ['vehicles'], skippedStores: [] }));
 const mockSubscribe = vi.fn(() => vi.fn()); // Return unsubscribe function
 
 // Mock the stores
@@ -92,8 +90,8 @@ vi.mock('../stores/statusStore', () => ({
 // Mock the manual refresh service
 vi.mock('./manualRefreshService', () => ({
   manualRefreshService: {
-    refreshAllStores: mockRefreshAllStores,
-    refreshVehicleData: mockRefreshVehicleData
+    refreshData: mockRefreshData,
+    isNetworkAvailable: vi.fn(() => true)
   }
 }));
 
@@ -120,10 +118,10 @@ describe('AutomaticRefreshService', () => {
       await expect(automaticRefreshService.initialize()).resolves.not.toThrow();
     });
 
-    it('should load cached data on startup', async () => {
+    it('should start background refresh on startup', async () => {
       await automaticRefreshService.initialize();
       
-      expect(mockLoadFromStorage).toHaveBeenCalled();
+      expect(mockRefreshData).toHaveBeenCalled();
     });
 
     it('should be marked as active after initialization', async () => {
@@ -138,7 +136,6 @@ describe('AutomaticRefreshService', () => {
       const config = automaticRefreshService.getConfig();
       
       expect(config).toHaveProperty('vehicleRefreshInterval');
-      expect(config).toHaveProperty('startupDelay');
       expect(config).toHaveProperty('enableBackgroundRefresh');
     });
 

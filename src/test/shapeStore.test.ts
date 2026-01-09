@@ -37,9 +37,8 @@ describe('ShapeStore', () => {
     const store = useShapeStore.getState();
 
     // Verify all required methods exist
-    expect(typeof store.initializeShapes).toBe('function');
+    expect(typeof store.loadShapes).toBe('function');
     expect(typeof store.getShape).toBe('function');
-    expect(typeof store.refreshShapes).toBe('function');
     expect(typeof store.refreshData).toBe('function');
     expect(typeof store.clearShapes).toBe('function');
     expect(typeof store.isDataFresh).toBe('function');

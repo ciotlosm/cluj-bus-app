@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TranzyStopResponse } from '../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../utils/core/constants';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface StationStore {
@@ -27,10 +27,6 @@ interface StationStore {
   
   // Performance helper: check if data is fresh
   isDataFresh: (maxAgeMs?: number) => boolean;
-  
-  // Local storage integration
-  persistToStorage: () => void;
-  loadFromStorage: () => void;
 }
 
 // Create shared utilities for this store
@@ -40,7 +36,7 @@ const refreshMethod = createRefreshMethod(
   () => import('../services/stationService'),
   'getStops'
 );
-const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.STOP_TIMES);
+const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.STATIC_DATA);
 
 export const useStationStore = create<StationStore>()(
   persist(
@@ -79,9 +75,6 @@ export const useStationStore = create<StationStore>()(
             error: null, 
             lastUpdated: Date.now() 
           });
-          
-          // Persist to storage after successful load
-          get().persistToStorage();
         } catch (error) {
           set({ 
             loading: false, 
@@ -91,26 +84,15 @@ export const useStationStore = create<StationStore>()(
       },
       
       refreshData: async () => {
-        await refreshMethod(get, set, () => get().persistToStorage());
+        await refreshMethod(get, set);
       },
       
       clearStops: () => set({ stops: [], error: null, lastUpdated: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default 24 hours for general data)
-      isDataFresh: (maxAgeMs = CACHE_DURATIONS.STOP_TIMES) => {
+      isDataFresh: (maxAgeMs = IN_MEMORY_CACHE_DURATIONS.STATIC_DATA) => {
         return freshnessChecker(get, maxAgeMs);
-      },
-      
-      // Local storage integration methods
-      persistToStorage: () => {
-        // Persistence is handled automatically by zustand persist middleware
-        // This method exists for API consistency but doesn't need implementation
-      },
-      
-      loadFromStorage: () => {
-        // Loading from storage is handled automatically by zustand persist middleware
-        // This method exists for API consistency but doesn't need implementation
       },
     }),
     {

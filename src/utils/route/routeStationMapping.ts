@@ -3,7 +3,7 @@
 // Handles edge cases like missing data and provides fast lookup functions
 
 import type { TranzyStopTimeResponse, TranzyVehicleResponse } from '../../types/rawTranzyApi';
-import { CACHE_DURATIONS } from '../core/constants';
+import { IN_MEMORY_CACHE_DURATIONS } from '../core/constants';
 import { createTripToRouteMap } from '../vehicle/vehicleMappingUtils';
 
 /**
@@ -186,7 +186,7 @@ function isCacheValid(stopTimes: TranzyStopTimeResponse[], vehicles: TranzyVehic
   if (!globalMappingCache) return false;
   
   const now = Date.now();
-  const isNotExpired = (now - globalMappingCache.timestamp) < CACHE_DURATIONS.ROUTE_MAPPING;
+  const isNotExpired = (now - globalMappingCache.timestamp) < IN_MEMORY_CACHE_DURATIONS.STATIC_DATA;
   const currentHash = createDataHash(stopTimes, vehicles);
   const isSameData = globalMappingCache.dataHash === currentHash;
   

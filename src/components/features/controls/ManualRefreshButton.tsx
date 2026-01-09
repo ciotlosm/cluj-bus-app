@@ -10,6 +10,123 @@ import { getDataFreshnessMonitor, type DataFreshnessStatus } from '../../../util
 import { automaticRefreshService } from '../../../services/automaticRefreshService';
 import { manualRefreshService } from '../../../services/manualRefreshService';
 
+interface RefreshCountdownDotsProps {
+  size: number; // Circle diameter
+  dotCount: number; // Number of dots around the circle
+}
+
+/**
+ * Dot-based countdown animation component
+ * Shows dots around a circle that disappear smoothly over 60 seconds
+ */
+const RefreshCountdownDots: FC<RefreshCountdownDotsProps> = ({ 
+  size, 
+  dotCount 
+}) => {
+  const [animationStartTime, setAnimationStartTime] = useState<number>(Date.now());
+  const [currentProgress, setCurrentProgress] = useState(0);
+  const [key, setKey] = useState(0); // Force re-render when refresh happens
+
+  // Reset animation when component mounts or refresh happens
+  const resetAnimation = useCallback(() => {
+    setAnimationStartTime(Date.now());
+    setCurrentProgress(0);
+    setKey(prev => prev + 1); // Force re-render
+  }, []);
+
+  // Listen for manual refresh to reset animation
+  useEffect(() => {
+    const unsubscribe = manualRefreshService.subscribeToProgress((progress) => {
+      // If refresh just started (progress has items), reset animation
+      if (Object.keys(progress).length > 0 && currentProgress > 0) {
+        resetAnimation();
+      }
+    });
+
+    return unsubscribe;
+  }, [resetAnimation, currentProgress]);
+
+  // Run smooth 60-second animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - animationStartTime;
+      const progress = Math.min(elapsed / 60000, 1); // 60 seconds
+      setCurrentProgress(progress);
+      
+      if (progress >= 1) {
+        resetAnimation(); // Loop the animation
+      }
+    }, 100); // Update every 100ms for smooth animation
+
+    return () => clearInterval(interval);
+  }, [animationStartTime, resetAnimation]);
+
+  const radius = size / 2 - 3;
+  const center = size / 2;
+  
+  // Calculate visible dots based on progress
+  const visibleDots = Math.ceil(dotCount * (1 - currentProgress));
+  
+  // Generate dot positions
+  const dots = Array.from({ length: dotCount }, (_, index) => {
+    const angle = (index / dotCount) * 2 * Math.PI - Math.PI / 2; // Start from top
+    const x = center + radius * Math.cos(angle);
+    const y = center + radius * Math.sin(angle);
+    const isVisible = index >= dotCount - visibleDots;
+    
+    // Determine if this is the next dot to disappear (flash green)
+    const nextToDisappear = index === dotCount - visibleDots - 1 && visibleDots > 0;
+    
+    return { x, y, isVisible, nextToDisappear, key: `${key}-${index}` };
+  });
+
+  return (
+    <Box
+      key={key} // Force re-render when key changes
+      sx={{
+        position: 'absolute',
+        top: (48 - size) / 2,
+        left: (48 - size) / 2,
+        width: size,
+        height: size,
+        pointerEvents: 'none',
+      }}
+    >
+      <svg width={size} height={size}>
+        {dots.map(dot => (
+          <circle
+            key={dot.key}
+            cx={dot.x}
+            cy={dot.y}
+            r={1.5}
+            fill={dot.nextToDisappear ? '#4caf50' : 'currentColor'} // Green for next to disappear
+            opacity={dot.isVisible ? 0.4 : 0}
+            style={{
+              transition: 'opacity 0.3s ease-out, fill 0.5s ease-in-out',
+              color: 'inherit',
+              // Add pulsing animation for the next dot
+              ...(dot.nextToDisappear && {
+                animation: 'pulse 1s ease-in-out infinite alternate'
+              })
+            }}
+          />
+        ))}
+        {/* Add CSS animation for pulsing */}
+        <defs>
+          <style>
+            {`
+              @keyframes pulse {
+                from { opacity: 0.4; }
+                to { opacity: 0.8; }
+              }
+            `}
+          </style>
+        </defs>
+      </svg>
+    </Box>
+  );
+};
+
 interface ManualRefreshButtonProps {
   className?: string;
   disabled?: boolean;
@@ -133,34 +250,25 @@ export const ManualRefreshButton: FC<ManualRefreshButtonProps> = ({
       ? ` • Next auto-refresh: ${formatCountdown(freshnessStatus.nextVehicleRefresh)}`
       : '';
     
-    return `${statusText}${countdownText}`;
+    return `${statusText}${countdownText} • Click to refresh`;
   };
 
   // Check if any refresh is happening and get button color
   const buttonColor = getButtonColor();
 
+  // Calculate animation progress (0 to 1)
+  const animationProgress = freshnessStatus.nextVehicleRefresh > 0 
+    ? (60 - freshnessStatus.nextVehicleRefresh) / 60 
+    : 0;
+
   return (
     <Tooltip title={getTooltipContent()} arrow>
       <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-        {/* Subtle countdown progress ring - only show when not refreshing and countdown > 0 */}
-        {!isRefreshing && freshnessStatus.nextVehicleRefresh > 0 && (
-          <CircularProgress
-            variant="determinate"
-            value={((60 - freshnessStatus.nextVehicleRefresh) / 60) * 100} // Progress from 0 to 100 as countdown decreases
-            size={52} // Slightly larger than button (48px)
-            thickness={2}
-            sx={{
-              position: 'absolute',
-              top: -2,
-              left: -2,
-              color: 'action.disabled',
-              opacity: 0.3,
-              '& .MuiCircularProgress-circle': {
-                strokeLinecap: 'round',
-                // Smooth transition for progress changes
-                transition: 'stroke-dashoffset 0.5s ease-out',
-              },
-            }}
+        {/* Dot-based countdown animation - only show when not refreshing */}
+        {!isRefreshing && (
+          <RefreshCountdownDots 
+            size={40} // Smaller circle around the icon
+            dotCount={12} // 12 dots for clean visual spacing
           />
         )}
         

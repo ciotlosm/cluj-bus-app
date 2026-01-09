@@ -28,8 +28,6 @@ describe('Store Refresh Functionality', () => {
       
       // Check that all required methods exist
       expect(typeof store.refreshData).toBe('function');
-      expect(typeof store.persistToStorage).toBe('function');
-      expect(typeof store.loadFromStorage).toBe('function');
       expect(typeof store.isDataFresh).toBe('function');
       
       // Check that lastUpdated property exists
@@ -58,8 +56,6 @@ describe('Store Refresh Functionality', () => {
       
       // Check that all required methods exist
       expect(typeof store.refreshData).toBe('function');
-      expect(typeof store.persistToStorage).toBe('function');
-      expect(typeof store.loadFromStorage).toBe('function');
       expect(typeof store.isDataFresh).toBe('function');
       
       // Check that lastUpdated property exists
@@ -88,8 +84,6 @@ describe('Store Refresh Functionality', () => {
       
       // Check that all required methods exist
       expect(typeof store.refreshData).toBe('function');
-      expect(typeof store.persistToStorage).toBe('function');
-      expect(typeof store.loadFromStorage).toBe('function');
       expect(typeof store.isDataFresh).toBe('function');
       
       // Check that lastUpdated property exists
@@ -172,11 +166,10 @@ describe('Store Refresh Functionality', () => {
       expect(store.lastUpdated).toBe(null); // Initially null
     });
 
-    it('should have refreshData as alias for refreshShapes', () => {
+    it('should have consistent refreshData method like other stores', () => {
       const store = useShapeStore.getState();
       
-      // Both methods should exist
-      expect(typeof store.refreshShapes).toBe('function');
+      // Should have refreshData method like all other stores
       expect(typeof store.refreshData).toBe('function');
     });
   });
@@ -198,8 +191,6 @@ describe('Store Refresh Functionality', () => {
         
         // All stores should have these methods with correct signatures
         expect(typeof store.refreshData, `${storeName}Store.refreshData`).toBe('function');
-        expect(typeof store.persistToStorage, `${storeName}Store.persistToStorage`).toBe('function');
-        expect(typeof store.loadFromStorage, `${storeName}Store.loadFromStorage`).toBe('function');
         expect(typeof store.isDataFresh, `${storeName}Store.isDataFresh`).toBe('function');
         
         // All stores should have lastUpdated property (favorites store initializes it)

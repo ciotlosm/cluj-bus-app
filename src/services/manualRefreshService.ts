@@ -1,11 +1,25 @@
-// Manual Refresh Service - Coordinates refresh across all stores
-// Handles network connectivity checks and error handling for API failures
-// Ensures refresh operations are atomic and prevent concurrent executions
+// Manual Refresh Service - Single entry point for all refresh operations
+// Handles network connectivity checks and prevents concurrent executions
 
-import { RefreshOrchestrator, type RefreshResult, type RefreshOptions } from '../utils/core/refreshOrchestrator';
+import { useVehicleStore } from '../stores/vehicleStore';
+import { useStationStore } from '../stores/stationStore';
+import { useRouteStore } from '../stores/routeStore';
+import { useShapeStore } from '../stores/shapeStore';
+import { useStopTimeStore } from '../stores/stopTimeStore';
+import { useTripStore } from '../stores/tripStore';
+import { useStatusStore } from '../stores/statusStore';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 
-// Re-export types for backward compatibility
-export type { RefreshResult, RefreshOptions };
+export interface RefreshResult {
+  success: boolean;
+  errors: string[];
+  refreshedStores: string[];
+  skippedStores: string[];
+}
+
+export interface RefreshOptions {
+  // No options needed - stores handle their own freshness logic
+}
 
 class ManualRefreshService {
   private isRefreshing = false;
@@ -13,18 +27,12 @@ class ManualRefreshService {
   private currentProgress: { [storeName: string]: 'starting' | 'completed' | 'error' } = {};
   private progressCallbacks: Set<(progress: { [storeName: string]: 'starting' | 'completed' | 'error' }) => void> = new Set();
 
-  /**
-   * Performs manual refresh of all stores with network connectivity checks
-   * Ensures atomic operations and prevents concurrent executions
-   */
-  async refreshAllStores(options: RefreshOptions = {}): Promise<RefreshResult> {
-    // Prevent concurrent refresh operations
+  async refreshData(options: RefreshOptions = {}): Promise<RefreshResult> {
     if (this.isRefreshing && this.refreshPromise) {
       return this.refreshPromise;
     }
 
     this.isRefreshing = true;
-    
     this.refreshPromise = this.performRefresh(options);
     
     try {
@@ -37,25 +45,79 @@ class ManualRefreshService {
   }
 
   private async performRefresh(options: RefreshOptions): Promise<RefreshResult> {
-    // Reset progress tracking
+    const result: RefreshResult = {
+      success: true,
+      errors: [],
+      refreshedStores: [],
+      skippedStores: []
+    };
+
+    if (!this.isNetworkAvailable()) {
+      result.success = false;
+      result.errors.push('Network unavailable');
+      return result;
+    }
+
     this.currentProgress = {};
     this.notifyProgressCallbacks();
-    
-    // Use shared orchestrator with progress callback
-    const result = await RefreshOrchestrator.refreshStores({
-      ...options,
-      onProgress: (storeName, status) => {
-        this.currentProgress[storeName] = status;
+
+    // Check freshness before refreshing each store
+    const stores = [
+      { name: 'vehicles', store: useVehicleStore, maxAge: IN_MEMORY_CACHE_DURATIONS.VEHICLES },
+      { name: 'stations', store: useStationStore, maxAge: IN_MEMORY_CACHE_DURATIONS.STATIC_DATA },
+      { name: 'routes', store: useRouteStore, maxAge: IN_MEMORY_CACHE_DURATIONS.STATIC_DATA },
+      { name: 'shapes', store: useShapeStore, maxAge: IN_MEMORY_CACHE_DURATIONS.STATIC_DATA },
+      { name: 'stopTimes', store: useStopTimeStore, maxAge: IN_MEMORY_CACHE_DURATIONS.STATIC_DATA },
+      { name: 'trips', store: useTripStore, maxAge: IN_MEMORY_CACHE_DURATIONS.STATIC_DATA }
+    ];
+
+    for (const { name, store, maxAge } of stores) {
+      try {
+        const storeState = store.getState();
+        
+        // Check if data is fresh - skip refresh if so
+        if (storeState.isDataFresh && storeState.isDataFresh(maxAge)) {
+          result.skippedStores.push(name);
+          
+          // Still show progress for skipped stores to give user feedback
+          this.currentProgress[name] = 'starting';
+          this.notifyProgressCallbacks();
+          
+          // Brief delay to show the user something happened
+          await new Promise(resolve => setTimeout(resolve, 150));
+          
+          this.currentProgress[name] = 'completed';
+          this.notifyProgressCallbacks();
+          continue;
+        }
+        
+        this.currentProgress[name] = 'starting';
+        this.notifyProgressCallbacks();
+
+        // Call refreshData() method - always refreshes when called
+        await storeState.refreshData();
+        result.refreshedStores.push(name);
+        
+        this.currentProgress[name] = 'completed';
+        this.notifyProgressCallbacks();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        result.errors.push(`${name}: ${errorMessage}`);
+        result.success = false;
+        
+        this.currentProgress[name] = 'error';
         this.notifyProgressCallbacks();
       }
-    });
+    }
     
-    // Clear progress tracking immediately when refresh completes
     this.currentProgress = {};
     this.notifyProgressCallbacks();
     
     return result;
   }
+
+  // Remove redundant methods - only refreshData() is needed
+  // Stores handle their own freshness logic via isDataFresh() checks
 
   private notifyProgressCallbacks(): void {
     this.progressCallbacks.forEach(callback => {
@@ -67,47 +129,26 @@ class ManualRefreshService {
     });
   }
 
-  /**
-   * Refresh only vehicle data for high-priority updates
-   */
-  async refreshVehicleData(): Promise<RefreshResult> {
-    // Use the same unified refresh mechanism with progress tracking
-    return this.refreshAllStores({ vehiclesOnly: true });
-  }
-
-  /**
-   * Checks if a manual refresh operation is currently in progress
-   */
   isRefreshInProgress(): boolean {
     return this.isRefreshing;
   }
 
-  /**
-   * Subscribe to refresh progress updates
-   */
   subscribeToProgress(callback: (progress: { [storeName: string]: 'starting' | 'completed' | 'error' }) => void): () => void {
     this.progressCallbacks.add(callback);
-    
-    // Return unsubscribe function
     return () => {
       this.progressCallbacks.delete(callback);
     };
   }
 
-  /**
-   * Get current refresh progress
-   */
   getCurrentProgress(): { [storeName: string]: 'starting' | 'completed' | 'error' } {
     return { ...this.currentProgress };
   }
 
-  /**
-   * Gets the current network connectivity status
-   */
   isNetworkAvailable(): boolean {
-    return RefreshOrchestrator.isNetworkAvailable();
+    const statusStore = useStatusStore.getState();
+    return statusStore.networkOnline && statusStore.apiStatus !== 'offline';
   }
 }
 
-// Export singleton instance
-export const manualRefreshService = new ManualRefreshService();
+const refreshService = new ManualRefreshService();
+export { refreshService as manualRefreshService };

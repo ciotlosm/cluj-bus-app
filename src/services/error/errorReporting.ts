@@ -21,9 +21,13 @@ export const apiStatusTracker = {
   },
   
   getStatus(): 'online' | 'offline' | 'error' {
-    // Check current network status
+    // Check current network status first (hierarchical)
     if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline';
-    if (!this.lastCall) return 'offline';
+    
+    // If no API calls have been made yet, start optimistic
+    if (!this.lastCall) return 'online';
+    
+    // Determine status based on call results
     if (this.consecutiveFailures >= 3) return 'error';
     return this.lastCall.success ? 'online' : 'error';
   },

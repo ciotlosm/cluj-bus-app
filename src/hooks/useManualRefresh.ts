@@ -2,7 +2,7 @@
 // Provides reactive state management for refresh operations and network status
 
 import { useState, useCallback, useEffect } from 'react';
-import { type RefreshResult, type RefreshOptions } from '../utils/core/refreshOrchestrator';
+import { type RefreshResult, type RefreshOptions } from '../services/manualRefreshService';
 import { useStatusStore } from '../stores/statusStore';
 import { manualRefreshService } from '../services/manualRefreshService';
 
@@ -12,9 +12,8 @@ interface UseManualRefreshReturn {
   isNetworkAvailable: boolean;
   lastRefreshResult: RefreshResult | null;
   
-  // Actions
-  refreshAll: (options?: RefreshOptions) => Promise<RefreshResult>;
-  refreshVehicles: () => Promise<RefreshResult>;
+  // Actions - simplified to single refresh method
+  refresh: (options?: RefreshOptions) => Promise<RefreshResult>;
   
   // Status helpers
   canRefresh: boolean;
@@ -35,16 +34,9 @@ export function useManualRefresh(): UseManualRefreshReturn {
   const isNetworkAvailable = networkOnline && apiStatus !== 'offline';
   const canRefresh = isNetworkAvailable && !isRefreshing;
 
-  // Refresh all stores - simplified to just call service
-  const refreshAll = useCallback(async (options?: RefreshOptions): Promise<RefreshResult> => {
-    const result = await manualRefreshService.refreshAllStores(options);
-    setLastRefreshResult(result);
-    return result;
-  }, []);
-
-  // Refresh only vehicle data - simplified to just call service
-  const refreshVehicles = useCallback(async (): Promise<RefreshResult> => {
-    const result = await manualRefreshService.refreshVehicleData();
+  // Single refresh method - stores handle their own freshness logic
+  const refresh = useCallback(async (options?: RefreshOptions): Promise<RefreshResult> => {
+    const result = await manualRefreshService.refreshData(options);
     setLastRefreshResult(result);
     return result;
   }, []);
@@ -72,8 +64,7 @@ export function useManualRefresh(): UseManualRefreshReturn {
     lastRefreshResult,
     
     // Actions
-    refreshAll,
-    refreshVehicles,
+    refresh,
     
     // Status helpers
     canRefresh

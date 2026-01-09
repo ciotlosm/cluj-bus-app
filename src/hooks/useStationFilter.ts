@@ -19,7 +19,7 @@ import {
 import {
   filterStations
 } from '../utils/station/stationFilterStrategies';
-import { CACHE_DURATIONS } from '../utils/core/constants';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
 import type { FilteredStation } from '../types/stationFilter';
 
@@ -71,15 +71,9 @@ export function useStationFilter(): StationFilterResult {
         loadTrips();
       }
       
-      // Load vehicles if not already loaded (vehicle store updated to use context)
+      // Load vehicles if not already loaded (consistent with other stores)
       if (vehicles.length === 0 && !vehicleLoading && !vehicleError) {
         loadVehicles();
-      } else if (vehicles.length > 0) {
-        // Check if vehicle data is fresh and refresh if needed
-        const vehicleStore = useVehicleStore.getState();
-        if (!vehicleStore.isDataFresh(CACHE_DURATIONS.VEHICLES)) {
-          loadVehicles();
-        }
       }
       
       // Load routes if not already loaded (route store updated to use context)

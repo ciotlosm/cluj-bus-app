@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RouteShape } from '../types/arrivalTime.ts';
-import { CACHE_DURATIONS } from '../utils/core/constants.ts';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants.ts';
 import { compressData, decompressData, getCompressionRatio, formatSize } from '../utils/core/compressionUtils.ts';
 import { 
   createRefreshMethod, 
@@ -26,9 +26,8 @@ interface ShapeStore {
   lastUpdated: number | null;
   
   // Actions
-  initializeShapes: () => Promise<void>;
+  loadShapes: () => Promise<void>;
   getShape: (shapeId: string) => RouteShape | undefined;
-  refreshShapes: () => Promise<void>;
   refreshData: () => Promise<void>;
   clearShapes: () => void;
   
@@ -70,7 +69,7 @@ const refreshMethod = createRefreshMethod(
   }
 );
 
-const freshnessChecker = createFreshnessChecker(CACHE_DURATIONS.SHAPES);
+const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.STATIC_DATA);
 
 export const useShapeStore = create<ShapeStore>()(
   persist(
@@ -82,24 +81,21 @@ export const useShapeStore = create<ShapeStore>()(
   lastUpdated: null,
   
   // Actions
-  initializeShapes: async () => {
+  loadShapes: async () => {
     const currentState = get();
     
-    // Prevent duplicate initialization (simplified)
+    // Performance optimization: avoid duplicate requests if already loading
     if (currentState.loading) {
       return;
     }
     
-    // Check if we need to refresh based on cache state
-    if (currentState.shapes.size === 0 || currentState.isDataExpired()) {
-      // No cached data or expired, fetch immediately
-      await get().refreshShapes();
-    } else if (currentState.isDataFresh()) {
-      // Data is fresh, trigger background refresh
-      setTimeout(() => {
-        get().refreshShapes();
-      }, 0);
+    // Check if cached data is fresh
+    if (currentState.shapes.size > 0 && currentState.isDataFresh()) {
+      return; // Use cached data
     }
+    
+    // Need to fetch fresh data
+    await get().refreshData();
   },
   
   getShape: (shapeId: string) => {
@@ -107,17 +103,9 @@ export const useShapeStore = create<ShapeStore>()(
     return shapes.get(shapeId);
   },
   
-  refreshShapes: async () => {
-    // Use standardized refresh method (retry and cached data handling enabled by default)
-    await refreshMethod(get, set, () => {
-      // Persistence is handled by zustand persist middleware with compression
-      // No explicit persistence needed here as it's automatic
-    });
-  },
-  
-  // Alias for refreshShapes to maintain API consistency
   refreshData: async () => {
-    await get().refreshShapes();
+    // Use standardized refresh method (retry and cached data handling enabled by default)
+    await refreshMethod(get, set);
   },
   
   clearShapes: () => {
@@ -129,7 +117,7 @@ export const useShapeStore = create<ShapeStore>()(
   },
   
   // Utilities
-  isDataFresh: (maxAgeMs = CACHE_DURATIONS.SHAPES) => {
+  isDataFresh: (maxAgeMs = IN_MEMORY_CACHE_DURATIONS.STATIC_DATA) => {
     return freshnessChecker(get, maxAgeMs);
   },
   
@@ -141,7 +129,7 @@ export const useShapeStore = create<ShapeStore>()(
   isDataExpired: () => {
     const { lastUpdated } = get();
     if (!lastUpdated) return true;
-    return (Date.now() - lastUpdated) >= CACHE_DURATIONS.SHAPES;
+    return (Date.now() - lastUpdated) >= IN_MEMORY_CACHE_DURATIONS.STATIC_DATA;
   },
   
   // Local storage integration methods (handled by persist middleware)

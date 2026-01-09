@@ -11,27 +11,29 @@ export const API_CONFIG = {
 } as const;
 
 /**
- * Cache duration constants (in milliseconds)
- * These control how long data stays fresh before requiring a refresh
+ * Refresh and cache configuration constants (in milliseconds)
+ * Single-tier caching: In-memory cache checks only
  */
-export const CACHE_DURATIONS = {
-  // Vehicle data refreshes frequently (30 seconds) for real-time tracking
-  VEHICLES: 30 * 1000,
+
+// Auto-refresh cycle configuration
+export const AUTO_REFRESH_CYCLE = 60 * 1000; // 1 minute (configurable for future 2min)
+
+// In-memory cache durations (when to fetch new data)
+export const IN_MEMORY_CACHE_DURATIONS = {
+  // Vehicle data - matches auto-refresh cycle
+  VEHICLES: AUTO_REFRESH_CYCLE, // 1 minute
   
-  // Route data is more stable (5 minutes)
-  ROUTES: 5 * 60 * 1000,
+  // Static data - 24 hours (routes, stations, shapes, trips, stop times)
+  STATIC_DATA: 24 * 60 * 60 * 1000, // 24 hours
+} as const;
+
+// UI staleness thresholds (for display purposes only)
+export const STALENESS_THRESHOLDS = {
+  // Vehicle data shows as stale after 5 minutes
+  VEHICLES: 5 * 60 * 1000, // 5 minutes
   
-  // Stop times data is stable (24 hours)
-  STOP_TIMES:  24 * 60 * 60 * 1000,
-  
-  // Trip data is stable (24 hours) - trip schedules rarely change
-  TRIPS: 24 * 60 * 60 * 1000,
-  
-  // Route-to-station mapping cache (5 minutes)
-  ROUTE_MAPPING: 5 * 60 * 1000,
-  
-  // Shape data is very stable (24 hours) - route geometry rarely changes
-  SHAPES: 24 * 60 * 60 * 1000,
+  // Static data shows as stale after 24 hours
+  STATIC_DATA: 24 * 60 * 60 * 1000, // 24 hours
 } as const;
 
 /**
