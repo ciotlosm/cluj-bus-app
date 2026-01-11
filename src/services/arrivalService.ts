@@ -1,5 +1,5 @@
 // ArrivalService - Dedicated service for real-time arrival calculations
-// Uses raw API data directly, no transformations or caching
+// Uses enhanced vehicles (service layer handles predictions automatically)
 // Single responsibility: calculate arrival times on-demand
 
 import type { 
@@ -8,6 +8,7 @@ import type {
   TranzyStopTimeResponse,
   TranzyTripResponse 
 } from '../types/rawTranzyApi.ts';
+import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils.ts';
 import type { ArrivalTimeResult } from '../types/arrivalTime.ts';
 import { handleApiError } from './error';
 import { 
@@ -18,13 +19,13 @@ import {
 export const arrivalService = {
   /**
    * Calculate arrival times for vehicles approaching a specific stop
-   * Fetches fresh data each time - no caching for real-time accuracy
+   * Uses enhanced vehicles with position predictions for improved accuracy
    */
   async calculateArrivalsForStop(stopId: string): Promise<ArrivalTimeResult[]> {
     try {
-      // Get all required data in parallel for efficiency
+      // Get enhanced vehicles with predictions and other required data in parallel
       const [vehicles, trips, stopTimes, stops] = await Promise.all([
-        this.getVehicles(),
+        this.getVehicles(), // Now returns enhanced vehicles by default
         this.getTrips(),
         this.getStopTimes(),
         this.getStops()
@@ -36,7 +37,7 @@ export const arrivalService = {
         throw new Error(`Stop ${stopId} not found`);
       }
 
-      // Calculate and sort arrival times using raw API data directly
+      // Calculate and sort arrival times using enhanced vehicle data with predictions
       const arrivals = calculateMultipleArrivals(vehicles, targetStop, trips, stopTimes, stops);
       return sortVehiclesByArrival(arrivals);
     } catch (error) {
@@ -47,9 +48,9 @@ export const arrivalService = {
   /**
    * Helper methods to fetch data from other services
    */
-  async getVehicles() {
+  async getVehicles(): Promise<EnhancedVehicleData[]> {
     const { vehicleService } = await import('./vehicleService');
-    return vehicleService.getVehicles();
+    return vehicleService.getEnhancedVehicles();
   },
 
   async getTrips() {

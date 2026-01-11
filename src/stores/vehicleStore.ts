@@ -1,15 +1,16 @@
-// VehicleStore - Clean state management with raw API data
-// Standardized with Zustand persist middleware for consistency
+// VehicleStore - Clean state management for enhanced vehicles
+// Always stores enhanced vehicles with position predictions
+// Enhancement happens at service layer, store handles data management
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TranzyVehicleResponse } from '../types/rawTranzyApi';
+import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils';
 import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface VehicleStore {
-  // Raw API data - no transformations
-  vehicles: TranzyVehicleResponse[];
+  // Always stores enhanced vehicles (service handles enhancement)
+  vehicles: EnhancedVehicleData[];
   
   // Simple loading and error states
   loading: boolean;
@@ -21,6 +22,7 @@ interface VehicleStore {
   // Actions
   loadVehicles: () => Promise<void>;
   refreshData: () => Promise<void>;
+  updatePredictions: () => Promise<void>;
   clearVehicles: () => void;
   clearError: () => void;
   
@@ -40,7 +42,7 @@ const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.VEHICL
 export const useVehicleStore = create<VehicleStore>()(
   persist(
     (set, get) => ({
-      // Raw API data
+      // Always stores enhanced vehicles (service provides enhancement)
       vehicles: [],
       
       // Simple states
@@ -64,9 +66,9 @@ export const useVehicleStore = create<VehicleStore>()(
         set({ loading: true, error: null });
         
         try {
-          // Import service dynamically to avoid circular dependencies
+          // Service handles enhancement, store just manages the data
           const { vehicleService } = await import('../services/vehicleService');
-          const vehicles = await vehicleService.getVehicles();
+          const vehicles = await vehicleService.getVehicles(); // Service returns enhanced vehicles
           
           set({ 
             vehicles, 
@@ -85,7 +87,108 @@ export const useVehicleStore = create<VehicleStore>()(
         await refreshMethod(get, set);
       },
       
-      clearVehicles: () => set({ vehicles: [], error: null, lastUpdated: null }),
+      updatePredictions: async () => {
+        const currentState = get();
+        
+        // Only update if we have vehicles and they're not too old
+        if (currentState.vehicles.length === 0) {
+          return;
+        }
+        
+        // Don't update predictions if data is too stale (over 5 minutes)
+        const maxStaleTime = 5 * 60 * 1000; // 5 minutes
+        if (currentState.lastUpdated && (Date.now() - currentState.lastUpdated) > maxStaleTime) {
+          return;
+        }
+        
+        try {
+          // Get the original API data from enhanced vehicles
+          const originalVehicles = currentState.vehicles.map(vehicle => ({
+            ...vehicle,
+            // Restore original API coordinates for re-enhancement
+            latitude: vehicle.apiLatitude,
+            longitude: vehicle.apiLongitude
+          }));
+          
+          // Get cached data from stores instead of making API calls
+          const { useTripStore } = await import('./tripStore');
+          const { useStationStore } = await import('./stationStore');
+          const { useShapeStore } = await import('./shapeStore');
+          const { useStopTimeStore } = await import('./stopTimeStore');
+          
+          const tripStore = useTripStore.getState();
+          const stationStore = useStationStore.getState();
+          const shapeStore = useShapeStore.getState();
+          const stopTimeStore = useStopTimeStore.getState();
+          
+          // Use cached data if available, otherwise skip prediction update
+          if (tripStore.trips.length === 0 || stationStore.stops.length === 0) {
+            console.log('[VehicleStore] Skipping prediction update - missing cached trip/station data');
+            return;
+          }
+          
+          // Build route shapes from cached data
+          let routeShapes: Map<string, any> | undefined;
+          if (shapeStore.shapes.size > 0) {
+            routeShapes = new Map();
+            
+            // Create mapping from trip_id to route shape
+            for (const vehicle of originalVehicles) {
+              if (vehicle.trip_id) {
+                const trip = tripStore.trips.find(t => t.trip_id === vehicle.trip_id);
+                if (trip && trip.shape_id) {
+                  const shape = shapeStore.shapes.get(trip.shape_id);
+                  if (shape) {
+                    // Use the existing RouteShape directly
+                    routeShapes.set(vehicle.trip_id, shape);
+                  }
+                }
+              }
+            }
+          }
+          
+          // Build stop times by trip from cached data
+          const stopTimesByTrip = new Map();
+          if (stopTimeStore.stopTimes.length > 0) {
+            for (const stopTime of stopTimeStore.stopTimes) {
+              if (!stopTimesByTrip.has(stopTime.trip_id)) {
+                stopTimesByTrip.set(stopTime.trip_id, []);
+              }
+              stopTimesByTrip.get(stopTime.trip_id).push(stopTime);
+            }
+          }
+          
+          // Use cached stops
+          const stops = stationStore.stops;
+          
+          // Re-enhance with current timestamp using cached data
+          const { enhanceVehiclesWithPredictions } = await import('../utils/vehicle/vehicleEnhancementUtils');
+          const updatedVehicles = enhanceVehiclesWithPredictions(
+            originalVehicles,
+            routeShapes,
+            stopTimesByTrip,
+            stops
+          );
+          
+          // Update store with new predictions (keep same lastUpdated time)
+          set({ 
+            vehicles: updatedVehicles,
+            error: null
+          });
+          
+          console.log(`[VehicleStore] Updated predictions for ${updatedVehicles.length} vehicles using cached data`);
+          
+        } catch (error) {
+          console.warn('Failed to update predictions:', error);
+          // Don't set error state for prediction updates - they're non-critical
+        }
+      },
+      
+      clearVehicles: () => set({ 
+        vehicles: [], 
+        error: null, 
+        lastUpdated: null 
+      }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh

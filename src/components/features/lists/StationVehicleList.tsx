@@ -111,6 +111,7 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
           arrivalTime={arrivalTime}
           station={station}
           vehicleRefreshTimestamp={vehicleRefreshTimestamp}
+          allStationVehicles={vehicles}
         />
       ))}
       
@@ -141,9 +142,10 @@ interface VehicleCardProps {
   arrivalTime?: any;
   station: any;
   vehicleRefreshTimestamp?: number | null;
+  allStationVehicles: StationVehicle[]; // Keep this for the map dialog
 }
 
-const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp }) => {
+const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp, allStationVehicles }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   
@@ -157,7 +159,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
   const { stops } = useStationStore();
   
   // Get all data needed for the map dialog
-  const { vehicles } = useVehicleStore();
+  const { vehicles: allVehicles } = useVehicleStore();
   const { routes } = useRouteStore();
   
   // Get actual stops for this vehicle's trip
@@ -503,7 +505,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         onClose={() => setMapDialogOpen(false)}
         vehicleId={vehicle.id}
         targetStationId={station?.stop_id || null}
-        vehicles={vehicles}
+        vehicles={allStationVehicles}
         routes={routes}
         stations={stops}
         trips={trips}

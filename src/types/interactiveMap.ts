@@ -13,6 +13,7 @@ import type {
   TranzyStopTimeResponse 
 } from './rawTranzyApi';
 import type { RouteShape, ProjectionResult, DistanceResult } from './arrivalTime';
+import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils';
 
 // Re-export commonly used types
 export type { Coordinates, RouteShape };
@@ -169,7 +170,7 @@ export interface InteractiveTransitMapProps {
   mode: MapMode;
   
   // Data props based on mode
-  vehicles?: TranzyVehicleResponse[];
+  vehicles?: EnhancedVehicleData[];
   routes?: TranzyRouteResponse[];
   stations?: TranzyStopResponse[];
   routeShapes?: Map<string, RouteShape>;
@@ -200,7 +201,7 @@ export interface InteractiveTransitMapProps {
   onLoadingChange?: (loading: MapLoadingState) => void;
   
   // Event handlers
-  onVehicleClick?: (vehicle: TranzyVehicleResponse) => void;
+  onVehicleClick?: (vehicle: EnhancedVehicleData) => void;
   onStationClick?: (station: TranzyStopResponse) => void;
   onRouteClick?: (route: TranzyRouteResponse) => void;
 }
@@ -210,9 +211,9 @@ export interface InteractiveTransitMapProps {
 // ============================================================================
 
 export interface VehicleLayerProps {
-  vehicles: TranzyVehicleResponse[];
+  vehicles: EnhancedVehicleData[];
   routes: Map<number, TranzyRouteResponse>;
-  onVehicleClick?: (vehicle: TranzyVehicleResponse) => void;
+  onVehicleClick?: (vehicle: EnhancedVehicleData) => void;
   highlightedVehicleId?: number;
   colorStrategy?: VehicleColorStrategy;
   colorScheme: MapColorScheme;
@@ -247,6 +248,8 @@ export interface DebugLayerProps {
   debugData: DebugVisualizationData;
   visible: boolean;
   colorScheme: MapColorScheme;
+  // Vehicle prediction debug data
+  vehicles?: EnhancedVehicleData[];
 }
 
 export interface UserLocationLayerProps {

@@ -6,6 +6,7 @@
 
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import type { TranzyVehicleResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
+import type { EnhancedVehicleData } from '../vehicle/vehicleEnhancementUtils';
 import type { Coordinates, MapPerformanceConfig } from '../../types/interactiveMap';
 import { throttle } from '../core/performanceUtils';
 
@@ -16,7 +17,7 @@ import { throttle } from '../core/performanceUtils';
 export interface ClusterPoint {
   id: string;
   position: Coordinates;
-  data: TranzyVehicleResponse | TranzyStopResponse;
+  data: TranzyVehicleResponse | TranzyStopResponse | EnhancedVehicleData;
 }
 
 export interface Cluster {
@@ -163,12 +164,12 @@ export function useThrottledMapUpdate<T>(
  * Combines viewport filtering, clustering, and throttling
  */
 export function useOptimizedVehicles(
-  vehicles: TranzyVehicleResponse[],
+  vehicles: EnhancedVehicleData[],
   bounds: ViewportBounds | null,
   performanceConfig: MapPerformanceConfig,
   zoomLevel: number = 13
 ): {
-  optimizedVehicles: TranzyVehicleResponse[];
+  optimizedVehicles: EnhancedVehicleData[];
   clusters: Cluster[];
   shouldCluster: boolean;
 } {

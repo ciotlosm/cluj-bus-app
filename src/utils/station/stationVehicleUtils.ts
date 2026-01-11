@@ -1,6 +1,7 @@
 /**
  * Station Vehicle Utilities
  * Vehicle retrieval and station metadata management
+ * Supports both original and enhanced vehicle data with position predictions
  */
 
 import { 
@@ -10,6 +11,7 @@ import {
 import { calculateVehicleArrivalTime, sortVehiclesByArrival, isVehicleOffRoute } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
+import type { EnhancedVehicleData } from '../vehicle/vehicleEnhancementUtils';
 import type { ArrivalTimeResult, ArrivalStatus, RouteShape } from '../../types/arrivalTime';
 
 /**
@@ -65,11 +67,12 @@ function getStatusFromMessage(statusMessage: string): ArrivalStatus {
 
 /**
  * Get vehicles serving a specific station with arrival time calculations
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export const getStationVehicles = (
   stationId: number,
   stopTimes: TranzyStopTimeResponse[],
-  vehicles: TranzyVehicleResponse[],
+  vehicles: EnhancedVehicleData[], // Simplified: only accept enhanced vehicles
   allRoutes: TranzyRouteResponse[],
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
@@ -200,11 +203,12 @@ export const getStationVehicles = (
 
 /**
  * Add metadata (vehicles, route IDs) to a station
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export const addStationMetadata = (
   station: any,
   stopTimes: TranzyStopTimeResponse[],
-  vehicles: TranzyVehicleResponse[],
+  vehicles: EnhancedVehicleData[], // Simplified: only accept enhanced vehicles
   allRoutes: TranzyRouteResponse[],
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations

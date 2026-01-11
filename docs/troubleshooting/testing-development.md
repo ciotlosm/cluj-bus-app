@@ -1,5 +1,11 @@
 # Testing and Development Issues
 
+## React Component Issues
+
+**Problem**: Maximum update depth exceeded in AnimatedVehicleMarker **Solution**: Fixed circular useEffect dependencies causing infinite re-renders
+
+**Problem**: Leaflet map container reuse error during development **Solution**: Added unique key prop to MapContainer and proper cleanup in useEffect
+
 ## Long-Running Tests and Memory Issues
 
 ### Problem: JavaScript Heap Out of Memory

@@ -4,6 +4,7 @@
  */
 
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from './rawTranzyApi';
+import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils';
 
 /**
  * Constants for filtering behavior
@@ -14,7 +15,7 @@ export const SECONDARY_STATION_THRESHOLD = 100; // meters
  * Vehicle with route information for a station
  */
 export interface StationVehicle {
-  vehicle: TranzyVehicleResponse;
+  vehicle: EnhancedVehicleData; // Use enhanced vehicle data directly
   route: TranzyRouteResponse | null;
   trip: TranzyTripResponse | null; // NEW: trip information for headsign
   arrivalTime?: {

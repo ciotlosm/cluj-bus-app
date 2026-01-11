@@ -18,6 +18,9 @@ export const API_CONFIG = {
 // Auto-refresh cycle configuration
 export const AUTO_REFRESH_CYCLE = 60 * 1000; // 1 minute (configurable for future 2min)
 
+// Prediction update cycle configuration (independent of API refresh)
+export const PREDICTION_UPDATE_CYCLE = 30 * 1000; // 30 seconds
+
 // In-memory cache durations (when to fetch new data)
 export const IN_MEMORY_CACHE_DURATIONS = {
   // Vehicle data - matches auto-refresh cycle
@@ -54,7 +57,7 @@ export const PERFORMANCE = {
 export const ARRIVAL_CONFIG = {
   // Average bus speed for time calculations (km/h)
   // Reduced from 25 to 18 for more realistic urban conditions
-  AVERAGE_SPEED: 25,
+  AVERAGE_SPEED: 18,
   
   // Dwell time per intermediate stop (seconds)
   // Increased from 30 to 60 for more realistic stop times

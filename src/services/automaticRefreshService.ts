@@ -3,23 +3,27 @@
 
 import { useStatusStore } from '../stores/statusStore';
 import { manualRefreshService } from './manualRefreshService';
-import { AUTO_REFRESH_CYCLE } from '../utils/core/constants';
+import { AUTO_REFRESH_CYCLE, PREDICTION_UPDATE_CYCLE } from '../utils/core/constants';
 
 interface AutoRefreshConfig {
   vehicleRefreshInterval: number;
+  predictionUpdateInterval: number;
   enableBackgroundRefresh: boolean;
 }
 
 class AutomaticRefreshService {
   private vehicleRefreshTimer: NodeJS.Timeout | null = null;
+  private predictionUpdateTimer: NodeJS.Timeout | null = null;
   private networkStatusUnsubscribe: (() => void) | null = null;
   private isAppInForeground = true;
   private hasInitializedStartup = false;
   private config: AutoRefreshConfig;
+  private cleanupVisibilityHandlers: (() => void) | null = null;
 
   constructor(config: Partial<AutoRefreshConfig> = {}) {
     this.config = {
       vehicleRefreshInterval: AUTO_REFRESH_CYCLE,
+      predictionUpdateInterval: PREDICTION_UPDATE_CYCLE,
       enableBackgroundRefresh: false,
       ...config
     };
@@ -42,9 +46,10 @@ class AutomaticRefreshService {
     // Start background refresh immediately (components handle their own cache loading)
     this.startBackgroundRefresh();
 
-    // Start vehicle refresh timer if in foreground
+    // Start timers if in foreground
     if (this.isAppInForeground) {
       this.startVehicleRefreshTimer();
+      this.startPredictionUpdateTimer();
     }
   }
 
@@ -65,11 +70,6 @@ class AutomaticRefreshService {
       console.warn('Background refresh failed:', error);
     }
   }
-
-  /**
-   * Remove unused loadCachedDataOnStartup method
-   * Components now handle their own cache loading via Zustand persist
-   */
 
   /**
    * Start automatic vehicle refresh timer
@@ -112,6 +112,64 @@ class AutomaticRefreshService {
   }
 
   /**
+   * Start automatic prediction update timer
+   * Updates vehicle predictions every 30 seconds using existing API data
+   */
+  private startPredictionUpdateTimer(): void {
+    if (this.predictionUpdateTimer) {
+      return; // Timer already running
+    }
+
+    this.predictionUpdateTimer = setInterval(async () => {
+      // Only update predictions if app is in foreground
+      if (!this.isAppInForeground) {
+        return;
+      }
+
+      try {
+        // Update predictions without fetching new API data
+        await this.updatePredictionsOnly();
+      } catch (error) {
+        console.warn('Automatic prediction update failed:', error);
+      }
+    }, this.config.predictionUpdateInterval);
+  }
+
+  /**
+   * Stop automatic prediction update timer
+   */
+  private stopPredictionUpdateTimer(): void {
+    if (this.predictionUpdateTimer) {
+      clearInterval(this.predictionUpdateTimer);
+      this.predictionUpdateTimer = null;
+    }
+  }
+
+  /**
+   * Update vehicle predictions using existing cached data
+   * This recalculates predictions with current timestamp without API calls
+   */
+  private async updatePredictionsOnly(): Promise<void> {
+    try {
+      // Import vehicle store dynamically to avoid circular dependencies
+      const { useVehicleStore } = await import('../stores/vehicleStore');
+      const vehicleStore = useVehicleStore.getState();
+      
+      // Only update if we have cached vehicles
+      if (vehicleStore.vehicles.length === 0) {
+        return;
+      }
+
+      // Trigger prediction recalculation in the store
+      // This will use existing API data but recalculate predictions with current time
+      await vehicleStore.updatePredictions();
+      
+    } catch (error) {
+      console.warn('Failed to update predictions:', error);
+    }
+  }
+
+  /**
    * Setup app visibility change handling
    * Requirement 7.4: Handle app visibility changes for timer management
    */
@@ -139,8 +197,6 @@ class AutomaticRefreshService {
     };
   }
 
-  private cleanupVisibilityHandlers: (() => void) | null = null;
-
   /**
    * Handle app visibility changes
    */
@@ -161,8 +217,9 @@ class AutomaticRefreshService {
    * Handle app coming to foreground
    */
   private async onAppForeground(): Promise<void> {
-    // Start vehicle refresh timer
+    // Start timers
     this.startVehicleRefreshTimer();
+    this.startPredictionUpdateTimer();
 
     // Check if any data is stale and refresh if needed
     await this.refreshStaleDataOnForeground();
@@ -172,9 +229,10 @@ class AutomaticRefreshService {
    * Handle app going to background
    */
   private onAppBackground(): void {
-    // Stop vehicle refresh timer to save battery
+    // Stop timers to save battery
     if (!this.config.enableBackgroundRefresh) {
       this.stopVehicleRefreshTimer();
+      this.stopPredictionUpdateTimer();
     }
   }
 
@@ -226,25 +284,28 @@ class AutomaticRefreshService {
   }
 
   /**
-   * Manually trigger a refresh and reset the automatic timer
+   * Manually trigger a refresh and reset the automatic timers
    * This should be called by the manual refresh button to keep both systems in sync
    */
   async triggerManualRefresh(): Promise<void> {
     try {
-      // Stop current timer
+      // Stop current timers
       this.stopVehicleRefreshTimer();
+      this.stopPredictionUpdateTimer();
       
       // Trigger the same refresh logic used by automatic refresh
       await manualRefreshService.refreshData();
       
-      // Restart timer (resets the countdown)
+      // Restart timers (resets the countdown)
       if (this.isAppInForeground) {
         this.startVehicleRefreshTimer();
+        this.startPredictionUpdateTimer();
       }
     } catch (error) {
-      // Restart timer even if refresh failed
+      // Restart timers even if refresh failed
       if (this.isAppInForeground) {
         this.startVehicleRefreshTimer();
+        this.startPredictionUpdateTimer();
       }
       throw error; // Re-throw for button to handle
     }
@@ -254,7 +315,7 @@ class AutomaticRefreshService {
    * Check if automatic refresh is currently active
    */
   isActive(): boolean {
-    return this.vehicleRefreshTimer !== null;
+    return this.vehicleRefreshTimer !== null || this.predictionUpdateTimer !== null;
   }
 
   /**
@@ -271,12 +332,21 @@ class AutomaticRefreshService {
     const oldConfig = this.config;
     this.config = { ...this.config, ...newConfig };
 
-    // Restart timer if interval changed
+    // Restart timers if intervals changed
     if (oldConfig.vehicleRefreshInterval !== this.config.vehicleRefreshInterval) {
       if (this.vehicleRefreshTimer) {
         this.stopVehicleRefreshTimer();
         if (this.isAppInForeground) {
           this.startVehicleRefreshTimer();
+        }
+      }
+    }
+    
+    if (oldConfig.predictionUpdateInterval !== this.config.predictionUpdateInterval) {
+      if (this.predictionUpdateTimer) {
+        this.stopPredictionUpdateTimer();
+        if (this.isAppInForeground) {
+          this.startPredictionUpdateTimer();
         }
       }
     }
@@ -288,6 +358,7 @@ class AutomaticRefreshService {
   destroy(): void {
     // Stop timers
     this.stopVehicleRefreshTimer();
+    this.stopPredictionUpdateTimer();
 
     // Cleanup network status subscription
     if (this.networkStatusUnsubscribe) {

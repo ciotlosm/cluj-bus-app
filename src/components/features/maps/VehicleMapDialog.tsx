@@ -5,7 +5,7 @@
  */
 
 import type { FC } from 'react';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Dialog, 
   DialogTitle, 
@@ -42,6 +42,7 @@ import type {
   TranzyTripResponse,
   TranzyStopTimeResponse
 } from '../../../types/rawTranzyApi';
+import type { StationVehicle } from '../../../types/stationFilter';
 
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -56,10 +57,21 @@ interface MapControllerProps {
 
 const MapController: FC<MapControllerProps> = ({ onMapReady }) => {
   const map = useMap();
+  const hasInitialized = useRef(false);
   
   useEffect(() => {
-    onMapReady(map);
+    if (map && !hasInitialized.current) {
+      hasInitialized.current = true;
+      onMapReady(map);
+    }
   }, [map, onMapReady]);
+  
+  // Reset initialization flag when component unmounts
+  useEffect(() => {
+    return () => {
+      hasInitialized.current = false;
+    };
+  }, []);
   
   return null;
 };
@@ -69,7 +81,7 @@ interface VehicleMapDialogProps {
   onClose: () => void;
   vehicleId: number | null;
   targetStationId?: number | null; // NEW: The station where the user clicked the vehicle
-  vehicles: TranzyVehicleResponse[];
+  vehicles: StationVehicle[];
   routes: TranzyRouteResponse[];
   stations: TranzyStopResponse[];
   trips: TranzyTripResponse[];
@@ -100,8 +112,15 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   const [currentMode, setCurrentMode] = useState<MapMode>(MapMode.VEHICLE_TRACKING);
   const mapRef = useRef<LeafletMap | null>(null);
   
+  // Generate a stable key for the map that changes when dialog opens/closes or vehicle changes
+  const mapKey = useMemo(() => {
+    if (!open || !vehicleId) return 'map-closed';
+    return `vehicle-map-${vehicleId}-${Date.now()}`;
+  }, [open, vehicleId]);
+  
   // Find the target vehicle and trip
-  const targetVehicle = vehicleId ? vehicles.find(v => v.id === vehicleId) : null;
+  const targetStationVehicle = vehicleId ? vehicles.find(sv => sv.vehicle.id === vehicleId) : null;
+  const targetVehicle = targetStationVehicle?.vehicle || null; // Already enhanced
   const vehicleTrip = targetVehicle ? trips.find(trip => trip.trip_id === targetVehicle.trip_id) : null;
 
   // Handle map instance ready
@@ -145,6 +164,10 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
     if (!open) {
       setRouteShapes(new Map());
       setLoadingShapes(false);
+      // Clear map reference when dialog closes - but don't dispose the map
+      if (mapRef.current) {
+        mapRef.current = null;
+      }
     }
   }, [open]);
 
@@ -154,14 +177,14 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   }
 
   // Simple data filtering - moved after state declarations
-  const filteredVehicles = [targetVehicle];
-  const filteredRoutes = targetVehicle.route_id 
+  const filteredVehicles = targetVehicle ? [targetVehicle] : [];
+  const filteredRoutes = targetVehicle?.route_id 
     ? routes.filter(route => route.route_id === targetVehicle.route_id)
     : [];
   
   // Filter stations for this trip
   let filteredStations = stations;
-  if (targetVehicle.trip_id) {
+  if (targetVehicle?.trip_id) {
     const tripStopTimes = stopTimes.filter(st => st.trip_id === targetVehicle.trip_id);
     if (tripStopTimes.length > 0) {
       const tripStationIds = new Set(tripStopTimes.map(st => st.stop_id));
@@ -407,7 +430,7 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       disableRestoreFocus={true}
       disableEnforceFocus={false}
       disableAutoFocus={false}
-      keepMounted={false}
+      keepMounted={false} // Ensure complete unmounting when closed
     >
       <DialogTitle 
         id="vehicle-map-dialog-title"
@@ -472,6 +495,7 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
 
           {/* Custom map without automatic viewport management */}
           <MapContainer
+            key={mapKey} // Use stable key that changes only when needed
             center={[mapCenter.lat, mapCenter.lon]}
             zoom={15}
             style={{ height: '100%', width: '100%' }}
@@ -528,6 +552,7 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
                 debugData={debugData}
                 visible={true}
                 colorScheme={DEFAULT_MAP_COLORS}
+                vehicles={filteredVehicles}
               />
             )}
           </MapContainer>

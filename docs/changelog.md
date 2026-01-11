@@ -2,6 +2,19 @@
 
 ## Recent Updates (January 2025)
 
+### January 10, 2025 - Smooth Vehicle Animation & Prediction Updates
+- **🎯 FEATURE**: Added 30-second prediction updates independent of 60-second API refresh
+- **🎬 ANIMATION**: Vehicles now smoothly animate between positions on the map
+- **⚡ PERFORMANCE**: Prediction updates use cached data without additional API calls
+- **🔧 TIMING**: API refresh (60s) and prediction updates (30s) run independently with configurable constants
+
+### January 10, 2025 - Vehicle Position Prediction System
+- **🎯 FEATURE**: Added vehicle position prediction based on timestamp age and route movement simulation
+- **⚡ ACCURACY**: Vehicles now show predicted current positions instead of stale GPS coordinates
+- **🗺️ INTEGRATION**: All arrival calculations and map displays automatically use predicted positions
+- **🔧 DEBUG**: Enhanced debug layer shows both API (grey) and predicted (blue) positions with movement lines
+- **🧹 ARCHITECTURE**: Service-layer enhancement maintains backward compatibility with existing code
+
 ### January 9, 2025 - Manual Refresh UX Improvements
 - **🎯 UX FIX**: Manual refresh now shows progress even when data is fresh (skipped stores)
 - **⚡ FEEDBACK**: Added 150ms delay for skipped stores so users see something happened
