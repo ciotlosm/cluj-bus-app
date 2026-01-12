@@ -7,6 +7,8 @@ import { projectPointToShape } from './distanceUtils.ts';
 import { isProjectionBetween, calculateSegmentConfidence } from './geometryUtils.ts';
 import { calculateDistance } from '../location/distanceUtils.ts';
 import { getTripStopSequence } from './tripUtils.ts';
+import { CALCULATION_TOLERANCES } from '../core/constants';
+import { CONFIDENCE_LEVELS, ARRIVAL_METHODS } from '../core/stringConstants';
 import type {
   TranzyVehicleResponse,
   TranzyStopResponse,
@@ -36,8 +38,8 @@ export function estimateVehicleProgressWithShape(
     return {
       projectionPoint: vehicleProjection.closestPoint,
       segmentBetweenStops: null,
-      confidence: 'low',
-      method: 'route_projection'
+      confidence: CONFIDENCE_LEVELS.LOW,
+      method: ARRIVAL_METHODS.ROUTE_PROJECTION
     };
   }
   
@@ -89,8 +91,8 @@ export function estimateVehicleProgressWithShape(
         previousStop: bestSegment.previousStop,
         nextStop: bestSegment.nextStop
       },
-      confidence: bestSegment.confidence > 0.7 ? 'high' : 'medium',
-      method: 'route_projection'
+      confidence: bestSegment.confidence > 0.7 ? CONFIDENCE_LEVELS.HIGH : CONFIDENCE_LEVELS.MEDIUM,
+      method: ARRIVAL_METHODS.ROUTE_PROJECTION
     };
   }
   
@@ -98,8 +100,8 @@ export function estimateVehicleProgressWithShape(
   return {
     projectionPoint: vehicleProjection.closestPoint,
     segmentBetweenStops: null,
-    confidence: 'low',
-    method: 'route_projection'
+    confidence: CONFIDENCE_LEVELS.LOW,
+    method: ARRIVAL_METHODS.ROUTE_PROJECTION
   };
 }
 
@@ -120,8 +122,8 @@ export function estimateVehicleProgressWithStops(
     return {
       projectionPoint: vehiclePosition,
       segmentBetweenStops: null,
-      confidence: 'low',
-      method: 'stop_segments'
+      confidence: CONFIDENCE_LEVELS.LOW,
+      method: ARRIVAL_METHODS.STOP_SEGMENTS
     };
   }
   
@@ -166,7 +168,7 @@ export function estimateVehicleProgressWithStops(
       const segmentLength = calculateDistance(stopAPosition, stopBPosition);
       
       // If sum of distances is much larger than segment length, vehicle might be off-route
-      const tolerance = 0.5; // 50% tolerance
+      const tolerance = CALCULATION_TOLERANCES.SEGMENT_DISTANCE;
       const isReasonablyClose = bestSegment.totalDistance <= segmentLength * (1 + tolerance);
       
       return {
@@ -175,8 +177,8 @@ export function estimateVehicleProgressWithStops(
           previousStop: bestSegment.previousStop,
           nextStop: bestSegment.nextStop
         },
-        confidence: isReasonablyClose ? 'medium' : 'low',
-        method: 'stop_segments'
+        confidence: isReasonablyClose ? CONFIDENCE_LEVELS.MEDIUM : CONFIDENCE_LEVELS.LOW,
+        method: ARRIVAL_METHODS.STOP_SEGMENTS
       };
     }
   }
@@ -185,7 +187,7 @@ export function estimateVehicleProgressWithStops(
   return {
     projectionPoint: vehiclePosition,
     segmentBetweenStops: null,
-    confidence: 'low',
-    method: 'stop_segments'
+    confidence: CONFIDENCE_LEVELS.LOW,
+    method: ARRIVAL_METHODS.STOP_SEGMENTS
   };
 }

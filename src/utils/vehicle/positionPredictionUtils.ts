@@ -64,11 +64,19 @@ export function predictVehiclePosition(
   // Parse timestamp and calculate age
   const timestampAge = calculateTimestampAge(vehicle.timestamp);
   
-  console.log(`[Prediction] Vehicle ${vehicle.id}: timestamp age = ${timestampAge}ms, has route shape = ${!!routeShape}, has stop times = ${!!stopTimes}, has stops = ${!!stops}`);
+  // Only log for debugging in development, much less frequently
+  if (process.env.NODE_ENV === 'development') {
+    if (!globalThis._predictionLogCounter) globalThis._predictionLogCounter = 0;
+    globalThis._predictionLogCounter++;
+    
+    // Log only every 100th prediction to reduce noise
+    if (globalThis._predictionLogCounter % 100 === 0) {
+      console.log(`[Prediction] Processed ${globalThis._predictionLogCounter} predictions. Latest: Vehicle ${vehicle.id}, age=${timestampAge}ms`);
+    }
+  }
   
   // If timestamp age is zero or negative, return original coordinates
   if (timestampAge <= 0) {
-    console.log(`[Prediction] Vehicle ${vehicle.id}: timestamp age <= 0, using original coordinates`);
     return {
       predictedPosition: { lat: vehicle.latitude, lon: vehicle.longitude },
       metadata: {
@@ -84,7 +92,6 @@ export function predictVehiclePosition(
 
   // If no route shape available, fall back to API coordinates
   if (!routeShape || !stopTimes || !stops || !vehicle.trip_id) {
-    console.log(`[Prediction] Vehicle ${vehicle.id}: missing data - routeShape: ${!!routeShape}, stopTimes: ${!!stopTimes}, stops: ${!!stops}, trip_id: ${vehicle.trip_id}`);
     return {
       predictedPosition: { lat: vehicle.latitude, lon: vehicle.longitude },
       metadata: {

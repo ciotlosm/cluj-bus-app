@@ -70,9 +70,11 @@ export function calculateSpeedAdjustedTime(
 /**
  * Calculate confidence-adjusted time range
  */
+import { CONFIDENCE_LEVELS } from '../core/stringConstants';
+
 export function calculateTimeRange(
   estimatedTime: number,
-  confidence: 'high' | 'medium' | 'low'
+  confidence: typeof CONFIDENCE_LEVELS[keyof typeof CONFIDENCE_LEVELS]
 ): { min: number; max: number; estimate: number } {
   let variabilityFactor: number;
   

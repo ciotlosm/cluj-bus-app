@@ -1,6 +1,9 @@
 // Vehicle Format Utilities
 // Helper functions for formatting vehicle data display
 
+import { TIME_THRESHOLDS } from '../core/constants';
+import { CONFIDENCE_LEVELS } from '../core/stringConstants';
+
 /**
  * Format vehicle timestamp for display
  * 
@@ -36,12 +39,12 @@ export function formatTimeAgo(timestamp: number): string {
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
   
-  if (diffSeconds < 30) return 'Just now';
-  if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+  if (diffSeconds < TIME_THRESHOLDS.JUST_NOW_SECONDS) return 'Just now';
+  if (diffSeconds < TIME_THRESHOLDS.SECONDS_DISPLAY_MAX) return `${diffSeconds} seconds ago`;
   if (diffMinutes === 1) return '1 minute ago';
-  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffMinutes < TIME_THRESHOLDS.MINUTES_DISPLAY_MAX) return `${diffMinutes} minutes ago`;
   if (diffHours === 1) return '1 hour ago';
-  if (diffHours < 24) return `${diffHours} hours ago`;
+  if (diffHours < TIME_THRESHOLDS.HOURS_DISPLAY_MAX) return `${diffHours} hours ago`;
   if (diffDays === 1) return '1 day ago';
   return `${diffDays} days ago`;
 }
@@ -108,6 +111,6 @@ export function getAccessibilityFeatures(
 export function formatArrivalTime(arrivalResult?: { statusMessage: string; confidence: string }): string {
   if (!arrivalResult) return '';
   
-  const confidenceIndicator = arrivalResult.confidence === 'low' ? ' (est.)' : '';
+  const confidenceIndicator = arrivalResult.confidence === CONFIDENCE_LEVELS.LOW ? ' (est.)' : '';
   return `${arrivalResult.statusMessage}${confidenceIndicator}`;
 }
