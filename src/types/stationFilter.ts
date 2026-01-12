@@ -5,6 +5,7 @@
 
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from './rawTranzyApi';
 import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils';
+import { type ConfidenceLevel } from '../utils/core/stringConstants';
 
 /**
  * Constants for filtering behavior
@@ -20,8 +21,9 @@ export interface StationVehicle {
   trip: TranzyTripResponse | null; // NEW: trip information for headsign
   arrivalTime?: {
     statusMessage: string;
-    confidence: 'high' | 'medium' | 'low';
+    confidence: ConfidenceLevel;
     estimatedMinutes: number;
+    calculationMethod: string; // NEW: preserve calculation method for debugging
   }; // NEW: arrival time information
 }
 

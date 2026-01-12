@@ -6,6 +6,7 @@
 
 import type { Coordinates } from '../utils/location/distanceUtils.ts';
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse } from './rawTranzyApi.ts';
+import { CONFIDENCE_LEVELS, ARRIVAL_METHODS, type ConfidenceLevel, type ArrivalMethod } from '../utils/core/stringConstants';
 
 // Re-export types for use in arrival modules
 export type { Coordinates, TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse };
@@ -39,8 +40,8 @@ export interface ShapeSegment {
 
 export interface DistanceResult {
   totalDistance: number;
-  method: 'route_shape' | 'stop_segments';
-  confidence: 'high' | 'medium' | 'low';
+  method: ArrivalMethod;
+  confidence: ConfidenceLevel;
 }
 
 // ============================================================================
@@ -53,8 +54,8 @@ export interface VehicleProgressEstimation {
     previousStop: TranzyStopTimeResponse | null; // null when before first stop
     nextStop: TranzyStopTimeResponse;
   } | null; // null when after last stop or off-route
-  confidence: 'high' | 'medium' | 'low';
-  method: 'route_projection' | 'stop_segments' | 'off_route' | 'fallback';
+  confidence: ConfidenceLevel;
+  method: ArrivalMethod;
 }
 
 export interface ArrivalTimeResult {
@@ -62,8 +63,8 @@ export interface ArrivalTimeResult {
   estimatedMinutes: number; // Always positive - actual time value
   status: ArrivalStatus;    // Determines sort order and display
   statusMessage: string;
-  confidence: 'high' | 'medium' | 'low';
-  calculationMethod: 'route_shape' | 'stop_segments';
+  confidence: ConfidenceLevel;
+  calculationMethod: ArrivalMethod;
   rawDistance?: number;
   debugInfo?: {
     vehicleToShapeDistance: number;

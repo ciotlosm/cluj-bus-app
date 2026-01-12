@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils';
-import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
+import { IN_MEMORY_CACHE_DURATIONS, STALENESS_THRESHOLDS } from '../utils/core/constants';
 import { createRefreshMethod, createFreshnessChecker } from '../utils/core/storeUtils';
 
 interface VehicleStore {
@@ -96,7 +96,7 @@ export const useVehicleStore = create<VehicleStore>()(
         }
         
         // Don't update predictions if data is too stale (over 5 minutes)
-        const maxStaleTime = 5 * 60 * 1000; // 5 minutes
+        const maxStaleTime = STALENESS_THRESHOLDS.VEHICLES;
         if (currentState.lastUpdated && (Date.now() - currentState.lastUpdated) > maxStaleTime) {
           return;
         }
@@ -176,7 +176,12 @@ export const useVehicleStore = create<VehicleStore>()(
             error: null
           });
           
-          console.log(`[VehicleStore] Updated predictions for ${updatedVehicles.length} vehicles using cached data`);
+          console.log(`[VehicleStore] Updated predictions for ${updatedVehicles.length} vehicles using cached data at ${new Date().toLocaleTimeString()}`);
+          
+          // Reset prediction counter for cleaner logging
+          if (globalThis._predictionLogCounter) {
+            globalThis._predictionLogCounter = 0;
+          }
           
         } catch (error) {
           console.warn('Failed to update predictions:', error);

@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createFreshnessChecker } from '../utils/core/storeUtils';
+import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 
 interface FavoritesStore {
   // Core state - Simple array for easy serialization
@@ -34,7 +35,7 @@ interface FavoritesStore {
 }
 
 // Create shared utilities for this store
-const freshnessChecker = createFreshnessChecker(24 * 60 * 60 * 1000); // 24 hours - favorites don't expire often
+const freshnessChecker = createFreshnessChecker(IN_MEMORY_CACHE_DURATIONS.FAVORITES);
 
 export const useFavoritesStore = create<FavoritesStore>()(
   persist(
@@ -103,7 +104,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
       },
       
       // Performance helper: check if data is fresh
-      isDataFresh: (maxAgeMs = 24 * 60 * 60 * 1000) => {
+      isDataFresh: (maxAgeMs = IN_MEMORY_CACHE_DURATIONS.FAVORITES) => {
         return freshnessChecker(get, maxAgeMs);
       },
       

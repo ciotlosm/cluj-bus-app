@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { LocationPreferences, PermissionState, LocationAccuracy } from '../types/location';
+import type { LocationPreferences, PermissionState, LocationAccuracyLevel } from '../types/location';
 import { DEFAULT_LOCATION_PREFERENCES, DEFAULT_LOCATION_ACCURACY } from '../types/location';
 import { handleLocationError } from '../services/error';
 
@@ -21,7 +21,7 @@ interface LocationStore {
   
   // Configuration - persisted preferences
   enableAutoLocation: boolean;
-  locationAccuracy: LocationAccuracy;
+  locationAccuracy: LocationAccuracyLevel;
   cacheTimeout: number;
   distanceThreshold: number;
   

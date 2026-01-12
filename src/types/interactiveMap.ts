@@ -24,8 +24,7 @@ export type { Coordinates, RouteShape };
 
 export enum MapMode {
   VEHICLE_TRACKING = 'vehicle_tracking',
-  ROUTE_OVERVIEW = 'route_overview', 
-  STATION_CENTERED = 'station_centered'
+  ROUTE_OVERVIEW = 'route_overview'
 }
 
 // ============================================================================

@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RouteShape } from '../types/arrivalTime.ts';
-import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants.ts';
+import { IN_MEMORY_CACHE_DURATIONS, CALCULATION_TOLERANCES } from '../utils/core/constants.ts';
 import { compressData, decompressData, getCompressionRatio, formatSize } from '../utils/core/compressionUtils.ts';
 import { 
   createRefreshMethod, 
@@ -204,7 +204,7 @@ export const useShapeStore = create<ShapeStore>()(
               const ratio = getCompressionRatio(jsonString, compressed);
               const isCompressed = compressed.startsWith('gzip:');
               
-              if (isCompressed && ratio > 1.1) {
+              if (isCompressed && ratio > CALCULATION_TOLERANCES.COMPRESSION_RATIO_THRESHOLD) {
                 console.log(`📦 Shape data compressed: ${formatSize(originalSize)} → ${formatSize(compressedSize)} (${ratio.toFixed(1)}x reduction)`);
               }
             }
