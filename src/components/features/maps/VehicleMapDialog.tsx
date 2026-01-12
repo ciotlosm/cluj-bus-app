@@ -21,6 +21,7 @@ import type { Map as LeafletMap } from 'leaflet';
 import { VehicleLayer } from './VehicleLayer';
 import { RouteShapeLayer } from './RouteShapeLayer';
 import { StationLayer } from './StationLayer';
+import { UserLocationLayer } from './UserLocationLayer';
 import { DebugLayer } from './DebugLayer';
 import { MapControls } from './MapControls';
 import { MapMode, VehicleColorStrategy } from '../../../types/interactiveMap';
@@ -29,8 +30,9 @@ import { projectPointToShape, calculateDistanceAlongShape } from '../../../utils
 import { determineNextStop } from '../../../utils/arrival/vehiclePositionUtils';
 import { 
   calculateRouteOverviewViewport,
-  calculateStationCenteredViewport,
-  calculateVehicleTrackingViewport
+  calculateVehicleTrackingViewport,
+  calculateComprehensiveViewport,
+  calculateVehicleComprehensiveViewport
 } from '../../../utils/maps/viewportUtils';
 import type { RouteShape, ProjectionResult } from '../../../types/arrivalTime';
 import type { DebugVisualizationData } from '../../../types/interactiveMap';
@@ -43,6 +45,8 @@ import type {
   TranzyStopTimeResponse
 } from '../../../types/rawTranzyApi';
 import type { StationVehicle } from '../../../types/stationFilter';
+import { useLocationStore } from '../../../stores/locationStore';
+import { HeaderControls } from '../../layout/HeaderControls';
 
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -106,7 +110,17 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   const [showRouteShapes, setShowRouteShapes] = useState(true);
   const [showStations, setShowStations] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
-  const [showUserLocation, setShowUserLocation] = useState(false);
+  const [showUserLocation, setShowUserLocation] = useState(true);
+  
+  // Get user location from store
+  const { currentPosition, requestLocation } = useLocationStore();
+  
+  // Request location when user location is enabled
+  useEffect(() => {
+    if (showUserLocation && !currentPosition) {
+      requestLocation();
+    }
+  }, [showUserLocation, currentPosition, requestLocation]);
   
   // Map mode and viewport management
   const [currentMode, setCurrentMode] = useState<MapMode>(MapMode.VEHICLE_TRACKING);
@@ -115,7 +129,7 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   // Generate a stable key for the map that changes when dialog opens/closes or vehicle changes
   const mapKey = useMemo(() => {
     if (!open || !vehicleId) return 'map-closed';
-    return `vehicle-map-${vehicleId}-${Date.now()}`;
+    return `vehicle-map-${vehicleId}`;
   }, [open, vehicleId]);
   
   // Find the target vehicle and trip
@@ -126,6 +140,34 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   // Handle map instance ready
   const handleMapReady = (map: LeafletMap) => {
     mapRef.current = map;
+    
+    // Set initial comprehensive viewport that includes target station, vehicle, and next stop
+    if (targetVehicle) {
+      const targetStation = targetStationId 
+        ? stations.find(s => s.stop_id === targetStationId) 
+        : null;
+      
+      const viewport = calculateVehicleComprehensiveViewport(
+        { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
+        targetStation,
+        nextStop,
+        map.getContainer().clientWidth,
+        map.getContainer().clientHeight
+      );
+      
+      if (viewport && viewport.bounds) {
+        // Use fitBounds for comprehensive initial view
+        const bounds: [[number, number], [number, number]] = [
+          [viewport.bounds.south, viewport.bounds.west],
+          [viewport.bounds.north, viewport.bounds.east]
+        ];
+        map.fitBounds(bounds, { 
+          padding: [20, 20],
+          maxZoom: 16
+        });
+      }
+      // If comprehensive viewport fails, the MapContainer's initial center/zoom will be used
+    }
   };
 
   // Load route shapes when dialog opens and we have trip data
@@ -250,13 +292,36 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
     
     setCurrentMode(newMode);
     
+    // Get target station for comprehensive viewport calculations
+    const targetStation = targetStationId 
+      ? stations.find(s => s.stop_id === targetStationId) 
+      : null;
+    
     switch (newMode) {
       case MapMode.VEHICLE_TRACKING: {
-        const viewport = calculateVehicleTrackingViewport(
+        // Use comprehensive viewport that includes target station, vehicle, and next stop
+        const viewport = calculateVehicleComprehensiveViewport(
           { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
-          mapRef.current.getZoom()
+          targetStation,
+          nextStop,
+          mapRef.current.getContainer().clientWidth,
+          mapRef.current.getContainer().clientHeight
         );
-        mapRef.current.setView([viewport.center.lat, viewport.center.lon], viewport.zoom);
+        
+        if (viewport && viewport.bounds) {
+          // Use fitBounds for comprehensive view
+          const bounds: [[number, number], [number, number]] = [
+            [viewport.bounds.south, viewport.bounds.west],
+            [viewport.bounds.north, viewport.bounds.east]
+          ];
+          mapRef.current.fitBounds(bounds, { 
+            padding: [20, 20],
+            maxZoom: 16
+          });
+        } else {
+          // Fallback to simple vehicle centering
+          mapRef.current.setView([targetVehicle.latitude, targetVehicle.longitude], 15);
+        }
         break;
       }
       
@@ -277,22 +342,6 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
             padding: [20, 20], // 20px padding instead of percentage
             maxZoom: 16 // Prevent over-zooming
           });
-        }
-        break;
-      }
-      
-      case MapMode.STATION_CENTERED: {
-        // Use target station if available, otherwise use first filtered station
-        const stationToCenter = targetStationId 
-          ? stations.find(s => s.stop_id === targetStationId) || filteredStations[0]
-          : filteredStations[0];
-          
-        if (stationToCenter) {
-          const viewport = calculateStationCenteredViewport(
-            stationToCenter,
-            mapRef.current.getZoom()
-          );
-          mapRef.current.setView([viewport.center.lat, viewport.center.lon], viewport.zoom);
         }
         break;
       }
@@ -410,6 +459,7 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       return null;
     }
   })() : null;
+
   // Center map on vehicle location
   const mapCenter = { lat: targetVehicle.latitude, lon: targetVehicle.longitude };
 
@@ -462,14 +512,19 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
           </Typography>
         </Box>
         
-        <IconButton
-          edge="end"
-          color="inherit"
-          onClick={onClose}
-          aria-label="close"
-        >
-          <CloseIcon />
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Reusable header controls */}
+          <HeaderControls />
+          
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={onClose}
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
       
       <DialogContent sx={{ p: 0, height: '100%' }}>
@@ -536,12 +591,34 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
               />
             )}
 
-            {/* Station layer - only trip stations */}
+            {/* Station layer - all trip stations when enabled */}
             {showStations && (
               <StationLayer
                 stations={filteredStations}
                 targetStationId={targetStationId}
                 nextStationId={nextStop?.stop_id}
+                colorScheme={DEFAULT_MAP_COLORS}
+              />
+            )}
+
+            {/* Important stations layer - always show target and next station */}
+            {!showStations && (
+              <StationLayer
+                stations={filteredStations.filter(station => 
+                  station.stop_id === targetStationId || 
+                  station.stop_id === nextStop?.stop_id
+                )}
+                targetStationId={targetStationId}
+                nextStationId={nextStop?.stop_id}
+                colorScheme={DEFAULT_MAP_COLORS}
+              />
+            )}
+
+            {/* User location layer */}
+            {showUserLocation && (
+              <UserLocationLayer
+                position={currentPosition}
+                showAccuracyCircle={true}
                 colorScheme={DEFAULT_MAP_COLORS}
               />
             )}

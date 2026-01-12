@@ -350,8 +350,38 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         {arrivalTime && (
           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
             {(() => {
-              // Generate debug info for low confidence arrivals
-              const debugInfo = arrivalTime?.confidence === 'low' 
+              // Generate enhanced debug info for all arrivals to help troubleshoot 15-second updates
+              const enhancedDebugInfo = {
+                // Basic arrival info
+                confidence: arrivalTime?.confidence || 'unknown',
+                status: arrivalTime?.statusMessage || 'unknown',
+                arrivalText: formatArrivalTime(arrivalTime),
+                
+                // Timing details for troubleshooting
+                vehicleTimestamp: vehicle.timestamp,
+                vehicleAge: vehicle.timestamp ? `${Math.round((Date.now() - new Date(vehicle.timestamp).getTime()) / 1000)}s ago` : 'unknown',
+                currentTime: new Date().toLocaleTimeString(),
+                
+                // Vehicle position details
+                vehicleId: vehicle.label || vehicle.id, // Use label first (user-facing number), fallback to ID
+                vehicleSpeed: vehicle.speed ? `${vehicle.speed} km/h` : 'stopped',
+                vehiclePosition: `${vehicle.latitude?.toFixed(6)}, ${vehicle.longitude?.toFixed(6)}`,
+                
+                // Prediction calculation details
+                method: arrivalTime?.calculationMethod || 'unknown',
+                estimatedArrival: arrivalTime?.estimatedMinutes !== undefined 
+                  ? new Date(Date.now() + (arrivalTime.estimatedMinutes * 60 * 1000)).toLocaleTimeString()
+                  : 'unknown',
+                estimatedMinutes: arrivalTime?.estimatedMinutes !== undefined 
+                  ? `${arrivalTime.estimatedMinutes} min`
+                  : 'unknown',
+                
+                // Store refresh info
+                lastRefresh: vehicleRefreshTimestamp ? new Date(vehicleRefreshTimestamp).toLocaleTimeString() : 'unknown'
+              };
+              
+              // Generate debug info for low confidence arrivals (existing functionality)
+              const lowConfidenceDebugInfo = arrivalTime?.confidence === 'low' 
                 ? generateConfidenceDebugInfo({ vehicle, route, trip, arrivalTime }) 
                 : null;
               
@@ -366,18 +396,41 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                     fontWeight: 'medium',
                     fontSize: { xs: '0.7rem', sm: '0.75rem' },
                     '& .MuiChip-icon': { color: 'inherit' },
-                    cursor: debugInfo ? 'help' : 'default'
+                    cursor: 'help' // Always show cursor since we always have tooltip now
                   }}
                 />
               );
 
-              // Only show tooltip for low confidence arrivals (or all in development)
-              const shouldShowTooltip = debugInfo || (process.env.NODE_ENV === 'development' && arrivalTime);
+              // Always show enhanced tooltip for troubleshooting 15-second updates
+              const shouldShowTooltip = true;
               
               if (shouldShowTooltip) {
-                const tooltipContent = debugInfo 
-                  ? formatConfidenceDebugTooltip(debugInfo)
-                  : `Development Mode\nConfidence: ${arrivalTime?.confidence}\nStatus: ${arrivalTime?.statusMessage}`;
+                // Create comprehensive tooltip content
+                let tooltipContent = '';
+                
+                // Primary info (always shown)
+                tooltipContent += `🚌 Vehicle ${enhancedDebugInfo.vehicleId}\n`;
+                tooltipContent += `📍 ${enhancedDebugInfo.vehiclePosition}\n`;
+                tooltipContent += `⚡ ${enhancedDebugInfo.vehicleSpeed}\n`;
+                tooltipContent += `⏰ ${enhancedDebugInfo.arrivalText}\n\n`;
+                
+                // Timing details for troubleshooting
+                tooltipContent += `🕐 Current: ${enhancedDebugInfo.currentTime}\n`;
+                tooltipContent += `📡 Vehicle Data: ${enhancedDebugInfo.vehicleAge}\n`;
+                tooltipContent += `🔄 Last Refresh: ${enhancedDebugInfo.lastRefresh}\n`;
+                tooltipContent += `🎯 Est. Arrival: ${enhancedDebugInfo.estimatedArrival}\n`;
+                tooltipContent += `⏱️ Est. Minutes: ${enhancedDebugInfo.estimatedMinutes}\n\n`;
+                
+                // Prediction details
+                tooltipContent += `📊 Confidence: ${enhancedDebugInfo.confidence}\n`;
+                tooltipContent += `🔧 Method: ${enhancedDebugInfo.method}\n`;
+                tooltipContent += `📋 Status: ${enhancedDebugInfo.status}\n`;
+                
+                // Add low confidence debug info if available
+                if (lowConfidenceDebugInfo) {
+                  tooltipContent += `\n--- Low Confidence Details ---\n`;
+                  tooltipContent += formatConfidenceDebugTooltip(lowConfidenceDebugInfo);
+                }
                 
                 return (
                   <Tooltip
@@ -387,11 +440,12 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                     slotProps={{
                       tooltip: {
                         sx: {
-                          fontSize: '0.75rem',
-                          maxWidth: 400,
+                          fontSize: '0.7rem',
+                          maxWidth: 500,
                           whiteSpace: 'pre-line',
                           fontFamily: 'monospace',
-                          backgroundColor: 'rgba(0, 0, 0, 0.9)'
+                          backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                          lineHeight: 1.3
                         }
                       }
                     }}
