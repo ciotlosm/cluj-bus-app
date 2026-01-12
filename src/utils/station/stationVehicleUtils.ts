@@ -8,6 +8,7 @@ import {
   getCachedStationRouteMapping, 
   getRouteIdsForStation 
 } from '../route/routeStationMapping';
+import { CONFIDENCE_LEVELS, ARRIVAL_METHODS } from '../core/stringConstants';
 import { calculateVehicleArrivalTime, sortVehiclesByArrival, isVehicleOffRoute } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
@@ -29,7 +30,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
         status: getStatusFromMessage(stationVehicle.arrivalTime.statusMessage), // Convert message back to status
         statusMessage: stationVehicle.arrivalTime.statusMessage,
         confidence: stationVehicle.arrivalTime.confidence,
-        calculationMethod: 'route_shape' as const, // Default value
+        calculationMethod: stationVehicle.arrivalTime.calculationMethod || 'unknown',
         originalVehicle: stationVehicle
       } as ArrivalTimeResult & { originalVehicle: StationVehicle };
     } else {
@@ -39,8 +40,8 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
         estimatedMinutes: 999, // High value for sorting to end
         status: 'off_route' as const, // Lowest priority status
         statusMessage: '',
-        confidence: 'low' as const,
-        calculationMethod: 'route_shape' as const,
+        confidence: CONFIDENCE_LEVELS.LOW,
+        calculationMethod: ARRIVAL_METHODS.ROUTE_SHAPE,
         originalVehicle: stationVehicle
       } as ArrivalTimeResult & { originalVehicle: StationVehicle };
     }
@@ -140,6 +141,7 @@ export const getStationVehicles = (
           statusMessage: string;
           confidence: 'high' | 'medium' | 'low';
           estimatedMinutes: number;
+          calculationMethod: string;
         } | undefined;
         
         if (targetStop && stops.length > 0) {
@@ -162,7 +164,8 @@ export const getStationVehicles = (
             arrivalTime = {
               statusMessage: arrivalResult.statusMessage,
               confidence: arrivalResult.confidence,
-              estimatedMinutes: arrivalResult.estimatedMinutes
+              estimatedMinutes: arrivalResult.estimatedMinutes,
+              calculationMethod: arrivalResult.calculationMethod
             };
           } catch (error) {
             console.warn('Failed to calculate arrival time for vehicle:', vehicle.id, error);

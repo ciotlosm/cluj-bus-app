@@ -35,15 +35,8 @@ function getVehicleStatus(vehicle: StationVehicle): ArrivalStatus {
   const statusMessage = vehicle.arrivalTime.statusMessage;
   if (statusMessage.includes('At stop')) return 'at_stop';
   if (statusMessage.includes('Departed')) return 'departed';
-  if (statusMessage.includes('minutes')) return 'in_minutes';
+  if (statusMessage.includes('minute')) return 'in_minutes'; // Changed from 'minutes' to 'minute' to catch both singular and plural
   return 'off_route';
-}
-
-/**
- * Get trip identifier for grouping vehicles
- */
-function getTripId(vehicle: StationVehicle): string {
-  return vehicle.trip?.trip_id || `no-trip-${vehicle.vehicle.id}`;
 }
 
 /**
@@ -70,7 +63,7 @@ export function selectBestVehiclePerStatus(
 
 /**
  * Group vehicles for display optimization
- * Implements trip-based grouping with status-based selection
+ * Implements status-priority grouping with trip diversity within each status
  */
 export function groupVehiclesForDisplay(
   vehicles: StationVehicle[],
@@ -85,85 +78,82 @@ export function groupVehiclesForDisplay(
     };
   }
   
-  // Apply grouping logic: maximum one vehicle per trip per status
-  const tripStatusGroups = new Map<string, Map<ArrivalStatus, StationVehicle[]>>();
+  // Step 1: Group vehicles by status and sort within each status by arrival time
+  const byStatus: Record<ArrivalStatus, StationVehicle[]> = {
+    'at_stop': [],
+    'in_minutes': [],
+    'departed': [],
+    'off_route': []
+  };
   
-  // Group vehicles by trip and status
   for (const vehicle of vehicles) {
-    const tripId = getTripId(vehicle);
     const status = getVehicleStatus(vehicle);
-    
-    if (!tripStatusGroups.has(tripId)) {
-      tripStatusGroups.set(tripId, new Map());
-    }
-    
-    const tripGroups = tripStatusGroups.get(tripId)!;
-    if (!tripGroups.has(status)) {
-      tripGroups.set(status, []);
-    }
-    
-    tripGroups.get(status)!.push(vehicle);
+    byStatus[status].push(vehicle);
   }
   
-  // Select best vehicle from each trip-status group
-  const selectedVehicles: StationVehicle[] = [];
-  const hiddenVehicles: StationVehicle[] = [];
-  
-  for (const [tripId, statusGroups] of tripStatusGroups) {
-    for (const [status, vehiclesInGroup] of statusGroups) {
-      // Limit to MAX_VEHICLES_PER_TRIP_STATUS per group
-      const maxPerGroup = VEHICLE_DISPLAY.MAX_VEHICLES_PER_TRIP_STATUS;
-      
-      if (vehiclesInGroup.length <= maxPerGroup) {
-        // All vehicles fit in the limit
-        selectedVehicles.push(...vehiclesInGroup);
-      } else {
-        // Select best vehicles and mark rest as hidden
-        const sortedVehicles = vehiclesInGroup.sort((a, b) => {
-          const aMinutes = a.arrivalTime?.estimatedMinutes ?? 999;
-          const bMinutes = b.arrivalTime?.estimatedMinutes ?? 999;
-          return aMinutes - bMinutes;
-        });
-        
-        selectedVehicles.push(...sortedVehicles.slice(0, maxPerGroup));
-        hiddenVehicles.push(...sortedVehicles.slice(maxPerGroup));
-      }
-    }
-  }
-  
-  // Limit total displayed vehicles to threshold
-  let finalDisplayed: StationVehicle[];
-  let finalHidden: StationVehicle[];
-  
-  if (selectedVehicles.length <= options.maxVehicles) {
-    finalDisplayed = selectedVehicles;
-    finalHidden = hiddenVehicles;
-  } else {
-    // Sort selected vehicles by arrival priority before limiting
-    const sortedSelected = selectedVehicles.sort((a, b) => {
-      const aStatus = getVehicleStatus(a);
-      const bStatus = getVehicleStatus(b);
+  // Sort vehicles within each status group by arrival time (earliest first)
+  for (const status of Object.keys(byStatus) as ArrivalStatus[]) {
+    byStatus[status].sort((a, b) => {
       const aMinutes = a.arrivalTime?.estimatedMinutes ?? 999;
       const bMinutes = b.arrivalTime?.estimatedMinutes ?? 999;
-      
-      // Sort by status priority first, then by time
-      const statusOrder = { 'at_stop': 0, 'in_minutes': 1, 'departed': 2, 'off_route': 3 };
-      const statusDiff = statusOrder[aStatus] - statusOrder[bStatus];
-      
-      if (statusDiff !== 0) {
-        return statusDiff;
-      }
-      
       return aMinutes - bMinutes;
     });
+  }
+  
+  // Step 2: Apply trip diversity within each status category
+  // Select up to MAX_VEHICLES_PER_TRIP_STATUS vehicles per trip per status
+  const selectedByStatus: Record<ArrivalStatus, StationVehicle[]> = {
+    'at_stop': [],
+    'in_minutes': [],
+    'departed': [],
+    'off_route': []
+  };
+  
+  for (const [status, vehiclesInStatus] of Object.entries(byStatus) as [ArrivalStatus, StationVehicle[]][]) {
+    const tripCounts = new Map<string, number>();
     
-    finalDisplayed = sortedSelected.slice(0, options.maxVehicles);
-    finalHidden = [...sortedSelected.slice(options.maxVehicles), ...hiddenVehicles];
+    for (const vehicle of vehiclesInStatus) {
+      const tripId = vehicle.trip?.trip_id || `no-trip-${vehicle.vehicle.id}`;
+      const currentCount = tripCounts.get(tripId) || 0;
+      
+      if (currentCount < VEHICLE_DISPLAY.MAX_VEHICLES_PER_TRIP_STATUS) {
+        selectedByStatus[status].push(vehicle);
+        tripCounts.set(tripId, currentCount + 1);
+      }
+    }
+  }
+  
+  // Step 3: Fill slots with status priority (at_stop → in_minutes → departed → off_route)
+  const finalDisplayed: StationVehicle[] = [];
+  const allHidden: StationVehicle[] = [];
+  
+  // Priority order for filling slots
+  const statusPriority: ArrivalStatus[] = ['at_stop', 'in_minutes', 'departed', 'off_route'];
+  
+  for (const status of statusPriority) {
+    const selectedForStatus = selectedByStatus[status];
+    const allForStatus = byStatus[status];
+    
+    // Add selected vehicles for this status
+    for (const vehicle of selectedForStatus) {
+      if (finalDisplayed.length < options.maxVehicles) {
+        finalDisplayed.push(vehicle);
+      } else {
+        allHidden.push(vehicle);
+      }
+    }
+    
+    // Add remaining vehicles from this status to hidden
+    for (const vehicle of allForStatus) {
+      if (!selectedForStatus.includes(vehicle)) {
+        allHidden.push(vehicle);
+      }
+    }
   }
   
   return {
     displayed: finalDisplayed,
-    hidden: finalHidden,
+    hidden: allHidden,
     groupingApplied: true
   };
 }
