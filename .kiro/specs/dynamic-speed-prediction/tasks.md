@@ -105,8 +105,8 @@ This implementation plan creates a dynamic speed prediction system that enhances
     - **Property 11: Dynamic Speed Recalculation**
     - **Validates: Requirements 5.4**
 
-- [ ] 9. Implement speed display enhancements
-  - [ ] 9.1 Create SpeedDisplayFormatter class in speedPredictionUtils.ts
+- [x] 9. Implement speed display enhancements
+  - [x] 9.1 Create SpeedDisplayFormatter class in speedPredictionUtils.ts
     - Implement `formatSpeedDisplay()` method with km/h formatting and status logic
     - Add confidence indication for low-confidence predictions
     - Handle "At Stop" status for stationary vehicles near stations
@@ -135,8 +135,8 @@ This implementation plan creates a dynamic speed prediction system that enhances
     - **Property 15: Graceful Error Handling**
     - **Validates: Requirements 8.3, 8.4**
 
-- [ ] 11. Add utility functions and summary reporting
-  - [ ] 11.1 Add speed prediction utility functions to vehicleEnhancementUtils.ts
+- [x] 11. Add utility functions and summary reporting
+  - [x] 11.1 Add speed prediction utility functions to vehicleEnhancementUtils.ts
     - Implement `hasSpeedPredictionApplied()` function
     - Implement `getSpeedPredictionSummary()` function for monitoring
     - Add debugging and analysis utilities
@@ -148,8 +148,8 @@ This implementation plan creates a dynamic speed prediction system that enhances
   - Test error handling and fallback scenarios
   - Ask the user if questions arise.
 
-- [ ] 13. Update arrival calculation integration
-  - [ ] 13.1 Update arrival calculation utilities to use predicted speeds
+- [x] 13. Update arrival calculation integration
+  - [x] 13.1 Update arrival calculation utilities to use predicted speeds
     - Modify `src/utils/arrival/timeUtils.ts` to use `predictionMetadata.predictedSpeed`
     - Update movement simulation in `src/utils/vehicle/positionPredictionUtils.ts`
     - Ensure backward compatibility with existing arrival calculations

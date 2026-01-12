@@ -57,19 +57,27 @@ export interface EnhancedVehicleData extends TranzyVehicleResponse {
 /**
  * Enhance a single vehicle with position prediction
  * Preserves original API coordinates and adds predicted position
+ * Enhanced to support dynamic speed prediction integration (Requirements 5.1, 5.3)
  */
 export function enhanceVehicleWithPrediction(
   vehicle: TranzyVehicleResponse,
   routeShape?: RouteShape,
   stopTimes?: TranzyStopTimeResponse[],
-  stops?: TranzyStopResponse[]
+  stops?: TranzyStopResponse[],
+  existingEnhancement?: { predictionMetadata?: { predictedSpeed?: number } }
 ): EnhancedVehicleData {
   // Preserve original API coordinates
   const apiLatitude = vehicle.latitude;
   const apiLongitude = vehicle.longitude;
   
-  // Calculate predicted position
-  const predictionResult = predictVehiclePosition(vehicle, routeShape, stopTimes, stops);
+  // Calculate predicted position with enhanced speed support (Requirements 5.1, 5.3)
+  const predictionResult = predictVehiclePosition(
+    vehicle, 
+    routeShape, 
+    stopTimes, 
+    stops, 
+    existingEnhancement
+  );
   
   // Create enhanced vehicle data
   const enhancedVehicle: EnhancedVehicleData = {
@@ -236,6 +244,103 @@ export function enhanceVehiclesWithSpeedPredictions(
  */
 export function hasSpeedPredictionApplied(vehicle: EnhancedVehicleData): boolean {
   return vehicle.predictionMetadata?.speedApplied === true;
+}
+
+/**
+ * Enhance a single vehicle with both speed and position predictions
+ * Applies speed prediction first, then uses it for enhanced position prediction
+ * This is the recommended function for full dynamic prediction integration (Requirements 5.1, 5.3, 5.4)
+ */
+export function enhanceVehicleWithFullPrediction(
+  vehicle: TranzyVehicleResponse,
+  nearbyVehicles: TranzyVehicleResponse[],
+  stationDensityCenter: Coordinates,
+  routeShape?: RouteShape,
+  stopTimes?: TranzyStopTimeResponse[],
+  stops?: TranzyStopResponse[]
+): EnhancedVehicleData {
+  // Step 1: Apply speed prediction first
+  const speedPredictor = new SpeedPredictor();
+  const speedPredictionData = speedPredictor.predictSpeed(
+    vehicle,
+    nearbyVehicles,
+    stationDensityCenter
+  );
+  
+  // Step 2: Create temporary enhanced vehicle with speed prediction for position calculation
+  const vehicleWithSpeed = {
+    predictionMetadata: {
+      predictedSpeed: speedPredictionData.predictedSpeed,
+      speedMethod: speedPredictionData.speedMethod,
+      speedConfidence: speedPredictionData.speedConfidence
+    }
+  };
+  
+  // Step 3: Apply position prediction using the predicted speed (Requirements 5.1, 5.3)
+  const enhancedVehicle = enhanceVehicleWithPrediction(
+    vehicle,
+    routeShape,
+    stopTimes,
+    stops,
+    vehicleWithSpeed
+  );
+  
+  // Step 4: Merge complete speed prediction data into final result
+  return {
+    ...enhancedVehicle,
+    predictionMetadata: {
+      ...enhancedVehicle.predictionMetadata,
+      // Merge complete speed prediction fields
+      predictedSpeed: speedPredictionData.predictedSpeed,
+      speedMethod: speedPredictionData.speedMethod,
+      speedConfidence: speedPredictionData.speedConfidence,
+      speedApplied: speedPredictionData.speedApplied,
+      apiSpeed: speedPredictionData.apiSpeed,
+      nearbyVehicleCount: speedPredictionData.nearbyVehicleCount,
+      nearbyAverageSpeed: speedPredictionData.nearbyAverageSpeed,
+      distanceToCenter: speedPredictionData.distanceToCenter,
+      locationBasedSpeed: speedPredictionData.locationBasedSpeed,
+      speedCalculationTimeMs: speedPredictionData.speedCalculationTimeMs
+    }
+  };
+}
+
+/**
+ * Enhance multiple vehicles with full prediction (speed + position)
+ * Applies both speed and position predictions in the correct order
+ * This is the recommended function for batch processing with full dynamic prediction
+ */
+export function enhanceVehiclesWithFullPredictions(
+  vehicles: TranzyVehicleResponse[],
+  stationDensityCenter: Coordinates,
+  routeShapes?: Map<string, RouteShape>,
+  stopTimesByTrip?: Map<string, TranzyStopTimeResponse[]>,
+  stops?: TranzyStopResponse[]
+): EnhancedVehicleData[] {
+  return vehicles.map(vehicle => {
+    // Get route shape for this vehicle's trip
+    let routeShape: RouteShape | undefined;
+    if (routeShapes && vehicle.trip_id) {
+      // Try to find route shape by trip_id or route_id
+      routeShape = routeShapes.get(vehicle.trip_id) || 
+                   (vehicle.route_id ? routeShapes.get(vehicle.route_id.toString()) : undefined);
+    }
+    
+    // Get stop times for this vehicle's trip
+    let stopTimes: TranzyStopTimeResponse[] | undefined;
+    if (stopTimesByTrip && vehicle.trip_id) {
+      stopTimes = stopTimesByTrip.get(vehicle.trip_id);
+    }
+    
+    return enhanceVehicleWithFullPrediction(
+      vehicle,
+      vehicles, // Use all vehicles as nearby vehicles for speed prediction
+      stationDensityCenter,
+      routeShape,
+      stopTimes,
+      stops
+    );
+  });
 }
 
 /**

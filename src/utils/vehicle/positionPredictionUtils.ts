@@ -54,12 +54,14 @@ export interface RouteMovementData {
 
 /**
  * Calculate predicted vehicle position based on timestamp age and route movement
+ * Enhanced to support dynamic speed prediction (Requirements 5.1, 5.3, 5.4)
  */
 export function predictVehiclePosition(
   vehicle: TranzyVehicleResponse,
   routeShape?: RouteShape,
   stopTimes?: TranzyStopTimeResponse[],
-  stops?: TranzyStopResponse[]
+  stops?: TranzyStopResponse[],
+  enhancedVehicle?: { predictionMetadata?: { predictedSpeed?: number } }
 ): PositionPredictionResult {
   // Parse timestamp and calculate age
   const timestampAge = calculateTimestampAge(vehicle.timestamp);
@@ -128,7 +130,7 @@ export function predictVehiclePosition(
       };
     }
 
-    // Simulate movement along route
+    // Simulate movement along route with enhanced speed support (Requirements 5.1, 5.3)
     const movementData: RouteMovementData = {
       routeShape,
       tripStopTimes,
@@ -136,7 +138,7 @@ export function predictVehiclePosition(
       vehicleProjection
     };
 
-    const simulation = simulateMovementAlongRoute(timestampAge, movementData);
+    const simulation = simulateMovementAlongRoute(timestampAge, movementData, enhancedVehicle);
     
     return {
       predictedPosition: simulation.endPosition,
@@ -197,19 +199,22 @@ export function calculateTimestampAge(timestamp: string): number {
 
 /**
  * Simulate vehicle movement along route shape based on elapsed time
+ * Enhanced to support dynamic speed prediction (Requirements 5.1, 5.3, 5.4)
  * Reuses existing vehicle progress estimation for station detection
  */
 export function simulateMovementAlongRoute(
   elapsedTimeMs: number,
-  movementData: RouteMovementData
+  movementData: RouteMovementData,
+  vehicle?: { predictionMetadata?: { predictedSpeed?: number } }
 ): MovementSimulation {
   const { routeShape, tripStopTimes, stops, vehicleProjection } = movementData;
   
   // Convert elapsed time to seconds for calculations
   const elapsedTimeSeconds = elapsedTimeMs / 1000;
   
-  // Calculate how far the vehicle should have moved
-  const averageSpeedMs = (ARRIVAL_CONFIG.AVERAGE_SPEED * 1000) / 3600; // km/h to m/s
+  // Use predicted speed if available, otherwise fall back to average speed (Requirement 5.1)
+  const effectiveSpeed = vehicle?.predictionMetadata?.predictedSpeed || ARRIVAL_CONFIG.AVERAGE_SPEED;
+  const averageSpeedMs = (effectiveSpeed * 1000) / 3600; // km/h to m/s
   let remainingDistance = elapsedTimeSeconds * averageSpeedMs;
   
   // Start from vehicle's current projected position

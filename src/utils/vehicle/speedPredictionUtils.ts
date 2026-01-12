@@ -15,6 +15,7 @@ import { SPEED_PREDICTION_CONFIG, ARRIVAL_CONFIG } from '../core/constants';
 import type { TranzyVehicleResponse, TranzyStopResponse, TranzyStopTimeResponse } from '../../types/rawTranzyApi';
 import type { RouteShape, ProjectionResult } from '../../types/arrivalTime';
 import type { MovementSimulation, RouteMovementData } from './positionPredictionUtils';
+import type { EnhancedVehicleData } from './vehicleEnhancementUtils';
 
 // ============================================================================
 // Speed Prediction Interfaces
@@ -436,6 +437,136 @@ export class SpeedPredictor {
     this.setCachedDensityCenter(agencyId, result);
     
     return result.center;
+  }
+}
+
+// ============================================================================
+// Speed Display Formatter
+// ============================================================================
+
+/**
+ * Props interface for speed display formatting
+ */
+export interface SpeedDisplayProps {
+  vehicle: EnhancedVehicleData;
+  proximityThreshold: number; // meters to station for "At Stop" status
+  showConfidence?: boolean;
+}
+
+/**
+ * State interface for speed display result
+ */
+export interface SpeedDisplayState {
+  displayText: string;
+  displayValue: number | null;
+  status: 'moving' | 'at_stop' | 'stationary';
+  confidence: 'high' | 'medium' | 'low' | 'very_low';
+  uncertaintyIndicator?: string;
+}
+
+/**
+ * Speed Display Formatter Class
+ * Handles UI presentation of speed predictions and vehicle status using unified prediction metadata
+ * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
+ */
+export class SpeedDisplayFormatter {
+  /**
+   * Format speed display for UI presentation
+   * @param vehicle Enhanced vehicle data with speed prediction metadata
+   * @param isNearStation Whether vehicle is near a station (within proximity threshold)
+   * @param showConfidence Whether to show confidence indicators
+   * @returns Formatted speed display state
+   */
+  formatSpeedDisplay(
+    vehicle: EnhancedVehicleData,
+    isNearStation: boolean,
+    showConfidence: boolean = false
+  ): SpeedDisplayState {
+    // Get speed prediction data from unified metadata
+    const predictionMetadata = vehicle.predictionMetadata;
+    const predictedSpeed = predictionMetadata?.predictedSpeed || 0;
+    const speedConfidence = predictionMetadata?.speedConfidence || 'very_low';
+    
+    // Determine vehicle status (Requirements 6.1, 6.2)
+    const status = this.determineVehicleStatus(predictedSpeed, isNearStation);
+    
+    // Format display based on status
+    let displayText: string;
+    let displayValue: number | null;
+    
+    if (status === 'at_stop') {
+      // Requirement 6.2: Show "At Stop" for stationary vehicles near stations
+      displayText = 'At Stop';
+      displayValue = null;
+    } else if (status === 'stationary') {
+      // Stationary but not near station
+      displayText = 'Stationary';
+      displayValue = 0;
+    } else {
+      // Requirement 6.1, 6.3: Show speed in km/h with one decimal place
+      displayText = this.formatSpeed(predictedSpeed);
+      displayValue = predictedSpeed;
+    }
+    
+    // Add confidence indication if requested (Requirement 6.4)
+    let uncertaintyIndicator: string | undefined;
+    if (showConfidence && (speedConfidence === 'low' || speedConfidence === 'very_low')) {
+      uncertaintyIndicator = this.getConfidenceIndicator(speedConfidence);
+    }
+    
+    return {
+      displayText,
+      displayValue,
+      status,
+      confidence: speedConfidence,
+      uncertaintyIndicator
+    };
+  }
+  
+  /**
+   * Format speed value with km/h unit and one decimal place precision
+   * @param speed Speed in km/h
+   * @returns Formatted speed string
+   */
+  private formatSpeed(speed: number): string {
+    // Requirement 6.3: km/h with one decimal place precision
+    return `${speed.toFixed(1)} km/h`;
+  }
+  
+  /**
+   * Get confidence indicator text for low-confidence predictions
+   * @param confidence Speed confidence level
+   * @returns Confidence indicator string
+   */
+  private getConfidenceIndicator(confidence: string): string {
+    switch (confidence) {
+      case 'very_low':
+        return '⚠️ Estimated';
+      case 'low':
+        return '~ Approximate';
+      default:
+        return '';
+    }
+  }
+  
+  /**
+   * Determine vehicle status based on speed and proximity to station
+   * @param speed Predicted speed in km/h
+   * @param isNearStation Whether vehicle is near a station
+   * @returns Vehicle status classification
+   */
+  private determineVehicleStatus(
+    speed: number, 
+    isNearStation: boolean
+  ): 'moving' | 'at_stop' | 'stationary' {
+    // Check if vehicle is stationary (below speed threshold)
+    if (speed <= SPEED_PREDICTION_CONFIG.SPEED_THRESHOLD) {
+      // Requirement 6.2: "At Stop" status for stationary vehicles near stations
+      return isNearStation ? 'at_stop' : 'stationary';
+    }
+    
+    // Vehicle is moving
+    return 'moving';
   }
 }
 
