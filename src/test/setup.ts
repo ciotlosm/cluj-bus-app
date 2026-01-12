@@ -2,6 +2,7 @@
 // This file is imported before all test files
 
 import '@testing-library/jest-dom';
+import { MOCK_DATA } from './testConstants';
 
 // Mock browser APIs that might not be available in test environment
 Object.defineProperty(window, 'matchMedia', {
@@ -25,9 +26,9 @@ Object.defineProperty(navigator, 'geolocation', {
     getCurrentPosition: (success: PositionCallback) => {
       success({
         coords: {
-          latitude: 44.4268,
-          longitude: 26.1025,
-          accuracy: 10,
+          latitude: MOCK_DATA.COORDINATES.BUCHAREST.lat,
+          longitude: MOCK_DATA.COORDINATES.BUCHAREST.lon,
+          accuracy: MOCK_DATA.ACCURACY,
           altitude: null,
           altitudeAccuracy: null,
           heading: null,

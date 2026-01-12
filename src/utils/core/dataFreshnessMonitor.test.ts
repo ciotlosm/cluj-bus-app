@@ -286,7 +286,7 @@ describe('DataFreshnessMonitor', () => {
     });
 
     it('should have correct auto refresh intervals', () => {
-      expect(AUTO_REFRESH_CYCLE).toBe(60 * 1000); // 1 minute
+      expect(AUTO_REFRESH_CYCLE).toBe(120 * 1000); // 2 minutes
     });
   });
 });
