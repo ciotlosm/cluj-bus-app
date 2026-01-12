@@ -61,8 +61,9 @@ export {
   calculateBounds,
   addBoundsPadding,
   calculateRouteOverviewViewport,
-  calculateStationCenteredViewport,
   calculateVehicleTrackingViewport,
+  calculateComprehensiveViewport,
+  calculateVehicleComprehensiveViewport,
 } from './viewportUtils';
 
 export type {
