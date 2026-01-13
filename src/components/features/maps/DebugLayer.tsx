@@ -176,6 +176,10 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       {(() => {
         // Check if projection data is available
         if (vehicleProjection?.segmentIndex === undefined || stationProjection?.segmentIndex === undefined) {
+          console.log('Debug: Missing projection data', {
+            vehicleSegmentIndex: vehicleProjection?.segmentIndex,
+            stationSegmentIndex: stationProjection?.segmentIndex
+          });
           return null;
         }
         
@@ -187,15 +191,27 @@ export const DebugLayer: FC<DebugLayerProps> = ({
         const vehiclePassed = vehicleSegmentIndex > stationSegmentIndex;
         const segmentSpan = Math.abs(stationSegmentIndex - vehicleSegmentIndex);
         
+        console.log('Debug: Route segment data', {
+          vehicleSegmentIndex,
+          stationSegmentIndex,
+          vehiclePassed,
+          segmentSpan,
+          routeShapeSegments: routeShape.segments.length
+        });
+        
         // Skip if the route would be too long (performance protection)
-        if (segmentSpan > 400) {
+        if (segmentSpan > 500) {
+          console.log('Debug: Segment span too large', segmentSpan);
           return null; // Truly excessive, would be too long to display meaningfully
         }
         
         // Skip if vehicle and station are on the same segment (too close)
         if (segmentSpan === 0) {
+          console.log('Debug: Vehicle and station on same segment');
           return null;
         }
+        
+        console.log('Debug: Building route points for grey segment');
         
         // Build route points following the actual route shape
         const routePoints: [number, number][] = [];

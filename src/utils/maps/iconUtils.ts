@@ -210,16 +210,20 @@ export function createUserLocationIcon(options: IconOptions): Icon {
   
   const svgContent = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="#fff" stroke-width="2"/>
-      <circle cx="${size/2}" cy="${size/2}" r="3" fill="#fff"/>
+      <!-- Pin body (teardrop shape) -->
+      <circle cx="${size/2}" cy="${size/2 - 2}" r="${size/2 - 3}" fill="${color}" stroke="#fff" stroke-width="2"/>
+      <!-- Pin point -->
+      <path d="M${size/2} ${size/2 + 4} L${size/2 - 3} ${size/2 - 1} L${size/2 + 3} ${size/2 - 1} Z" fill="${color}" stroke="#fff" stroke-width="1"/>
+      <!-- Center dot -->
+      <circle cx="${size/2}" cy="${size/2 - 2}" r="2" fill="#fff"/>
     </svg>
   `;
 
   return new Icon({
     iconUrl: `data:image/svg+xml;base64,${btoa(svgContent)}`,
     iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
+    iconAnchor: [size/2, size/2 + 4], // Anchor at the bottom point of the pin
+    popupAnchor: [0, -size/2 - 4], // Popup appears above the pin
   });
 }
 

@@ -2,6 +2,10 @@
 
 ## Recent Updates (January 2025)
 
+### January 13, 2025 - Fixed User Location Accuracy Circle Display
+- **🎯 BUG FIX**: User location accuracy circle now displays correctly on map
+- **🔧 SOLUTION**: Fixed type mismatch - VehicleMapContent now receives full GeolocationPosition with accuracy data
+
 ### January 13, 2025 - Fixed Next Station Logic: Used Existing Methods
 - **🔧 FIX**: Replaced duplicate next stop logic with existing `estimateVehicleProgressWithStops` and `getTripStopSequence` methods
 - **🗑️ CLEANUP**: Deleted duplicate `nextStopUtils.ts` file and used proper existing vehicle progress estimation

@@ -51,11 +51,16 @@ export const UserLocationLayer: FC<UserLocationLayerProps> = ({
               <strong>Coordinates:</strong> {latitude.toFixed(6)}, {longitude.toFixed(6)}
             </div>
             
-            {accuracy && (
+            {accuracy !== null && accuracy !== undefined && (
               <div style={{ marginBottom: '6px' }}>
                 <strong>Accuracy:</strong> ±{Math.round(accuracy)}m
+                {accuracy === 0 && <span style={{ color: 'orange' }}> (Very precise)</span>}
               </div>
             )}
+            
+            <div style={{ marginBottom: '6px', fontSize: '12px', color: '#666' }}>
+              <strong>Debug:</strong> accuracy={accuracy}, type={typeof accuracy}
+            </div>
             
             <div style={{ 
               fontSize: '12px', 
@@ -71,16 +76,16 @@ export const UserLocationLayer: FC<UserLocationLayerProps> = ({
       </Marker>
 
       {/* Optional accuracy circle */}
-      {showAccuracyCircle && accuracy && (
+      {showAccuracyCircle && accuracy !== null && accuracy !== undefined && accuracy >= 0 && (
         <Circle
           center={[latitude, longitude]}
-          radius={accuracy}
+          radius={accuracy === 0 ? 10 : accuracy} // Show 10m circle for 0 accuracy (very precise GPS)
           pathOptions={{
             color: colorScheme.stations.userLocation,
             fillColor: colorScheme.stations.userLocation,
-            fillOpacity: 0.1,
-            weight: 2,
-            opacity: 0.5,
+            fillOpacity: accuracy === 0 ? 0.05 : 0.1, // Lighter for precise GPS
+            weight: accuracy === 0 ? 1 : 2,
+            opacity: accuracy === 0 ? 0.3 : 0.5,
           }}
         />
       )}

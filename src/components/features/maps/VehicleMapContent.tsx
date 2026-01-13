@@ -16,6 +16,7 @@ import { DebugLayer } from './DebugLayer';
 import { MapControls } from './MapControls';
 import { MapMode, VehicleColorStrategy } from '../../../types/map';
 import { projectPointToShape } from '../../../utils/arrival/distanceUtils';
+import { calculateDistance } from '../../../utils/location/distanceUtils';
 import { estimateVehicleProgressWithStops } from '../../../utils/arrival/vehicleProgressUtils';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import type { RouteShape } from '../../../types/arrivalTime';
@@ -78,7 +79,7 @@ interface VehicleMapContentProps {
   showUserLocation: boolean;
   debugMode: boolean;
   currentMode: MapMode;
-  currentPosition: { lat: number; lon: number } | null;
+  currentPosition: GeolocationPosition | null;
   mapKey: string;
   mapCenter: { lat: number; lon: number };
   onMapReady: (map: LeafletMap) => void;
@@ -215,13 +216,41 @@ export const VehicleMapContent: FC<VehicleMapContentProps> = ({
         }
       }
 
+      // Calculate projections and distance - this is what was missing!
+      const vehicleProjection = projectPointToShape(vehiclePosition, routeShape);
+      const stationProjection = projectPointToShape(targetStationPosition, routeShape);
+      
+      // Calculate the actual route distance using existing logic
+      const directDistance = calculateDistance(vehiclePosition, targetStationPosition);
+      
+      // Get next station info if available
+      const vehicleProgress = estimateVehicleProgressWithStops(targetVehicle, routeShape, stations);
+      const nextStationInfo = vehicleProgress?.segmentBetweenStops?.nextStop ? {
+        stop_id: vehicleProgress.segmentBetweenStops.nextStop.stop_id,
+        stop_name: vehicleProgress.segmentBetweenStops.nextStop.stop_name,
+        isTargetStation: vehicleProgress.segmentBetweenStops.nextStop.stop_id === targetStation.stop_id
+      } : undefined;
+      
+      const nextStationPosition = nextStationInfo ? {
+        lat: vehicleProgress.segmentBetweenStops.nextStop.stop_lat,
+        lon: vehicleProgress.segmentBetweenStops.nextStop.stop_lon
+      } : undefined;
+
       return {
         vehiclePosition,
         targetStationPosition,
+        nextStationPosition,
+        vehicleProjection,
+        stationProjection,
+        nextStationProjection: nextStationPosition ? projectPointToShape(nextStationPosition, routeShape) : undefined,
         routeShape,
-        projectionLine: null, // Will be calculated by DebugLayer
-        distanceAlongRoute: 0, // Will be calculated by DebugLayer
-        straightLineDistance: 0 // Will be calculated by DebugLayer
+        distanceCalculation: {
+          method: 'route_shape',
+          confidence: 'high',
+          totalDistance: directDistance,
+          segments: Math.abs(stationProjection.segmentIndex - vehicleProjection.segmentIndex)
+        },
+        nextStationInfo
       };
     } catch (error) {
       console.warn('Failed to create debug data:', error);
