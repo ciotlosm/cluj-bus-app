@@ -3,7 +3,6 @@
  * Shared logic for parsing trip sequences and stop relationships
  */
 
-import { calculateDistance } from '../location/distanceUtils';
 import { estimateVehicleProgressWithStops } from './vehicleProgressUtils';
 import type {
   TranzyVehicleResponse,

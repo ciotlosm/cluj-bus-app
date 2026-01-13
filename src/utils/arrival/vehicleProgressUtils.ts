@@ -6,7 +6,6 @@
 import { projectPointToShape } from './distanceUtils.ts';
 import { isProjectionBetween, calculateSegmentConfidence } from './geometryUtils.ts';
 import { calculateDistance } from '../location/distanceUtils.ts';
-import { getTripStopSequence } from './tripUtils.ts';
 import { CALCULATION_TOLERANCES } from '../core/constants';
 import { CONFIDENCE_LEVELS, ARRIVAL_METHODS } from '../core/stringConstants';
 import type {

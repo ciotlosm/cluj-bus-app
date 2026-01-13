@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import type { EnhancedRoute } from '../../../types/routeFilter';
 import { getRouteTypeLabel } from '../../../types/rawTranzyApi';
-import { getTransportTypeColor, getTransportTypeTextColor, getTransportTypeMuiColor } from '../../../utils/route/routeColorUtils';
+import { getTransportTypeMuiColor } from '../../../utils/route/routeColorUtils';
 import { HeartToggle } from '../controls/HeartToggle';
 import { useFavoritesStore } from '../../../stores/favoritesStore';
 

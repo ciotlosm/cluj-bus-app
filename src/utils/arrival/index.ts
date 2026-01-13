@@ -12,11 +12,6 @@ export {
   isVehicleOffRoute
 } from './arrivalUtils.ts';
 
-// Vehicle position utilities
-export {
-  determineNextStop
-} from './vehiclePositionUtils.ts';
-
 // Geometry utilities
 export {
   calculateProgressAlongSegment,

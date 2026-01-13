@@ -14,12 +14,13 @@ import { StationLayer } from './StationLayer';
 import { UserLocationLayer } from './UserLocationLayer';
 import { DebugLayer } from './DebugLayer';
 import { MapControls } from './MapControls';
-import { MapMode, VehicleColorStrategy } from '../../../types/interactiveMap';
-import { determineNextStop } from '../../../utils/arrival/vehiclePositionUtils';
+import { MapMode, VehicleColorStrategy } from '../../../types/map';
 import { projectPointToShape } from '../../../utils/arrival/distanceUtils';
+import { estimateVehicleProgressWithStops } from '../../../utils/arrival/vehicleProgressUtils';
+import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import type { RouteShape } from '../../../types/arrivalTime';
-import type { DebugVisualizationData } from '../../../types/interactiveMap';
-import { DEFAULT_MAP_COLORS, MAP_DEFAULTS } from '../../../types/interactiveMap';
+import type { DebugVisualizationData } from '../../../types/map/mapLayers';
+import { DEFAULT_MAP_COLORS, MAP_DEFAULTS } from '../../../types/map';
 import type { 
   TranzyRouteResponse, 
   TranzyStopResponse,
@@ -130,7 +131,7 @@ export const VehicleMapContent: FC<VehicleMapContentProps> = ({
   // Filter stations to show only trip stations
   let filteredStations = stations;
   if (targetVehicle?.trip_id) {
-    const tripStopTimes = stopTimes.filter(st => st.trip_id === targetVehicle.trip_id);
+    const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
     if (tripStopTimes.length > 0) {
       const tripStationIds = new Set(tripStopTimes.map(st => st.stop_id));
       filteredStations = stations.filter(station => tripStationIds.has(station.stop_id));
@@ -147,13 +148,25 @@ export const VehicleMapContent: FC<VehicleMapContentProps> = ({
     return shape ? new Map([[vehicleTrip.shape_id, shape]]) : new Map();
   }, [vehicleTrip?.shape_id, routeShapes]);
 
-  // Determine the vehicle's next stop
-  const nextStop = targetVehicle ? determineNextStop(
-    targetVehicle, 
-    trips, 
-    stopTimes, 
-    stations
-  ) : null;
+  // Calculate next stop using existing vehicle progress estimation
+  const nextStop = useMemo(() => {
+    if (!targetVehicle?.trip_id) return null;
+    
+    // Get trip stop sequence using existing utility
+    const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
+    if (tripStopTimes.length === 0) return null;
+    
+    // Use existing vehicle progress estimation to find next stop
+    const vehicleProgress = estimateVehicleProgressWithStops(targetVehicle, tripStopTimes, stations);
+    
+    // Extract next stop from vehicle progress
+    if (vehicleProgress.segmentBetweenStops?.nextStop) {
+      const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
+      return stations.find(s => s.stop_id === nextStopId) || null;
+    }
+    
+    return null;
+  }, [targetVehicle, stopTimes, stations]);
 
   // Create debug data using REAL distance calculations
   const debugData: DebugVisualizationData | null = useMemo(() => {

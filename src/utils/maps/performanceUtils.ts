@@ -4,7 +4,7 @@
  * Includes clustering, throttling, and viewport-based filtering
  */
 
-import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import type { TranzyVehicleResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
 import type { EnhancedVehicleData } from '../vehicle/vehicleEnhancementUtils';
 import type { Coordinates, MapPerformanceConfig } from '../../types/interactiveMap';

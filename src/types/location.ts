@@ -1,4 +1,4 @@
-import { LOCATION_ACCURACY, PERMISSION_STATES, type LocationAccuracyLevel, type PermissionState } from '../utils/core/stringConstants';
+import { LOCATION_ACCURACY, type LocationAccuracyLevel, type PermissionState } from '../utils/core/stringConstants';
 
 /**
  * Location-related TypeScript interfaces and types

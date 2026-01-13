@@ -2,6 +2,53 @@
 
 ## Recent Updates (January 2025)
 
+### January 13, 2025 - Fixed Next Station Logic: Used Existing Methods
+- **🔧 FIX**: Replaced duplicate next stop logic with existing `estimateVehicleProgressWithStops` and `getTripStopSequence` methods
+- **🗑️ CLEANUP**: Deleted duplicate `nextStopUtils.ts` file and used proper existing vehicle progress estimation
+
+### January 13, 2025 - Refactored Next Stop Logic: Removed Duplication
+- **🔧 REFACTOR**: Created shared `nextStopUtils.ts` utility to eliminate duplicate next stop calculation code
+- **📦 CONSOLIDATION**: Moved logic from 2 components to single utility with `calculateNextStop` and `getTripStations` functions
+
+### January 13, 2025 - Fixed Next Station Display in Vehicle Map
+- **🚌 BUG FIX**: Next station now shows up correctly in vehicle map (was disabled after cleanup)
+- **🔧 SOLUTION**: Implemented simple next stop calculation based on trip stop sequence
+
+### January 13, 2025 - Fixed Runtime Error: Undefined Variable in Map Zoom
+- **🐛 BUG FIX**: Fixed `routeShapeData is not defined` error in VehicleMapDialog
+- **🔧 SOLUTION**: Used correct variable name `routeShapes` instead of non-existent `routeShapeData`
+
+### January 13, 2025 - Fixed Map Zoom Modes: Route Overview vs Vehicle Tracking
+- **🗺️ BUG FIX**: Route overview now shows full route in viewport (was showing vehicle+target like tracking mode)
+- **🔧 SOLUTION**: Use `calculateRouteOverviewViewport` for route overview, `calculateVehicleComprehensiveViewport` for vehicle tracking
+
+### January 13, 2025 - Fixed Startup Error from Deleted File Reference
+- **🐛 BUG FIX**: Fixed import error in VehicleMapContent.tsx referencing deleted vehiclePositionUtils
+- **🔧 SOLUTION**: Replaced determineNextStop call with null (was only used for debug visualization)
+
+### January 13, 2025 - Codebase Cleanup: Removed 9 Unused Imports
+- **🧹 CLEANUP**: Systematic removal of unused imports across 7 files
+- **📦 OPTIMIZATION**: Improved build performance and reduced bundle size
+
+### January 13, 2025 - Code Cleanup: Arrival Utils Organization
+- **🧹 CLEANUP**: Removed unused `getTripStopSequence` import from vehicleProgressUtils
+- **🗑️ REMOVED**: Deleted unused `vehiclePositionUtils.ts` file (contained only 1 unused function)
+
+### January 13, 2025 - Route Filtering: Limit Departed Vehicles to 1 per Trip
+- **🚌 FEATURE**: When filtering by route, departed vehicles now limited to maximum 1 per trip
+- **🎯 BEHAVIOR**: Shows all vehicles for selected route, but reduces clutter from multiple departed vehicles on same trip
+
+### January 13, 2025 - Accessibility Fix for Vehicle Map Dialog
+- **♿ ACCESSIBILITY**: Fixed aria-hidden warning in VehicleMapDialog when focused buttons remain in background
+- **🔧 SOLUTION**: Added proper focus management and dialog configuration (keepMounted=false, focus enforcement)
+
+### January 13, 2025 - TypeScript Interface Architecture Improvements
+- **🏗️ ARCHITECTURE**: Implemented industry-standard interface organization with modular structure
+- **📁 NEW FILES**: Created `src/types/common.ts` for shared types, `src/types/map/` folder with focused modules
+- **🔧 CONSOLIDATION**: Unified `RetryConfig` type (was duplicated in storeUtils.ts and errorTypes.ts)
+- **📚 DOCUMENTATION**: Added comprehensive JSDoc comments to all major interfaces for better IDE support
+- **🎯 EXPORTS**: Created `src/types/stores.ts` with exported store interfaces for type safety in tests
+
 ### January 12, 2025 - Fixed Vehicle ID Consistency in Tooltip
 - **🐛 BUG FIX**: Fixed vehicle ID mismatch between card and tooltip (card showed 939, tooltip showed 429)
 - **🔧 SOLUTION**: Changed tooltip to use vehicle.label (user-facing number) instead of vehicle.id (internal ID)

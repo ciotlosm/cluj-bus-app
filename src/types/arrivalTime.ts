@@ -6,7 +6,7 @@
 
 import type { Coordinates } from '../utils/location/distanceUtils.ts';
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse } from './rawTranzyApi.ts';
-import { CONFIDENCE_LEVELS, ARRIVAL_METHODS, type ConfidenceLevel, type ArrivalMethod } from '../utils/core/stringConstants';
+import { type ConfidenceLevel, type ArrivalMethod } from '../utils/core/stringConstants';
 
 // Re-export types for use in arrival modules
 export type { Coordinates, TranzyStopResponse, TranzyVehicleResponse, TranzyTripResponse, TranzyStopTimeResponse };

@@ -19,7 +19,9 @@ import type { Map as LeafletMap } from 'leaflet';
 import { VehicleMapContent } from './VehicleMapContent';
 import { MapMode } from '../../../types/interactiveMap';
 import { fetchRouteShapesForTrips } from '../../../services/routeShapeService';
-import { calculateVehicleComprehensiveViewport } from '../../../utils/maps/viewportUtils';
+import { calculateVehicleComprehensiveViewport, calculateRouteOverviewViewport } from '../../../utils/maps/viewportUtils';
+import { estimateVehicleProgressWithStops } from '../../../utils/arrival/vehicleProgressUtils';
+import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import type { RouteShape } from '../../../types/arrivalTime';
 import type { 
   TranzyRouteResponse, 
@@ -77,6 +79,21 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       requestLocation();
     }
   }, [showUserLocation, currentPosition, requestLocation]);
+  
+  // Focus management for accessibility
+  useEffect(() => {
+    if (open) {
+      // Small delay to ensure dialog is rendered
+      const timer = setTimeout(() => {
+        // Focus the close button when dialog opens
+        const closeButton = document.querySelector('[aria-label="close"]') as HTMLElement;
+        if (closeButton) {
+          closeButton.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
   
   // Generate stable map key
   const mapKey = useMemo(() => {
@@ -166,16 +183,60 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
     if (!mapRef.current || !targetVehicle) return;
     
     if (newMode === MapMode.VEHICLE_TRACKING) {
-      mapRef.current.setView([targetVehicle.latitude, targetVehicle.longitude], 16);
-    } else if (newMode === MapMode.ROUTE_OVERVIEW) {
+      // Vehicle tracking: show vehicle, target station, and next station
       const targetStation = targetStationId 
         ? stations.find(s => s.stop_id === targetStationId) 
         : null;
       
+      // Calculate next stop for vehicle tracking mode using existing methods
+      const nextStation = (() => {
+        if (!targetVehicle.trip_id) return null;
+        
+        const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
+        if (tripStopTimes.length === 0) return null;
+        
+        const vehicleProgress = estimateVehicleProgressWithStops(targetVehicle, tripStopTimes, stations);
+        
+        if (vehicleProgress.segmentBetweenStops?.nextStop) {
+          const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
+          return stations.find(s => s.stop_id === nextStopId) || null;
+        }
+        
+        return null;
+      })();
+      
       const viewport = calculateVehicleComprehensiveViewport(
         { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
         targetStation,
-        null
+        nextStation
+      );
+      
+      if (viewport && viewport.bounds) {
+        const bounds: [[number, number], [number, number]] = [
+          [viewport.bounds.south, viewport.bounds.west],
+          [viewport.bounds.north, viewport.bounds.east]
+        ];
+        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+      }
+    } else if (newMode === MapMode.ROUTE_OVERVIEW) {
+      // Route overview: show the entire route with all stations
+      const tripStations = (() => {
+        if (!targetVehicle.trip_id) return stations;
+        
+        const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
+        if (tripStopTimes.length === 0) return stations;
+        
+        const tripStationIds = new Set(tripStopTimes.map(st => st.stop_id));
+        return stations.filter(station => tripStationIds.has(station.stop_id));
+      })();
+      
+      const routeShapesForOverview = vehicleTrip?.shape_id && routeShapes.has(vehicleTrip.shape_id)
+        ? new Map([[vehicleTrip.shape_id, routeShapes.get(vehicleTrip.shape_id)!]])
+        : new Map();
+      
+      const viewport = calculateRouteOverviewViewport(
+        routeShapesForOverview,
+        tripStations
       );
       
       if (viewport && viewport.bounds) {
@@ -193,6 +254,9 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
       open={open}
       onClose={onClose}
       fullScreen
+      disableRestoreFocus={false}
+      disableEnforceFocus={false}
+      keepMounted={false}
       PaperProps={{
         sx: {
           bgcolor: 'background.default'

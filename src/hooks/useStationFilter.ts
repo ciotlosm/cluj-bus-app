@@ -4,7 +4,7 @@
  * Shows all stations within proximity of the closest station
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useStationStore } from '../stores/stationStore';
 import { useStopTimeStore } from '../stores/stopTimeStore';
@@ -21,7 +21,6 @@ import {
 import {
   filterStations
 } from '../utils/station/stationFilterStrategies';
-import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
 import type { FilteredStation } from '../types/stationFilter';
 

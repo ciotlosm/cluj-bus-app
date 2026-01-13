@@ -13,7 +13,6 @@ import { CircularProgress, Box } from '@mui/material';
 import type { StationLayerProps } from '../../../types/interactiveMap';
 import { StationSymbolType, DEFAULT_MAP_PERFORMANCE } from '../../../types/interactiveMap';
 import { createStationIcon } from '../../../utils/maps/iconUtils';
-import { getStationTypeLabel } from '../../../utils/station/stationDisplayUtils';
 import { useOptimizedStations, useDebouncedLoading } from '../../../utils/maps/performanceUtils';
 
 export const StationLayer: FC<StationLayerProps> = ({

@@ -6,7 +6,7 @@
 
 import type { FC } from 'react';
 import { Polyline, Marker, Popup, Circle } from 'react-leaflet';
-import type { DebugLayerProps } from '../../../types/interactiveMap';
+import type { DebugLayerProps } from '../../../types/map/mapLayers';
 import { calculateDistance } from '../../../utils/location/distanceUtils';
 import { createDebugIcon, createDistanceLabelIcon, createVehicleIcon } from '../../../utils/maps/iconUtils';
 import type { EnhancedVehicleData } from '../../../utils/vehicle/vehicleEnhancementUtils';
@@ -37,10 +37,19 @@ export const DebugLayer: FC<DebugLayerProps> = ({
     nextStationInfo,
   } = debugData;
 
+  // Only validate the most critical data - allow partial debug info to show
+  if (!vehiclePosition || !targetStationPosition) {
+    return null;
+  }
+
   // Calculate various distances for display
   const directDistance = calculateDistance(vehiclePosition, targetStationPosition);
-  const vehicleToProjectionDistance = calculateDistance(vehiclePosition, vehicleProjection.closestPoint);
-  const stationToProjectionDistance = calculateDistance(targetStationPosition, stationProjection.closestPoint);
+  const vehicleToProjectionDistance = vehicleProjection?.closestPoint 
+    ? calculateDistance(vehiclePosition, vehicleProjection.closestPoint)
+    : 0;
+  const stationToProjectionDistance = stationProjection?.closestPoint
+    ? calculateDistance(targetStationPosition, stationProjection.closestPoint)
+    : 0;
 
   return (
     <>
@@ -68,9 +77,9 @@ export const DebugLayer: FC<DebugLayerProps> = ({
               Direct Distance Line (NOT USED)
             </div>
             <div><strong>Distance:</strong> {directDistance.toFixed(0)}m</div>
-            <div><strong>Calculation Method:</strong> {distanceCalculation.method}</div>
-            <div><strong>Confidence:</strong> {distanceCalculation.confidence}</div>
-            <div><strong>Total Distance:</strong> {distanceCalculation.totalDistance.toFixed(0)}m</div>
+            <div><strong>Calculation Method:</strong> {distanceCalculation?.method || 'Unknown'}</div>
+            <div><strong>Confidence:</strong> {distanceCalculation?.confidence || 'Unknown'}</div>
+            <div><strong>Total Distance:</strong> {distanceCalculation?.totalDistance?.toFixed(0) || '0'}m</div>
             <div style={{ 
               fontSize: '11px', 
               color: '#666', 
@@ -84,7 +93,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       </Polyline>
 
       {/* 2. Vehicle projection line (Requirement 4.2) - NOT used in calculation */}
-      {vehicleProjection.distanceToShape > 10 && ( // Only show if vehicle is significantly off route
+      {vehicleProjection?.closestPoint && vehicleProjection.distanceToShape > 10 && ( // Only show if vehicle is significantly off route
         <Polyline
           positions={[
             [vehiclePosition.lat, vehiclePosition.lon],
@@ -124,7 +133,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       )}
 
       {/* 3. Station projection line (Requirement 4.3) - NOT used in calculation */}
-      {stationProjection.distanceToShape > 10 && ( // Only show if station is significantly off route
+      {stationProjection?.closestPoint && stationProjection.distanceToShape > 10 && ( // Only show if station is significantly off route
         <Polyline
           positions={[
             [targetStationPosition.lat, targetStationPosition.lon],
@@ -165,6 +174,11 @@ export const DebugLayer: FC<DebugLayerProps> = ({
 
       {/* Route segment between vehicle and target station */}
       {(() => {
+        // Check if projection data is available
+        if (vehicleProjection?.segmentIndex === undefined || stationProjection?.segmentIndex === undefined) {
+          return null;
+        }
+        
         // Show the route from vehicle position to target station (or from station to vehicle if passed)
         const vehicleSegmentIndex = vehicleProjection.segmentIndex;
         const stationSegmentIndex = stationProjection.segmentIndex;
@@ -300,30 +314,33 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       {/* Debug markers with distinct shapes (Requirement 4.4) */}
       
       {/* Vehicle projection point */}
-      <Marker
-        position={[vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]}
-        icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'square', size: 14 })}
-      >
-        <Popup>
-          <div>
-            <strong>Vehicle Projection Point</strong>
-            <br />
-            Closest point on route to vehicle
-            <br />
-            Distance: {vehicleProjection.distanceToShape.toFixed(1)}m
-            <br />
-            Coordinates: {vehicleProjection.closestPoint.lat.toFixed(6)}, {vehicleProjection.closestPoint.lon.toFixed(6)}
-          </div>
-        </Popup>
-      </Marker>
+      {vehicleProjection?.closestPoint && (
+        <Marker
+          position={[vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]}
+          icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'square', size: 14 })}
+        >
+          <Popup>
+            <div>
+              <strong>Vehicle Projection Point</strong>
+              <br />
+              Closest point on route to vehicle
+              <br />
+              Distance: {vehicleProjection.distanceToShape.toFixed(1)}m
+              <br />
+              Coordinates: {vehicleProjection.closestPoint.lat.toFixed(6)}, {vehicleProjection.closestPoint.lon.toFixed(6)}
+            </div>
+          </Popup>
+        </Marker>
+      )}
 
       {/* Station projection point */}
-      <Marker
-        position={[stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]}
-        icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'triangle', size: 14 })}
-      >
-        <Popup>
-          <div>
+      {stationProjection?.closestPoint && (
+        <Marker
+          position={[stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]}
+          icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'triangle', size: 14 })}
+        >
+          <Popup>
+            <div>
             <strong>Station Projection Point</strong>
             <br />
             Closest point on route to station
@@ -334,6 +351,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
           </div>
         </Popup>
       </Marker>
+      )}
 
       {/* Vehicle position marker */}
       <Marker
@@ -491,7 +509,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
         icon={createDistanceLabelIcon(
           `${directDistance.toFixed(0)}m`, 
           'direct', 
-          distanceCalculation.confidence
+          distanceCalculation?.confidence || 'unknown'
         )}
       />
 
@@ -524,27 +542,31 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       )}
 
       {/* Accuracy circles around key points */}
-      <Circle
-        center={[vehiclePosition.lat, vehiclePosition.lon]}
-        radius={Math.max(10, vehicleProjection.distanceToShape)}
-        pathOptions={{
-          color: colorScheme.debug.projectionLine,
-          weight: 1,
-          opacity: 0.3,
-          fillOpacity: 0.1,
-        }}
-      />
+      {vehicleProjection?.distanceToShape !== undefined && (
+        <Circle
+          center={[vehiclePosition.lat, vehiclePosition.lon]}
+          radius={Math.max(10, vehicleProjection.distanceToShape)}
+          pathOptions={{
+            color: colorScheme.debug.projectionLine,
+            weight: 1,
+            opacity: 0.3,
+            fillOpacity: 0.1,
+          }}
+        />
+      )}
 
-      <Circle
-        center={[targetStationPosition.lat, targetStationPosition.lon]}
-        radius={Math.max(10, stationProjection.distanceToShape)}
-        pathOptions={{
-          color: colorScheme.debug.projectionLine,
-          weight: 1,
-          opacity: 0.3,
-          fillOpacity: 0.1,
-        }}
-      />
+      {stationProjection?.distanceToShape !== undefined && (
+        <Circle
+          center={[targetStationPosition.lat, targetStationPosition.lon]}
+          radius={Math.max(10, stationProjection.distanceToShape)}
+          pathOptions={{
+            color: colorScheme.debug.projectionLine,
+            weight: 1,
+            opacity: 0.3,
+            fillOpacity: 0.1,
+          }}
+        />
+      )}
 
       {/* Vehicle Position Prediction Debug Visualization (Requirements 5.1, 5.2, 5.3, 5.4, 5.5) */}
       {vehicles.map(vehicle => {

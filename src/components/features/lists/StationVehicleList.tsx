@@ -3,7 +3,7 @@
 // Includes performance optimizations with memoization to prevent unnecessary re-renders
 
 import type { FC } from 'react';
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { 
   Card, CardContent, Typography, Chip, Stack, Box, Avatar, IconButton,
   Collapse, List, ListItem, ListItemText, Tooltip
@@ -46,6 +46,49 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
   // State for expansion functionality
   const [showingAll, setShowingAll] = useState(false);
   
+  // Apply route filtering with departed vehicle limiting (must be before any returns)
+  const filteredVehicles = useMemo(() => {
+    if (!selectedRouteId) {
+      return vehicles;
+    }
+
+    // Filter vehicles by selected route
+    const routeVehicles = vehicles.filter(({ route }) => route?.route_id === selectedRouteId);
+    
+    // Group vehicles by trip_id and status
+    const vehiclesByTrip = new Map<string, StationVehicle[]>();
+    const nonDepartedVehicles: StationVehicle[] = [];
+    
+    for (const vehicle of routeVehicles) {
+      const isDeparted = vehicle.arrivalTime?.statusMessage?.includes('Departed') || false;
+      
+      if (!isDeparted) {
+        // Non-departed vehicles: include all
+        nonDepartedVehicles.push(vehicle);
+      } else if (vehicle.trip && vehicle.trip.trip_id) {
+        // Departed vehicles: group by trip_id
+        const tripId = vehicle.trip.trip_id;
+        if (!vehiclesByTrip.has(tripId)) {
+          vehiclesByTrip.set(tripId, []);
+        }
+        vehiclesByTrip.get(tripId)!.push(vehicle);
+      }
+    }
+    
+    // For departed vehicles, take only 1 per trip (the first one after sorting by arrival time)
+    const departedVehicles: StationVehicle[] = [];
+    for (const tripVehicles of vehiclesByTrip.values()) {
+      // Sort by arrival time and take the first (most relevant) one
+      const sortedTripVehicles = sortStationVehiclesByArrival(tripVehicles);
+      if (sortedTripVehicles.length > 0) {
+        departedVehicles.push(sortedTripVehicles[0]);
+      }
+    }
+    
+    // Combine non-departed and limited departed vehicles
+    return [...nonDepartedVehicles, ...departedVehicles];
+  }, [vehicles, selectedRouteId]);
+  
   // Don't render when collapsed (performance optimization)
   if (!expanded) return null;
 
@@ -57,11 +100,6 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
       </Typography>
     );
   }
-
-  // Apply route filtering before sorting and grouping
-  const filteredVehicles = selectedRouteId 
-    ? vehicles.filter(({ route }) => route?.route_id === selectedRouteId)
-    : vehicles;
 
   // Handle empty state when route filter is active but no vehicles match
   if (selectedRouteId && filteredVehicles.length === 0) {
