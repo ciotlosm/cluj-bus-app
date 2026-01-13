@@ -1,69 +1,6 @@
 // Performance Utilities
 // Helper functions for optimizing React component performance and data sharing
 
-import { useRef, useMemo } from 'react';
-
-/**
- * Custom hook for deep comparison memoization
- * Useful when dependencies are objects or arrays that might have the same content
- * but different references
- * 
- * @param factory - Function that creates the value to memoize
- * @param deps - Dependencies for comparison
- * @returns Memoized value that only changes when deps actually change
- */
-export function useDeepMemo<T>(factory: () => T, deps: unknown[]): T {
-  const ref = useRef<{ deps: unknown[]; value: T } | undefined>(undefined);
-  
-  const hasChanged = useMemo(() => {
-    if (!ref.current) return true;
-    
-    const prevDeps = ref.current.deps;
-    if (prevDeps.length !== deps.length) return true;
-    
-    return deps.some((dep, index) => {
-      const prevDep = prevDeps[index];
-      
-      // Deep comparison for arrays
-      if (Array.isArray(dep) && Array.isArray(prevDep)) {
-        if (dep.length !== prevDep.length) return true;
-        return dep.some((item, i) => item !== prevDep[i]);
-      }
-      
-      // Simple comparison for primitives and objects
-      return dep !== prevDep;
-    });
-  }, [...deps]);
-  
-  const value = useMemo(factory, [...deps]);
-  
-  if (hasChanged) {
-    ref.current = { deps, value };
-  }
-  
-  return ref.current!.value;
-}
-
-/**
- * Debounce function for performance optimization
- * Useful for expensive operations that shouldn't run on every change
- * 
- * @param func - Function to debounce
- * @param delay - Delay in milliseconds
- * @returns Debounced function
- */
-export function debounce<T extends (...args: unknown[]) => void>(
-  func: T, 
-  delay: number
-): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout;
-  
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-}
-
 /**
  * Throttle function for performance optimization
  * Ensures function is called at most once per specified interval
