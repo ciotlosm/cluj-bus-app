@@ -455,11 +455,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                 tooltipContent += `📡 Vehicle Data: ${enhancedDebugInfo.vehicleAge}\n`;
                 tooltipContent += `🎯 Precise ETA: ${enhancedDebugInfo.estimatedMinutes}\n\n`;
                 
-                // Prediction methods and confidence
-                tooltipContent += `📊 Confidence: ${enhancedDebugInfo.confidence}\n`;
-                tooltipContent += `🔧 Method: ${enhancedDebugInfo.method}\n`;
-                
-                // Position prediction info
+                // Position prediction info (compact format)
                 if (vehicle.predictionMetadata?.positionMethod && vehicle.predictionMetadata?.positionApplied) {
                   const positionConfidence = vehicle.predictionMetadata.timestampAge < 60000 ? 'high' : 
                                             vehicle.predictionMetadata.timestampAge < 120000 ? 'medium' : 'low';
