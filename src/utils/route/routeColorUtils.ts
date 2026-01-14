@@ -1,24 +1,20 @@
 // Route color utilities for transportation type-based coloring
 // Maps GTFS route types to consistent color schemes
 
+import { APP_COLORS, getTransportTypeColor as getColorFromConstants, getTransportTypeMuiColor as getMuiColorFromConstants } from '../core/colorConstants';
+
 /**
  * Transportation type color mapping
  * Uses distinct colors for each transport type for better visual identification
  */
-export const TRANSPORT_TYPE_COLORS = {
-  0: '#FF6B35',   // Tram - Orange (distinctive for rail-based transport)
-  3: '#1976D2',   // Bus - Blue (Material-UI primary)
-  11: '#4CAF50'   // Trolleybus - Green (electric/eco-friendly)
-} as const;
+export const TRANSPORT_TYPE_COLORS = APP_COLORS.TRANSPORT_TYPES;
 
 /**
  * Get color for transportation type
  * @param routeType - GTFS route type (0=Tram, 3=Bus, 11=Trolleybus)
  * @returns Hex color string
  */
-export const getTransportTypeColor = (routeType: number): string => {
-  return TRANSPORT_TYPE_COLORS[routeType as keyof typeof TRANSPORT_TYPE_COLORS] || '#757575'; // Default gray
-};
+export const getTransportTypeColor = getColorFromConstants;
 
 /**
  * Get contrast text color for transportation type background
@@ -27,7 +23,7 @@ export const getTransportTypeColor = (routeType: number): string => {
  */
 export const getTransportTypeTextColor = (routeType: number): string => {
   // All our transport colors are dark enough to use white text
-  return '#ffffff';
+  return APP_COLORS.TEXT_COLORS.WHITE;
 };
 
 /**
@@ -35,11 +31,4 @@ export const getTransportTypeTextColor = (routeType: number): string => {
  * @param routeType - GTFS route type
  * @returns Material-UI color variant
  */
-export const getTransportTypeMuiColor = (routeType: number): 'primary' | 'secondary' | 'success' | 'default' => {
-  switch (routeType) {
-    case 0: return 'secondary'; // Tram - Orange-ish
-    case 3: return 'primary';   // Bus - Blue
-    case 11: return 'success';  // Trolleybus - Green
-    default: return 'default';
-  }
-};
+export const getTransportTypeMuiColor = getMuiColorFromConstants;

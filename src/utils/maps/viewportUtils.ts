@@ -4,7 +4,7 @@
  * Used by map controls to adjust view based on mode
  */
 
-import type { Coordinates } from '../../types/interactiveMap';
+import type { Coordinates } from '../../utils/location/distanceUtils';
 import type { RouteShape } from '../../types/arrivalTime';
 import type { TranzyStopResponse } from '../../types/rawTranzyApi';
 import { MAP_DEFAULTS } from './mapConstants';
@@ -141,23 +141,45 @@ export function calculateRouteOverviewViewport(
   return { center, zoom, bounds };
 }
 
-// ============================================================================
-// Station Centered Viewport
-// ============================================================================
-
 /**
- * Calculate viewport to center on a specific station
+ * Calculate viewport to include target station, vehicle, and next vehicle station
+ * Used for comprehensive view when clicking station or vehicle buttons
  */
-export function calculateStationCenteredViewport(
-  station: TranzyStopResponse,
-  currentZoom: number = 15
-): { center: Coordinates; zoom: number } {
+export function calculateComprehensiveViewport(
+  targetStation: TranzyStopResponse,
+  vehiclePosition: Coordinates,
+  nextVehicleStation: TranzyStopResponse | null,
+  containerWidth: number = 800,
+  containerHeight: number = 600
+): { center: Coordinates; zoom: number; bounds: ViewportBounds } | null {
+  const coordinates: Coordinates[] = [
+    { lat: targetStation.stop_lat, lon: targetStation.stop_lon },
+    vehiclePosition
+  ];
+
+  // Add next vehicle station if available and different from target station
+  if (nextVehicleStation && nextVehicleStation.stop_id !== targetStation.stop_id) {
+    coordinates.push({ lat: nextVehicleStation.stop_lat, lon: nextVehicleStation.stop_lon });
+  }
+
+  if (coordinates.length === 0) return null;
+
+  // Calculate bounds with padding
+  const rawBounds = calculateBounds(coordinates);
+  if (!rawBounds) return null;
+
+  const bounds = addBoundsPadding(rawBounds, 0.1); // 10% padding for better visibility
+
+  // Calculate center
   const center: Coordinates = {
-    lat: station.stop_lat,
-    lon: station.stop_lon,
+    lat: (bounds.north + bounds.south) / 2,
+    lon: (bounds.east + bounds.west) / 2,
   };
 
-  return { center, zoom: currentZoom };
+  // Calculate appropriate zoom
+  const zoom = calculateZoomForBounds(bounds, containerWidth, containerHeight);
+
+  return { center, zoom, bounds };
 }
 
 // ============================================================================
@@ -175,4 +197,59 @@ export function calculateVehicleTrackingViewport(
     center: vehiclePosition, 
     zoom: currentZoom 
   };
+}
+
+/**
+ * Calculate viewport to include target station, vehicle, and next vehicle station
+ * Used for vehicle tracking with comprehensive context
+ */
+export function calculateVehicleComprehensiveViewport(
+  vehiclePosition: Coordinates,
+  targetStation: TranzyStopResponse | null,
+  nextVehicleStation: TranzyStopResponse | null,
+  containerWidth: number = 800,
+  containerHeight: number = 600
+): { center: Coordinates; zoom: number; bounds: ViewportBounds } | null {
+  const coordinates: Coordinates[] = [vehiclePosition];
+
+  // Add target station if available
+  if (targetStation) {
+    coordinates.push({ lat: targetStation.stop_lat, lon: targetStation.stop_lon });
+  }
+
+  // Add next vehicle station if available and different from target station
+  if (nextVehicleStation && (!targetStation || nextVehicleStation.stop_id !== targetStation.stop_id)) {
+    coordinates.push({ lat: nextVehicleStation.stop_lat, lon: nextVehicleStation.stop_lon });
+  }
+
+  if (coordinates.length === 1) {
+    // Only vehicle position, use simple centering
+    return { 
+      center: vehiclePosition, 
+      zoom: 15,
+      bounds: {
+        north: vehiclePosition.lat + 0.01,
+        south: vehiclePosition.lat - 0.01,
+        east: vehiclePosition.lon + 0.01,
+        west: vehiclePosition.lon - 0.01
+      }
+    };
+  }
+
+  // Calculate bounds with padding
+  const rawBounds = calculateBounds(coordinates);
+  if (!rawBounds) return null;
+
+  const bounds = addBoundsPadding(rawBounds, 0.1); // 10% padding for better visibility
+
+  // Calculate center
+  const center: Coordinates = {
+    lat: (bounds.north + bounds.south) / 2,
+    lon: (bounds.east + bounds.west) / 2,
+  };
+
+  // Calculate appropriate zoom
+  const zoom = calculateZoomForBounds(bounds, containerWidth, containerHeight);
+
+  return { center, zoom, bounds };
 }

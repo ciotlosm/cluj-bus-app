@@ -18,20 +18,22 @@ import type {
   ArrivalTimeResult,
   VehicleProgressEstimation
 } from '../../types/arrivalTime.ts';
+import type { EnhancedVehicleData } from '../vehicle/vehicleEnhancementUtils.ts';
 import { ARRIVAL_STATUS_SORT_ORDER } from '../../types/arrivalTime.ts';
 
 /**
  * Calculate arrival time for a single vehicle to a target stop
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export function calculateVehicleArrivalTime(
-  vehicle: TranzyVehicleResponse,
+  vehicle: TranzyVehicleResponse | EnhancedVehicleData,
   targetStop: TranzyStopResponse,
   trips: TranzyTripResponse[],
   stopTimes: TranzyStopTimeResponse[],
   stops: TranzyStopResponse[],
   routeShape?: RouteShape
 ): ArrivalTimeResult {
-  // Calculate distance using appropriate method
+  // Use predicted coordinates if available (enhanced vehicle), otherwise use API coordinates
   const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
   const stopPosition = { lat: targetStop.stop_lat, lon: targetStop.stop_lon };
   
@@ -67,9 +69,10 @@ export function calculateVehicleArrivalTime(
 
 /**
  * Calculate arrival times for multiple vehicles
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export function calculateMultipleArrivals(
-  vehicles: TranzyVehicleResponse[],
+  vehicles: (TranzyVehicleResponse | EnhancedVehicleData)[],
   targetStop: TranzyStopResponse,
   trips: TranzyTripResponse[],
   stopTimes: TranzyStopTimeResponse[],
@@ -117,9 +120,10 @@ export function sortVehiclesByArrival(results: ArrivalTimeResult[]): ArrivalTime
 
 /**
  * Determine target stop relationship using enhanced vehicle progress estimation
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export function determineTargetStopRelation(
-  vehicle: TranzyVehicleResponse,
+  vehicle: TranzyVehicleResponse | EnhancedVehicleData,
   targetStop: TranzyStopResponse,
   trips: TranzyTripResponse[],
   stopTimes: TranzyStopTimeResponse[],
@@ -160,9 +164,10 @@ export function determineTargetStopRelation(
 
 /**
  * Check if vehicle is off-route based on route_id, trip_id, timestamp age, and distance threshold
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export function isVehicleOffRoute(
-  vehicle: TranzyVehicleResponse,
+  vehicle: TranzyVehicleResponse | EnhancedVehicleData,
   routeShape?: RouteShape
 ): boolean {
   // No route ID or trip ID means off-route

@@ -36,7 +36,7 @@ export interface DirectionArrowOptions {
 }
 
 /**
- * Create vehicle icon with optional directional arrow
+ * Create vehicle icon with square shape and bus icon
  */
 export function createVehicleIcon(options: VehicleIconOptions): Icon {
   const {
@@ -48,8 +48,8 @@ export function createVehicleIcon(options: VehicleIconOptions): Icon {
   } = options;
 
   const iconSize = isSelected ? size + 4 : size;
-  const radius = isSelected ? iconSize / 2 - 2 : iconSize / 2 - 3;
   const strokeWidth = isSelected ? 3 : 2;
+  const cornerRadius = 3; // Slightly rounded corners for better appearance
   
   // Bus icon SVG path (Material Design bus icon) - always show bus icon
   const busIconPath = `
@@ -61,7 +61,8 @@ export function createVehicleIcon(options: VehicleIconOptions): Icon {
   
   const svgContent = `
     <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 ${iconSize} ${iconSize}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${iconSize/2}" cy="${iconSize/2}" r="${radius}" fill="${color}" stroke="#fff" stroke-width="${strokeWidth}"/>
+      <rect x="${strokeWidth}" y="${strokeWidth}" width="${iconSize - 2*strokeWidth}" height="${iconSize - 2*strokeWidth}" 
+            fill="${color}" stroke="#fff" stroke-width="${strokeWidth}" rx="${cornerRadius}"/>
       ${busIconPath}
     </svg>
   `;
@@ -203,23 +204,28 @@ export function createDebugIcon(options: DebugIconOptions): Icon {
 }
 
 /**
- * Create user location icon
+ * Create user location icon using Material Design location pin
  */
 export function createUserLocationIcon(options: IconOptions): Icon {
   const { color, size = 20 } = options;
   
+  // Material Design location_on icon path
+  const locationIconPath = `
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" 
+          fill="${color}"/>
+  `;
+  
   const svgContent = `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="#fff" stroke-width="2"/>
-      <circle cx="${size/2}" cy="${size/2}" r="3" fill="#fff"/>
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      ${locationIconPath}
     </svg>
   `;
 
   return new Icon({
     iconUrl: `data:image/svg+xml;base64,${btoa(svgContent)}`,
     iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
+    iconAnchor: [size/2, size], // Anchor at the bottom point of the pin
+    popupAnchor: [0, -size], // Popup appears above the pin
   });
 }
 

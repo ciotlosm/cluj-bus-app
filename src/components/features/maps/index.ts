@@ -7,6 +7,7 @@ export { VehicleMapDialog } from './VehicleMapDialog';
 export { VehicleLayer } from './VehicleLayer';
 export { RouteShapeLayer } from './RouteShapeLayer';
 export { StationLayer } from './StationLayer';
+export { UserLocationLayer } from './UserLocationLayer';
 export { DebugLayer } from './DebugLayer';
 export { MapControls } from './MapControls';
 
@@ -17,6 +18,7 @@ export type {
   VehicleLayerProps,
   RouteShapeLayerProps,
   StationLayerProps,
+  UserLocationLayerProps,
   DebugLayerProps,
   MapControlsProps,
   DebugVisualizationData,

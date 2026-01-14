@@ -2,6 +2,181 @@
 
 ## Recent Updates (January 2025)
 
+### January 14, 2026 - Fixed Speed Prediction Algorithm Logic
+- **🚨 CRITICAL FIX**: Speed prediction now correctly handles low-speed scenarios (1-5 km/h)
+- **🔧 SOLUTION**: API speeds ≤5 km/h now trigger fallback to nearby average or location-based prediction instead of being used directly
+- **📊 TECHNICAL**: Station detection now runs FIRST before speed prediction to avoid unnecessary calculations for stopped vehicles
+- **✅ RESULT**: "Moving slowly" status eliminated - vehicles are either "At station" (0 km/h), "Stopped" (0 km/h), or "In transit" (>5 km/h)
+
+### January 14, 2026 - Simplified Vehicle Map Tooltip
+- **🎨 UI IMPROVEMENT**: Redesigned vehicle tooltip with cleaner, more scannable format
+- **📍 ROUTE DISPLAY**: Shows route number + headsign instead of full route name
+- **🎯 CONFIDENCE COLORS**: Color-coded confidence levels (green=high, orange=medium, red=low)
+- **⏱️ COMPACT TIME**: Uses "4m ago" instead of "4 minutes ago" to save space
+- **🧹 REDUCED REDUNDANCY**: Removed duplicate information and verbose labels
+
+### January 13, 2025 - Fixed Leaflet Map Refresh Errors
+- **🚨 CRITICAL FIX**: Resolved cascade of Leaflet DOM errors during manual refresh in map view
+- **🔧 SOLUTION**: Removed unnecessary lastUpdated subscription causing map container reuse, added error handling for map state updates and icon creation
+
+### January 13, 2025 - Fixed Critical Infinite Re-render Issues
+- **🚨 CRITICAL FIX**: Resolved "Maximum update depth exceeded" errors in ManualRefreshButton, VehicleLayer, StationLayer, and AnimatedVehicleMarker
+- **🔧 SOLUTION**: Fixed useEffect dependencies, changed useMemo to useEffect for side effects, added state update optimization for animations
+
+### January 13, 2025 - Fixed Station Detection Bug for Moving Vehicles
+- **🚨 CRITICAL FIX**: Vehicles between stations no longer incorrectly show "At station" status
+- **🔧 SOLUTION**: Fixed dwell time logic to only show "stopped_at_station" when vehicle is actually dwelling, not after it has moved away
+
+### January 13, 2025 - Fixed Speed Prediction Inconsistency at Stations
+- **🚨 CRITICAL FIX**: Speed prediction now correctly shows "Stopped" when vehicles are dwelling at stations
+- **🔧 SOLUTION**: Unified station detection logic between speed and position prediction algorithms
+- **📊 TECHNICAL**: Speed prediction now checks dwell time metadata from movement simulation, not just final position proximity
+
+### January 13, 2025 - Fixed GPS Location Update Flickering
+- **🚨 UI FIX**: GPS location updates no longer cause station list to flicker and disappear
+- **🔧 SOLUTION**: Location loading state only shows spinner on initial load, not during background location updates
+
+### January 13, 2025 - Enhanced Speed Display and Prediction Details
+- **🎯 SPEED PRECISION**: Speed now displays with 2 decimal places for better accuracy
+- **📊 TOOLTIP ENHANCEMENT**: Arrival chip tooltips show speed prediction algorithm and confidence level
+- **🔧 MAP MARKERS**: Vehicle map tooltips include detailed speed prediction information
+
+### January 13, 2025 - Implemented Comprehensive Speed Prediction Architecture
+- **🚀 SPEED PREDICTION**: Always-on speed prediction with station detection - vehicles show predicted speed, not API speed
+- **🛑 STATION DETECTION**: Vehicles at stations show "Stopped" (speed = 0) instead of "arriving in 0 minutes"
+- **📊 SPEED LAYERS**: API speed → Predicted speed → Algorithm used (api_speed, nearby_average, location_based, stopped_at_station, static_fallback)
+- **🎯 UI ENHANCEMENT**: Vehicle cards show predicted speed, tooltips show both predicted and API speed for debugging
+- **🔧 ARCHITECTURE**: Removed `includeSpeed` parameter - speed prediction always enabled with proper fallbacks
+
+### January 13, 2025 - Fixed Critical Refresh Issue: Separated API and Prediction Timestamps
+- **🚨 CRITICAL FIX**: Manual/automatic refresh now works correctly - API calls are made when data is actually stale
+- **🔧 SOLUTION**: Added `lastApiFetch` timestamp separate from `lastUpdated` - refresh services use `lastApiFetch` for staleness detection, components use `lastUpdated` for subscriptions
+- **📦 ARCHITECTURE**: Enhanced vehicle predictions no longer interfere with API refresh logic
+
+### January 13, 2025 - Implemented Unified Timestamp Architecture
+- **⏰ ARCHITECTURE**: Implemented 4-timestamp system for consistent time handling across the app
+- **🔧 TIMESTAMPS**: API timestamp (vehicle.timestamp), fetch timestamp (lastUpdated), NOW timestamp (Date.now()), prediction timestamp (predictionTimestamp)
+- **📦 UTILITIES**: Created unified timestamp formatting with 3 formats: relative time ("2 minutes ago"), arrival time ("in 5 minutes"), absolute time ("at 14:32")
+- **🔄 SUBSCRIPTIONS**: Components now use proper timestamp subscriptions - vehicles use prediction updates, others use fetch timestamps
+
+### January 13, 2025 - Fixed Next Station Updates with Prediction Changes
+- **🐛 BUG FIX**: Next station now updates correctly when vehicle predictions change every 15 seconds
+- **🔧 SOLUTION**: Added `lastPredictionUpdate` timestamp to vehicle store and made next station calculation reactive to prediction updates
+
+### January 13, 2025 - Improved Map Marker Icons
+- **🎨 UI IMPROVEMENT**: Vehicle markers now use square icons instead of round ones for better visibility
+- **📍 LOCATION FIX**: User location marker now uses proper Material Design location pin icon instead of custom teardrop shape
+
+### January 13, 2025 - Fixed Debug Route Segments Visualization
+- **🐛 BUG FIX**: Debug mode now shows grey route segments for distance calculations
+- **🔧 SOLUTION**: Fixed debug data construction by copying working logic from main branch and adding missing `calculateDistanceAlongShape` import
+
+### January 13, 2025 - Fixed User Location Accuracy Circle Display
+- **🎯 BUG FIX**: User location accuracy circle now displays correctly on map
+- **🔧 SOLUTION**: Fixed type mismatch - VehicleMapContent now receives full GeolocationPosition with accuracy data
+
+### January 13, 2025 - Fixed Next Station Logic: Used Existing Methods
+- **🔧 FIX**: Replaced duplicate next stop logic with existing `estimateVehicleProgressWithStops` and `getTripStopSequence` methods
+- **🗑️ CLEANUP**: Deleted duplicate `nextStopUtils.ts` file and used proper existing vehicle progress estimation
+
+### January 13, 2025 - Refactored Next Stop Logic: Removed Duplication
+- **🔧 REFACTOR**: Created shared `nextStopUtils.ts` utility to eliminate duplicate next stop calculation code
+- **📦 CONSOLIDATION**: Moved logic from 2 components to single utility with `calculateNextStop` and `getTripStations` functions
+
+### January 13, 2025 - Fixed Next Station Display in Vehicle Map
+- **🚌 BUG FIX**: Next station now shows up correctly in vehicle map (was disabled after cleanup)
+- **🔧 SOLUTION**: Implemented simple next stop calculation based on trip stop sequence
+
+### January 13, 2025 - Fixed Runtime Error: Undefined Variable in Map Zoom
+- **🐛 BUG FIX**: Fixed `routeShapeData is not defined` error in VehicleMapDialog
+- **🔧 SOLUTION**: Used correct variable name `routeShapes` instead of non-existent `routeShapeData`
+
+### January 13, 2025 - Fixed Map Zoom Modes: Route Overview vs Vehicle Tracking
+- **🗺️ BUG FIX**: Route overview now shows full route in viewport (was showing vehicle+target like tracking mode)
+- **🔧 SOLUTION**: Use `calculateRouteOverviewViewport` for route overview, `calculateVehicleComprehensiveViewport` for vehicle tracking
+
+### January 13, 2025 - Fixed Startup Error from Deleted File Reference
+- **🐛 BUG FIX**: Fixed import error in VehicleMapContent.tsx referencing deleted vehiclePositionUtils
+- **🔧 SOLUTION**: Replaced determineNextStop call with null (was only used for debug visualization)
+
+### January 13, 2025 - Codebase Cleanup: Removed 9 Unused Imports
+- **🧹 CLEANUP**: Systematic removal of unused imports across 7 files
+- **📦 OPTIMIZATION**: Improved build performance and reduced bundle size
+
+### January 13, 2025 - Code Cleanup: Arrival Utils Organization
+- **🧹 CLEANUP**: Removed unused `getTripStopSequence` import from vehicleProgressUtils
+- **🗑️ REMOVED**: Deleted unused `vehiclePositionUtils.ts` file (contained only 1 unused function)
+
+### January 13, 2025 - Route Filtering: Limit Departed Vehicles to 1 per Trip
+- **🚌 FEATURE**: When filtering by route, departed vehicles now limited to maximum 1 per trip
+- **🎯 BEHAVIOR**: Shows all vehicles for selected route, but reduces clutter from multiple departed vehicles on same trip
+
+### January 13, 2025 - Accessibility Fix for Vehicle Map Dialog
+- **♿ ACCESSIBILITY**: Fixed aria-hidden warning in VehicleMapDialog when focused buttons remain in background
+- **🔧 SOLUTION**: Added proper focus management and dialog configuration (keepMounted=false, focus enforcement)
+
+### January 13, 2025 - TypeScript Interface Architecture Improvements
+- **🏗️ ARCHITECTURE**: Implemented industry-standard interface organization with modular structure
+- **📁 NEW FILES**: Created `src/types/common.ts` for shared types, `src/types/map/` folder with focused modules
+- **🔧 CONSOLIDATION**: Unified `RetryConfig` type (was duplicated in storeUtils.ts and errorTypes.ts)
+- **📚 DOCUMENTATION**: Added comprehensive JSDoc comments to all major interfaces for better IDE support
+- **🎯 EXPORTS**: Created `src/types/stores.ts` with exported store interfaces for type safety in tests
+
+### January 12, 2025 - Fixed Vehicle ID Consistency in Tooltip
+- **🐛 BUG FIX**: Fixed vehicle ID mismatch between card and tooltip (card showed 939, tooltip showed 429)
+- **🔧 SOLUTION**: Changed tooltip to use vehicle.label (user-facing number) instead of vehicle.id (internal ID)
+- **✅ RESULT**: Vehicle identification now consistent between card display and tooltip debugging info
+
+### January 12, 2025 - Fixed Calculation Method in Tooltip
+- **🐛 BUG FIX**: Fixed "Method: unknown" in vehicle tooltip by preserving calculationMethod from arrival calculations
+- **🔧 SOLUTION**: Added calculationMethod field to StationVehicle type and ensured it's passed through the data flow
+- **📊 RESULT**: Tooltip now shows actual calculation method (route_shape, stop_segments, etc.) for better debugging
+
+### January 12, 2025 - Enhanced Vehicle Tooltip Debugging
+- **🔧 FEATURE**: Added comprehensive tooltip to vehicle arrival times for troubleshooting 15-second updates
+- **📊 DETAILS**: Shows vehicle position, timing, refresh status, confidence, and prediction method
+- **🎯 USAGE**: Hover over any "In X minutes" or "Departed" chip to see detailed debug information
+
+### January 12, 2025 - Prediction Timer UI Updates Fixed
+- **🐛 BUG FIX**: Fixed prediction timers not updating in UI despite background calculations working
+- **🔄 SOLUTION**: Modified `useStationFilter` to re-filter when vehicle data changes, not just location changes
+- **⚡ RESULT**: Vehicle arrival times and timestamps now update every 15 seconds as intended
+
+### January 12, 2025 - Constants Consolidation & Organization
+- **🔧 CONSTANTS**: Consolidated hardcoded values into centralized constants files
+- **📁 ORGANIZATION**: Created `stringConstants.ts`, `colorConstants.ts`, and `testConstants.ts` for better organization
+- **⚡ PERFORMANCE**: Extracted calculation thresholds, time formatting, and cache duration constants
+- **🎨 COLORS**: Unified color definitions across map, transport types, and debug interfaces
+
+### January 11, 2025 - GPS Background Processing & Code Cleanup
+- **🔧 BACKGROUND PROCESSING**: GPS updates now happen in background without unnecessary UI re-renders
+- **📏 DISTANCE THRESHOLD**: Only re-filter stations when location changes by >500m (configurable)
+- **♻️ CODE REUSE**: Removed duplicate distance calculation, now uses existing `distanceUtils`
+- **⚡ PERFORMANCE**: GPS button updates location cache silently, components only re-render when results change
+
+### January 11, 2025 - Smart Map Viewport Enhancement
+- **🎯 FEATURE**: Map buttons now show comprehensive view including target station, vehicle, and next vehicle station
+- **🗺️ SMART ZOOM**: Default zoom, vehicle button, and station button automatically fit all relevant points in view
+- **⚡ CONTEXT**: Users see complete journey context instead of just single points
+
+### January 11, 2025 - Vehicle Display Order Fix
+- **🐛 BUG FIX**: Fixed vehicle ordering in station lists where "arriving in 1 minute" vehicles appeared after "departed" vehicles
+- **🎯 LOGIC**: Implemented status-priority grouping with trip diversity (at_stop → in_minutes → departed)
+- **🔧 DETECTION**: Fixed status detection to handle both "minute" (singular) and "minutes" (plural) correctly
+
+### January 10, 2025 - Smooth Vehicle Animation & Prediction Updates
+- **🎯 FEATURE**: Added 30-second prediction updates independent of 60-second API refresh
+- **🎬 ANIMATION**: Vehicles now smoothly animate between positions on the map
+- **⚡ PERFORMANCE**: Prediction updates use cached data without additional API calls
+- **🔧 TIMING**: API refresh (60s) and prediction updates (30s) run independently with configurable constants
+
+### January 10, 2025 - Vehicle Position Prediction System
+- **🎯 FEATURE**: Added vehicle position prediction based on timestamp age and route movement simulation
+- **⚡ ACCURACY**: Vehicles now show predicted current positions instead of stale GPS coordinates
+- **🗺️ INTEGRATION**: All arrival calculations and map displays automatically use predicted positions
+- **🔧 DEBUG**: Enhanced debug layer shows both API (grey) and predicted (blue) positions with movement lines
+- **🧹 ARCHITECTURE**: Service-layer enhancement maintains backward compatibility with existing code
+
 ### January 9, 2025 - Manual Refresh UX Improvements
 - **🎯 UX FIX**: Manual refresh now shows progress even when data is fresh (skipped stores)
 - **⚡ FEEDBACK**: Added 150ms delay for skipped stores so users see something happened

@@ -3,7 +3,7 @@
 // Includes performance optimizations with memoization to prevent unnecessary re-renders
 
 import type { FC } from 'react';
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { 
   Card, CardContent, Typography, Chip, Stack, Box, Avatar, IconButton,
   Collapse, List, ListItem, ListItemText, Tooltip
@@ -15,6 +15,7 @@ import {
   LocationOn as TargetStationIcon, Favorite as FavoriteIcon
 } from '@mui/icons-material';
 import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTime } from '../../../utils/vehicle/vehicleFormatUtils';
+import { formatAbsoluteTime, formatRelativeTime } from '../../../utils/time/timestampFormatUtils';
 import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
 import { groupVehiclesForDisplay } from '../../../utils/station/vehicleGroupingUtils';
 import { VEHICLE_DISPLAY } from '../../../utils/core/constants';
@@ -46,6 +47,49 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
   // State for expansion functionality
   const [showingAll, setShowingAll] = useState(false);
   
+  // Apply route filtering with departed vehicle limiting (must be before any returns)
+  const filteredVehicles = useMemo(() => {
+    if (!selectedRouteId) {
+      return vehicles;
+    }
+
+    // Filter vehicles by selected route
+    const routeVehicles = vehicles.filter(({ route }) => route?.route_id === selectedRouteId);
+    
+    // Group vehicles by trip_id and status
+    const vehiclesByTrip = new Map<string, StationVehicle[]>();
+    const nonDepartedVehicles: StationVehicle[] = [];
+    
+    for (const vehicle of routeVehicles) {
+      const isDeparted = vehicle.arrivalTime?.statusMessage?.includes('Departed') || false;
+      
+      if (!isDeparted) {
+        // Non-departed vehicles: include all
+        nonDepartedVehicles.push(vehicle);
+      } else if (vehicle.trip && vehicle.trip.trip_id) {
+        // Departed vehicles: group by trip_id
+        const tripId = vehicle.trip.trip_id;
+        if (!vehiclesByTrip.has(tripId)) {
+          vehiclesByTrip.set(tripId, []);
+        }
+        vehiclesByTrip.get(tripId)!.push(vehicle);
+      }
+    }
+    
+    // For departed vehicles, take only 1 per trip (the first one after sorting by arrival time)
+    const departedVehicles: StationVehicle[] = [];
+    for (const tripVehicles of vehiclesByTrip.values()) {
+      // Sort by arrival time and take the first (most relevant) one
+      const sortedTripVehicles = sortStationVehiclesByArrival(tripVehicles);
+      if (sortedTripVehicles.length > 0) {
+        departedVehicles.push(sortedTripVehicles[0]);
+      }
+    }
+    
+    // Combine non-departed and limited departed vehicles
+    return [...nonDepartedVehicles, ...departedVehicles];
+  }, [vehicles, selectedRouteId]);
+  
   // Don't render when collapsed (performance optimization)
   if (!expanded) return null;
 
@@ -57,11 +101,6 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
       </Typography>
     );
   }
-
-  // Apply route filtering before sorting and grouping
-  const filteredVehicles = selectedRouteId 
-    ? vehicles.filter(({ route }) => route?.route_id === selectedRouteId)
-    : vehicles;
 
   // Handle empty state when route filter is active but no vehicles match
   if (selectedRouteId && filteredVehicles.length === 0) {
@@ -111,6 +150,7 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
           arrivalTime={arrivalTime}
           station={station}
           vehicleRefreshTimestamp={vehicleRefreshTimestamp}
+          allStationVehicles={vehicles}
         />
       ))}
       
@@ -141,9 +181,10 @@ interface VehicleCardProps {
   arrivalTime?: any;
   station: any;
   vehicleRefreshTimestamp?: number | null;
+  allStationVehicles: StationVehicle[]; // Keep this for the map dialog
 }
 
-const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp }) => {
+const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp, allStationVehicles }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   
@@ -157,7 +198,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
   const { stops } = useStationStore();
   
   // Get all data needed for the map dialog
-  const { vehicles } = useVehicleStore();
+  const { vehicles: allVehicles } = useVehicleStore();
   const { routes } = useRouteStore();
   
   // Get actual stops for this vehicle's trip
@@ -250,30 +291,23 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
           <Box display="flex" alignItems="center" gap={0.5} sx={{ flexShrink: 0 }}>
             <TimeIcon fontSize="small" color="action" />
             <Box sx={{ textAlign: 'right' }}>
-              <Typography 
-                variant="caption" 
-                color="text.secondary"
-                sx={{ 
-                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                  whiteSpace: 'nowrap',
-                  display: 'block'
-                }}
+              <Tooltip 
+                title={vehicleRefreshTimestamp ? `Fetched ${formatRelativeTime(vehicleRefreshTimestamp)}` : ''}
+                arrow
               >
-                {formatTimestamp(vehicle.timestamp)}
-              </Typography>
-              {vehicleRefreshTimestamp && (
                 <Typography 
                   variant="caption" 
                   color="text.secondary"
                   sx={{ 
                     fontSize: { xs: '0.7rem', sm: '0.75rem' },
                     whiteSpace: 'nowrap',
-                    display: 'block'
+                    display: 'block',
+                    cursor: vehicleRefreshTimestamp ? 'help' : 'default'
                   }}
                 >
-                  {formatTimestamp(new Date(vehicleRefreshTimestamp).toISOString())}
+                  {formatTimestamp(vehicle.timestamp)}
                 </Typography>
-              )}
+              </Tooltip>
             </Box>
           </Box>
         </Stack>
@@ -348,8 +382,38 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         {arrivalTime && (
           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
             {(() => {
-              // Generate debug info for low confidence arrivals
-              const debugInfo = arrivalTime?.confidence === 'low' 
+              // Generate enhanced debug info for all arrivals to help troubleshoot 15-second updates
+              const enhancedDebugInfo = {
+                // Basic arrival info
+                confidence: arrivalTime?.confidence || 'unknown',
+                status: arrivalTime?.statusMessage || 'unknown',
+                arrivalText: formatArrivalTime(arrivalTime),
+                
+                // Timing details for troubleshooting
+                vehicleTimestamp: vehicle.timestamp,
+                vehicleAge: vehicle.timestamp ? `${Math.round((Date.now() - new Date(vehicle.timestamp).getTime()) / 1000)}s ago` : 'unknown',
+                currentTime: new Date().toLocaleTimeString(),
+                
+                // Vehicle position details
+                vehicleId: vehicle.label || vehicle.id, // Use label first (user-facing number), fallback to ID
+                vehicleSpeed: vehicle.speed ? `${Number(vehicle.speed).toFixed(2)} km/h` : 'stopped',
+                vehiclePosition: `${vehicle.latitude?.toFixed(6)}, ${vehicle.longitude?.toFixed(6)}`,
+                
+                // Prediction calculation details
+                method: arrivalTime?.calculationMethod || 'unknown',
+                estimatedArrival: arrivalTime?.estimatedMinutes !== undefined 
+                  ? new Date(Date.now() + (arrivalTime.estimatedMinutes * 60 * 1000)).toLocaleTimeString()
+                  : 'unknown',
+                estimatedMinutes: arrivalTime?.estimatedMinutes !== undefined 
+                  ? `${arrivalTime.estimatedMinutes} min`
+                  : 'unknown',
+                
+                // Store refresh info
+                lastRefresh: vehicleRefreshTimestamp ? new Date(vehicleRefreshTimestamp).toLocaleTimeString() : 'unknown'
+              };
+              
+              // Generate debug info for low confidence arrivals (existing functionality)
+              const lowConfidenceDebugInfo = arrivalTime?.confidence === 'low' 
                 ? generateConfidenceDebugInfo({ vehicle, route, trip, arrivalTime }) 
                 : null;
               
@@ -364,18 +428,50 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                     fontWeight: 'medium',
                     fontSize: { xs: '0.7rem', sm: '0.75rem' },
                     '& .MuiChip-icon': { color: 'inherit' },
-                    cursor: debugInfo ? 'help' : 'default'
+                    cursor: 'help' // Always show cursor since we always have tooltip now
                   }}
                 />
               );
 
-              // Only show tooltip for low confidence arrivals (or all in development)
-              const shouldShowTooltip = debugInfo || (process.env.NODE_ENV === 'development' && arrivalTime);
+              // Always show enhanced tooltip for troubleshooting 15-second updates
+              const shouldShowTooltip = true;
               
               if (shouldShowTooltip) {
-                const tooltipContent = debugInfo 
-                  ? formatConfidenceDebugTooltip(debugInfo)
-                  : `Development Mode\nConfidence: ${arrivalTime?.confidence}\nStatus: ${arrivalTime?.statusMessage}`;
+                // Create simplified tooltip content
+                let tooltipContent = '';
+                
+                // Essential vehicle info
+                tooltipContent += `🚌 Vehicle ${enhancedDebugInfo.vehicleId}\n`;
+                tooltipContent += `📍 ${enhancedDebugInfo.vehiclePosition}\n`;
+                tooltipContent += `⚡ ${enhancedDebugInfo.vehicleSpeed}`;
+                
+                // Show API speed if different from predicted speed
+                if (vehicle.apiSpeed !== vehicle.speed) {
+                  tooltipContent += ` (API: ${Number(vehicle.apiSpeed).toFixed(2)} km/h)`;
+                }
+                tooltipContent += `\n⏰ ${enhancedDebugInfo.arrivalText}\n\n`;
+                
+                // Vehicle data age
+                tooltipContent += `📡 Vehicle Data: ${enhancedDebugInfo.vehicleAge}\n`;
+                tooltipContent += `🎯 Precise ETA: ${enhancedDebugInfo.estimatedMinutes}\n\n`;
+                
+                // Position prediction info (compact format)
+                if (vehicle.predictionMetadata?.positionMethod && vehicle.predictionMetadata?.positionApplied) {
+                  const positionConfidence = vehicle.predictionMetadata.timestampAge < 60000 ? 'high' : 
+                                            vehicle.predictionMetadata.timestampAge < 120000 ? 'medium' : 'low';
+                  tooltipContent += `📍 Position: ${vehicle.predictionMetadata.positionMethod} (${positionConfidence})\n`;
+                }
+                
+                // Speed prediction info
+                if (vehicle.predictionMetadata?.speedMethod) {
+                  tooltipContent += `🏃 Speed: ${vehicle.predictionMetadata.speedMethod} (${vehicle.predictionMetadata.speedConfidence})\n`;
+                }
+                
+                // Add low confidence debug info if available
+                if (lowConfidenceDebugInfo) {
+                  tooltipContent += `\n--- Low Confidence Details ---\n`;
+                  tooltipContent += formatConfidenceDebugTooltip(lowConfidenceDebugInfo);
+                }
                 
                 return (
                   <Tooltip
@@ -385,11 +481,12 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
                     slotProps={{
                       tooltip: {
                         sx: {
-                          fontSize: '0.75rem',
-                          maxWidth: 400,
+                          fontSize: '0.7rem',
+                          maxWidth: 500,
                           whiteSpace: 'pre-line',
                           fontFamily: 'monospace',
-                          backgroundColor: 'rgba(0, 0, 0, 0.9)'
+                          backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                          lineHeight: 1.3
                         }
                       }
                     }}
@@ -503,7 +600,7 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         onClose={() => setMapDialogOpen(false)}
         vehicleId={vehicle.id}
         targetStationId={station?.stop_id || null}
-        vehicles={vehicles}
+        vehicles={allStationVehicles}
         routes={routes}
         stations={stops}
         trips={trips}

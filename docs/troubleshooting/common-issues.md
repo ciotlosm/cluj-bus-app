@@ -1,5 +1,11 @@
 # Common Issues
 
+## Map and Debug Issues
+
+### Debug Layer Crashes Map
+**Problem**: Clicking debug layer toggle causes Leaflet errors "Cannot set properties of undefined" and "Cannot read properties of undefined (reading 'appendChild')"
+**Solution**: Map container initialization issue - refresh page and avoid rapid debug toggle clicks
+
 ## Setup Problems
 
 ### API Key Not Working

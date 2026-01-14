@@ -18,6 +18,9 @@ interface RouteStore {
   // Performance optimization: track last update time
   lastUpdated: number | null;
   
+  // Separate API fetch timestamp for freshness checks
+  lastApiFetch: number | null;
+  
   // Actions
   loadRoutes: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -45,6 +48,7 @@ export const useRouteStore = create<RouteStore>()(
       loading: false,
       error: null,
       lastUpdated: null,
+      lastApiFetch: null,
       
       // Actions
       loadRoutes: async () => {
@@ -84,7 +88,7 @@ export const useRouteStore = create<RouteStore>()(
         await refreshMethod(get, set);
       },
       
-      clearRoutes: () => set({ routes: [], error: null, lastUpdated: null }),
+      clearRoutes: () => set({ routes: [], error: null, lastUpdated: null, lastApiFetch: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default from constants)

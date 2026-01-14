@@ -4,6 +4,8 @@
  */
 
 import type { TranzyStopResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from './rawTranzyApi';
+import type { EnhancedVehicleData } from '../utils/vehicle/vehicleEnhancementUtils';
+import { type ConfidenceLevel } from '../utils/core/stringConstants';
 
 /**
  * Constants for filtering behavior
@@ -14,13 +16,14 @@ export const SECONDARY_STATION_THRESHOLD = 100; // meters
  * Vehicle with route information for a station
  */
 export interface StationVehicle {
-  vehicle: TranzyVehicleResponse;
+  vehicle: EnhancedVehicleData; // Use enhanced vehicle data directly
   route: TranzyRouteResponse | null;
   trip: TranzyTripResponse | null; // NEW: trip information for headsign
   arrivalTime?: {
     statusMessage: string;
-    confidence: 'high' | 'medium' | 'low';
+    confidence: ConfidenceLevel;
     estimatedMinutes: number;
+    calculationMethod: string; // NEW: preserve calculation method for debugging
   }; // NEW: arrival time information
 }
 

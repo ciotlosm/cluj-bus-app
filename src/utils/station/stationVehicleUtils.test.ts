@@ -8,7 +8,7 @@ import type { StationVehicle } from '../../types/stationFilter';
 // Mock data for testing
 const createMockStationVehicle = (
   vehicleId: number, 
-  arrivalTime?: { statusMessage: string; confidence: 'high' | 'medium' | 'low'; estimatedMinutes: number }
+  arrivalTime?: { statusMessage: string; confidence: 'high' | 'medium' | 'low'; estimatedMinutes: number; calculationMethod: string }
 ): StationVehicle => ({
   vehicle: {
     id: vehicleId,
@@ -29,7 +29,7 @@ describe('sortStationVehiclesByArrival', () => {
   it('should sort vehicles with arrival times before vehicles without', () => {
     const vehicles: StationVehicle[] = [
       createMockStationVehicle(1), // No arrival time
-      createMockStationVehicle(2, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5 }),
+      createMockStationVehicle(2, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5, calculationMethod: 'route_projection' }),
       createMockStationVehicle(3), // No arrival time
     ];
 
@@ -42,9 +42,9 @@ describe('sortStationVehiclesByArrival', () => {
 
   it('should sort vehicles by estimated minutes when both have arrival times', () => {
     const vehicles: StationVehicle[] = [
-      createMockStationVehicle(1, { statusMessage: 'In 10 minutes', confidence: 'high', estimatedMinutes: 10 }),
-      createMockStationVehicle(2, { statusMessage: 'In 3 minutes', confidence: 'high', estimatedMinutes: 3 }),
-      createMockStationVehicle(3, { statusMessage: 'In 7 minutes', confidence: 'medium', estimatedMinutes: 7 }),
+      createMockStationVehicle(1, { statusMessage: 'In 10 minutes', confidence: 'high', estimatedMinutes: 10, calculationMethod: 'route_projection' }),
+      createMockStationVehicle(2, { statusMessage: 'In 3 minutes', confidence: 'high', estimatedMinutes: 3, calculationMethod: 'stop_segments' }),
+      createMockStationVehicle(3, { statusMessage: 'In 7 minutes', confidence: 'medium', estimatedMinutes: 7, calculationMethod: 'route_projection' }),
     ];
 
     const sorted = sortStationVehiclesByArrival(vehicles);
@@ -56,9 +56,9 @@ describe('sortStationVehiclesByArrival', () => {
 
   it('should handle mixed scenarios with different status messages', () => {
     const vehicles: StationVehicle[] = [
-      createMockStationVehicle(1, { statusMessage: 'Departed', confidence: 'high', estimatedMinutes: -5 }),
-      createMockStationVehicle(2, { statusMessage: 'At stop', confidence: 'high', estimatedMinutes: 0 }),
-      createMockStationVehicle(3, { statusMessage: 'In 2 minutes', confidence: 'medium', estimatedMinutes: 2 }),
+      createMockStationVehicle(1, { statusMessage: 'Departed', confidence: 'high', estimatedMinutes: -5, calculationMethod: 'route_projection' }),
+      createMockStationVehicle(2, { statusMessage: 'At stop', confidence: 'high', estimatedMinutes: 0, calculationMethod: 'route_projection' }),
+      createMockStationVehicle(3, { statusMessage: 'In 2 minutes', confidence: 'medium', estimatedMinutes: 2, calculationMethod: 'stop_segments' }),
       createMockStationVehicle(4), // No arrival time
     ];
 
@@ -73,9 +73,9 @@ describe('sortStationVehiclesByArrival', () => {
 
   it('should maintain stable sort order for vehicles with same arrival time', () => {
     const vehicles: StationVehicle[] = [
-      createMockStationVehicle(3, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5 }),
-      createMockStationVehicle(1, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5 }),
-      createMockStationVehicle(2, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5 }),
+      createMockStationVehicle(3, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5, calculationMethod: 'route_projection' }),
+      createMockStationVehicle(1, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5, calculationMethod: 'route_projection' }),
+      createMockStationVehicle(2, { statusMessage: 'In 5 minutes', confidence: 'high', estimatedMinutes: 5, calculationMethod: 'route_projection' }),
     ];
 
     const sorted = sortStationVehiclesByArrival(vehicles);

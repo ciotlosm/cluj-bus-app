@@ -6,6 +6,7 @@
 import { calculateDistance } from '../location/distanceUtils.ts';
 import type { Coordinates } from '../location/distanceUtils.ts';
 import type { RouteShape } from '../../types/arrivalTime.ts';
+import { CONFIDENCE_THRESHOLDS } from '../core/constants';
 
 /**
  * Core projection calculation - projects a point onto a line segment
@@ -180,8 +181,8 @@ export function calculateSegmentConfidence(
   );
   
   // Higher confidence when all points are close to route shape
-  if (maxDistance < 50) return 0.9;
-  if (maxDistance < 100) return 0.7;
-  if (maxDistance < 200) return 0.5;
-  return 0.3;
+  if (maxDistance < CONFIDENCE_THRESHOLDS.HIGH_DISTANCE) return CONFIDENCE_THRESHOLDS.HIGH_CONFIDENCE;
+  if (maxDistance < CONFIDENCE_THRESHOLDS.MEDIUM_DISTANCE) return CONFIDENCE_THRESHOLDS.MEDIUM_CONFIDENCE;
+  if (maxDistance < CONFIDENCE_THRESHOLDS.LOW_DISTANCE) return CONFIDENCE_THRESHOLDS.LOW_CONFIDENCE;
+  return CONFIDENCE_THRESHOLDS.FALLBACK_CONFIDENCE;
 }

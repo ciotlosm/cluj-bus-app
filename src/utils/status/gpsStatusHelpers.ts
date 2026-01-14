@@ -5,11 +5,11 @@ import {
   GpsOff,
   LocationDisabled,
 } from '@mui/icons-material';
-import type { PermissionState, LocationAccuracy } from '../../types/location';
+import type { PermissionState, LocationAccuracyLevel } from '../../types/location';
 
 export const getGpsIcon = (
   status: 'available' | 'unavailable' | 'disabled',
-  accuracy: LocationAccuracy | null,
+  accuracy: LocationAccuracyLevel | null,
   permissionState: PermissionState | null
 ) => {
   if (permissionState === 'denied') return LocationDisabled;
@@ -24,7 +24,7 @@ export const getGpsIcon = (
 
 export const getGpsColor = (
   status: 'available' | 'unavailable' | 'disabled',
-  accuracy: LocationAccuracy | null,
+  accuracy: LocationAccuracyLevel | null,
   permissionState: PermissionState | null
 ): 'success' | 'warning' | 'error' => {
   if (permissionState === 'denied' || status === 'disabled' || status === 'unavailable') {
@@ -38,7 +38,7 @@ export const getGpsColor = (
 
 export const getGpsTooltip = (
   status: 'available' | 'unavailable' | 'disabled',
-  accuracy: LocationAccuracy | null,
+  accuracy: LocationAccuracyLevel | null,
   permissionState: PermissionState | null
 ): string => {
   if (permissionState === 'denied') {
@@ -71,7 +71,7 @@ export const getGpsStatusText = (
 
 export const getGpsRecommendations = (
   status: 'available' | 'unavailable' | 'disabled',
-  accuracy: LocationAccuracy | null,
+  accuracy: LocationAccuracyLevel | null,
   permissionState: PermissionState | null
 ): string[] => {
   if (permissionState === 'denied') {

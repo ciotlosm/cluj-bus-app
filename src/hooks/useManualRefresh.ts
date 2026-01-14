@@ -51,8 +51,8 @@ export function useManualRefresh(): UseManualRefreshReturn {
     // Check immediately
     checkServiceState();
 
-    // Set up periodic check to stay in sync
-    const interval = setInterval(checkServiceState, 100);
+    // Set up periodic check to stay in sync (reduced frequency)
+    const interval = setInterval(checkServiceState, 500); // 500ms instead of 100ms
 
     return () => clearInterval(interval);
   }, []);

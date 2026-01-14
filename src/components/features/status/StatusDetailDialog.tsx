@@ -10,7 +10,7 @@ import {
   Chip,
   Divider
 } from '@mui/material';
-import type { PermissionState, LocationAccuracy } from '../../../types/location';
+import type { PermissionState, LocationAccuracyLevel } from '../../../types/location';
 import {
   getGpsIcon,
   getGpsColor,
@@ -23,11 +23,11 @@ import {
   getApiStatusText,
   getApiRecommendations
 } from '../../../utils/status/apiStatusHelpers';
-import { formatTimeAgo } from '../../../utils/vehicle/vehicleFormatUtils';
+import { formatRelativeTime } from '../../../utils/time/timestampFormatUtils';
 
 interface GpsState {
   status: 'available' | 'unavailable' | 'disabled';
-  accuracy: LocationAccuracy | null;
+  accuracy: LocationAccuracyLevel | null;
   permissionState: PermissionState | null;
   lastUpdated: number | null;
 }
@@ -83,7 +83,7 @@ export const StatusDetailDialog: FC<StatusDetailDialogProps> = ({
           {lastUpdated && (
             <>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                <strong>Last Updated:</strong> {formatTimeAgo(lastUpdated)} ({new Date(lastUpdated).toLocaleString()})
+                <strong>Last Updated:</strong> {formatRelativeTime(lastUpdated)} ({new Date(lastUpdated).toLocaleString()})
               </Typography>
             </>
           )}

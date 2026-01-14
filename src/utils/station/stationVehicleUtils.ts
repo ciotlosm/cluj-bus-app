@@ -1,15 +1,18 @@
 /**
  * Station Vehicle Utilities
  * Vehicle retrieval and station metadata management
+ * Supports both original and enhanced vehicle data with position predictions
  */
 
 import { 
   getCachedStationRouteMapping, 
   getRouteIdsForStation 
 } from '../route/routeStationMapping';
+import { CONFIDENCE_LEVELS, ARRIVAL_METHODS } from '../core/stringConstants';
 import { calculateVehicleArrivalTime, sortVehiclesByArrival, isVehicleOffRoute } from '../arrival/arrivalUtils';
 import type { StationVehicle, FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse, TranzyStopResponse } from '../../types/rawTranzyApi';
+import type { EnhancedVehicleData } from '../vehicle/vehicleEnhancementUtils';
 import type { ArrivalTimeResult, ArrivalStatus, RouteShape } from '../../types/arrivalTime';
 
 /**
@@ -27,7 +30,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
         status: getStatusFromMessage(stationVehicle.arrivalTime.statusMessage), // Convert message back to status
         statusMessage: stationVehicle.arrivalTime.statusMessage,
         confidence: stationVehicle.arrivalTime.confidence,
-        calculationMethod: 'route_shape' as const, // Default value
+        calculationMethod: stationVehicle.arrivalTime.calculationMethod || 'unknown',
         originalVehicle: stationVehicle
       } as ArrivalTimeResult & { originalVehicle: StationVehicle };
     } else {
@@ -37,8 +40,8 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
         estimatedMinutes: 999, // High value for sorting to end
         status: 'off_route' as const, // Lowest priority status
         statusMessage: '',
-        confidence: 'low' as const,
-        calculationMethod: 'route_shape' as const,
+        confidence: CONFIDENCE_LEVELS.LOW,
+        calculationMethod: ARRIVAL_METHODS.ROUTE_SHAPE,
         originalVehicle: stationVehicle
       } as ArrivalTimeResult & { originalVehicle: StationVehicle };
     }
@@ -59,17 +62,18 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
 function getStatusFromMessage(statusMessage: string): ArrivalStatus {
   if (statusMessage.includes('At stop')) return 'at_stop';
   if (statusMessage.includes('Departed')) return 'departed';
-  if (statusMessage.includes('minutes')) return 'in_minutes';
+  if (statusMessage.includes('minute')) return 'in_minutes'; // Changed to 'minute' to match both singular and plural
   return 'off_route';
 }
 
 /**
  * Get vehicles serving a specific station with arrival time calculations
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export const getStationVehicles = (
   stationId: number,
   stopTimes: TranzyStopTimeResponse[],
-  vehicles: TranzyVehicleResponse[],
+  vehicles: EnhancedVehicleData[], // Simplified: only accept enhanced vehicles
   allRoutes: TranzyRouteResponse[],
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations
@@ -137,6 +141,7 @@ export const getStationVehicles = (
           statusMessage: string;
           confidence: 'high' | 'medium' | 'low';
           estimatedMinutes: number;
+          calculationMethod: string;
         } | undefined;
         
         if (targetStop && stops.length > 0) {
@@ -159,7 +164,8 @@ export const getStationVehicles = (
             arrivalTime = {
               statusMessage: arrivalResult.statusMessage,
               confidence: arrivalResult.confidence,
-              estimatedMinutes: arrivalResult.estimatedMinutes
+              estimatedMinutes: arrivalResult.estimatedMinutes,
+              calculationMethod: arrivalResult.calculationMethod
             };
           } catch (error) {
             console.warn('Failed to calculate arrival time for vehicle:', vehicle.id, error);
@@ -200,11 +206,12 @@ export const getStationVehicles = (
 
 /**
  * Add metadata (vehicles, route IDs) to a station
+ * Supports both original and enhanced vehicle data with position predictions
  */
 export const addStationMetadata = (
   station: any,
   stopTimes: TranzyStopTimeResponse[],
-  vehicles: TranzyVehicleResponse[],
+  vehicles: EnhancedVehicleData[], // Simplified: only accept enhanced vehicles
   allRoutes: TranzyRouteResponse[],
   trips: TranzyTripResponse[] = [], // NEW: trip data for headsign
   stops: TranzyStopResponse[] = [], // NEW: stop data for arrival calculations

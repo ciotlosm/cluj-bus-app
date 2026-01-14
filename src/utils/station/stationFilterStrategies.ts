@@ -9,6 +9,7 @@ import { addStationMetadata } from './stationVehicleUtils';
 import { useShapeStore } from '../../stores/shapeStore';
 import type { FilteredStation } from '../../types/stationFilter';
 import type { TranzyStopResponse, TranzyStopTimeResponse, TranzyVehicleResponse, TranzyRouteResponse, TranzyTripResponse } from '../../types/rawTranzyApi';
+import type { EnhancedVehicleData } from '../vehicle/vehicleEnhancementUtils';
 import type { RouteShape } from '../../types/arrivalTime';
 import { SECONDARY_STATION_THRESHOLD } from '../../types/stationFilter';
 
@@ -21,7 +22,7 @@ export const filterStations = async (
   stops: TranzyStopResponse[],
   currentPosition: GeolocationPosition | null,
   stopTimes: TranzyStopTimeResponse[],
-  vehicles: TranzyVehicleResponse[],
+  vehicles: EnhancedVehicleData[], // Simplified: only accept enhanced vehicles
   allRoutes: TranzyRouteResponse[],
   maxResults?: number,
   proximityThreshold: number = SECONDARY_STATION_THRESHOLD,

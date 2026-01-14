@@ -1,21 +1,20 @@
 /**
  * Route Shape Service
  * Manages fetching and caching of route shapes for arrival time calculations
+ * Uses proper store architecture with caching
  */
 
-import { shapesService } from './shapesService.ts';
-import { getCachedRouteShape } from '../utils/shapes/shapeUtils.ts';
 import type { RouteShape } from '../types/arrivalTime.ts';
-import type { TranzyTripResponse, TranzyShapeResponse } from '../types/rawTranzyApi.ts';
+import type { TranzyTripResponse } from '../types/rawTranzyApi.ts';
 
 /**
  * Fetch route shapes for multiple trips efficiently
- * Only fetches unique shape_ids to minimize API calls
+ * Uses store architecture with caching
  */
 export async function fetchRouteShapesForTrips(trips: TranzyTripResponse[]): Promise<Map<string, RouteShape>> {
   const routeShapes = new Map<string, RouteShape>();
   
-  // Get unique shape IDs to minimize API calls
+  // Get unique shape IDs to minimize processing
   const uniqueShapeIds = [...new Set(trips.map(trip => trip.shape_id).filter(Boolean))];
   
   if (uniqueShapeIds.length === 0) {
@@ -23,33 +22,23 @@ export async function fetchRouteShapesForTrips(trips: TranzyTripResponse[]): Pro
   }
 
   try {
-    // Fetch all shapes from API (since we don't have a method to fetch specific shapes)
-    const allShapes = await shapesService.getAllShapes();
+    // Load shapes through store (respects caching)
+    const { useShapeStore } = await import('../stores/shapeStore');
+    await useShapeStore.getState().loadShapes();
     
-    // Group shapes by shape_id
-    const shapeGroups = new Map<string, TranzyShapeResponse[]>();
-    allShapes.forEach(shape => {
-      if (!shapeGroups.has(shape.shape_id)) {
-        shapeGroups.set(shape.shape_id, []);
-      }
-      shapeGroups.get(shape.shape_id)!.push(shape);
-    });
-
-    // Create RouteShape objects for requested shape IDs
+    // Get cached shapes from store
+    const allShapes = useShapeStore.getState().shapes;
+    
+    // Create RouteShape objects for requested shape IDs from cached data
     uniqueShapeIds.forEach(shapeId => {
-      const shapePoints = shapeGroups.get(shapeId);
-      if (shapePoints && shapePoints.length > 0) {
-        try {
-          const routeShape = getCachedRouteShape(shapeId, shapePoints);
-          routeShapes.set(shapeId, routeShape);
-        } catch (error) {
-          console.warn(`Failed to create route shape for ${shapeId}:`, error);
-        }
+      const routeShape = allShapes.get(shapeId);
+      if (routeShape) {
+        routeShapes.set(shapeId, routeShape);
       }
     });
 
   } catch (error) {
-    console.warn('Failed to fetch shapes:', error);
+    console.warn('Failed to fetch shapes from store:', error);
   }
 
   return routeShapes;

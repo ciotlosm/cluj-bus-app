@@ -1,29 +1,18 @@
 // Store utilities for manual refresh functionality
 // Shared utilities to eliminate code duplication across stores
 
-/**
- * Generic localStorage persistence utilities for stores
- */
-export interface StorageData<T> {
-  data: T;
-  lastUpdated: number | null;
-  error: string | null;
-}
+// Import types
+import type { StorageData, RetryConfig } from '../../types/common';
 
-/**
- * Configuration for retry logic with exponential backoff
- */
-export interface RetryConfig {
-  maxAttempts: number;
-  delays: number[]; // milliseconds for each attempt
-}
+// Re-export for backward compatibility
+export type { StorageData, RetryConfig };
 
-/**
- * Default retry configuration for network errors
- */
-export const DEFAULT_RETRY_CONFIG: RetryConfig = {
+// Define retry config locally to avoid import issues
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxAttempts: 3,
-  delays: [100, 200, 400] // 100ms, 200ms, 400ms
+  baseDelay: 1000, // 1 second
+  maxDelay: 10000, // 10 seconds
+  backoffMultiplier: 2
 };
 
 /**
@@ -47,7 +36,12 @@ export async function retryWithBackoff<T>(
         break;
       }
       
-      const delay = config.delays[attempt];
+      // Calculate exponential backoff delay
+      const delay = Math.min(
+        config.baseDelay * Math.pow(config.backoffMultiplier, attempt),
+        config.maxDelay
+      );
+      
       console.log(`${operationName} attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
@@ -126,7 +120,8 @@ export function createRefreshMethod<T>(
       setState({ 
         [dataKey]: data,
         error: null, 
-        lastUpdated: Date.now() 
+        lastUpdated: Date.now(),
+        lastApiFetch: Date.now()  // Track API fetch time separately
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Failed to refresh ${storeName}`;
@@ -151,14 +146,14 @@ export function createRefreshMethod<T>(
   };
 }
 
-/**
- * Creates a data freshness checker
- * @param defaultMaxAge - Default maximum age in milliseconds
- */
-export function createFreshnessChecker(defaultMaxAge: number) {
-  return (getState: () => any, maxAgeMs: number = defaultMaxAge): boolean => {
-    const { lastUpdated } = getState();
-    if (!lastUpdated) return false;
-    return (Date.now() - lastUpdated) < maxAgeMs;
-  };
-}
+  /**
+   * Creates a data freshness checker
+   * @param defaultMaxAge - Default maximum age in milliseconds
+   */
+  export function createFreshnessChecker(defaultMaxAge: number) {
+    return (getState: () => any, maxAgeMs: number = defaultMaxAge): boolean => {
+      const { lastApiFetch } = getState();
+      if (!lastApiFetch) return false;
+      return (Date.now() - lastApiFetch) < maxAgeMs;
+    };
+  }

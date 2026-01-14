@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { TEST_CONFIG } from './src/test/testConstants'
 
 export default defineConfig({
   plugins: [react()],
@@ -9,7 +10,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 5000, // Slightly increased for parallel execution
+    testTimeout: TEST_CONFIG.TIMEOUT,
     pool: 'forks',
     poolOptions: {
       forks: {
@@ -18,9 +19,9 @@ export default defineConfig({
       },
     },
     // Optimize for speed with memory leak fixed
-    maxConcurrency: 4,   // Allow 4 concurrent tests
-    minWorkers: 2,       // Start with 2 workers
-    maxWorkers: 4,       // Scale up to 4 workers based on CPU cores
+    maxConcurrency: TEST_CONFIG.MAX_CONCURRENCY,
+    minWorkers: TEST_CONFIG.MIN_WORKERS,
+    maxWorkers: TEST_CONFIG.MAX_WORKERS,
     // Clear mocks between tests
     clearMocks: true,
     // Restore mocks after each test

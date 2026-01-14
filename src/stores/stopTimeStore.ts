@@ -19,6 +19,9 @@ interface StopTimeStore {
   // Performance optimization: track last update time
   lastUpdated: number | null;
   
+  // Separate API fetch timestamp for freshness checks
+  lastApiFetch: number | null;
+  
   // Actions
   loadStopTimes: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -50,6 +53,7 @@ export const useStopTimeStore = create<StopTimeStore>()(
       loading: false,
       error: null,
       lastUpdated: null,
+      lastApiFetch: null,
       
       // Actions
       loadStopTimes: async () => {
@@ -89,7 +93,7 @@ export const useStopTimeStore = create<StopTimeStore>()(
         await refreshMethod(get, set);
       },
       
-      clearStopTimes: () => set({ stopTimes: [], error: null, lastUpdated: null }),
+      clearStopTimes: () => set({ stopTimes: [], error: null, lastUpdated: null, lastApiFetch: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default 24 hours for general data)

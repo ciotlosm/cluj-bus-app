@@ -80,11 +80,6 @@ export const MapControls: FC<MapControlsProps> = ({
               <RouteIcon />
             </Tooltip>
           </ToggleButton>
-          <ToggleButton value={MapMode.STATION_CENTERED}>
-            <Tooltip title="Station Centered" placement="top">
-              <StationIcon />
-            </Tooltip>
-          </ToggleButton>
         </ToggleButtonGroup>
 
         <Divider orientation="vertical" flexItem />
@@ -129,6 +124,17 @@ export const MapControls: FC<MapControlsProps> = ({
 
         {/* Additional controls */}
         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 0.5 }}>
+          {/* User location toggle */}
+          <Tooltip title={`${showUserLocation ? 'Hide' : 'Show'} User Location`} placement="top">
+            <IconButton
+              size="small"
+              color={showUserLocation ? 'primary' : 'default'}
+              onClick={() => onUserLocationToggle(!showUserLocation)}
+            >
+              <LocationIcon />
+            </IconButton>
+          </Tooltip>
+
           {/* Debug toggle */}
           <Tooltip title="Toggle Debug Mode" placement="top">
             <IconButton
@@ -137,17 +143,6 @@ export const MapControls: FC<MapControlsProps> = ({
               onClick={() => onDebugToggle(!debugMode)}
             >
               <DebugIcon />
-            </IconButton>
-          </Tooltip>
-
-          {/* User location toggle */}
-          <Tooltip title="Toggle User Location" placement="top">
-            <IconButton
-              size="small"
-              color={showUserLocation ? 'primary' : 'default'}
-              onClick={() => onUserLocationToggle(!showUserLocation)}
-            >
-              <LocationIcon />
             </IconButton>
           </Tooltip>
         </Box>

@@ -4,13 +4,15 @@
  * Shows all stations within proximity of the closest station
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLocationStore } from '../stores/locationStore';
 import { useStationStore } from '../stores/stationStore';
 import { useStopTimeStore } from '../stores/stopTimeStore';
 import { useTripStore } from '../stores/tripStore';
 import { useVehicleStore } from '../stores/vehicleStore';
 import { useRouteStore } from '../stores/routeStore';
+import { calculateDistance } from '../utils/location/distanceUtils';
+import { LOCATION_CONFIG } from '../utils/core/constants';
 import { 
   formatDistance,
   getStationTypeColor,
@@ -19,7 +21,6 @@ import {
 import {
   filterStations
 } from '../utils/station/stationFilterStrategies';
-import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 import { SECONDARY_STATION_THRESHOLD } from '../types/stationFilter';
 import type { FilteredStation } from '../types/stationFilter';
 
@@ -86,8 +87,24 @@ export function useStationFilter(): StationFilterResult {
   }, [stopTimes.length, trips.length, stopTimeLoading, tripLoading, stopTimeError, tripError, loadStopTimes, loadTrips, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
   
   const [filteredStations, setFilteredStations] = useState<FilteredStation[]>([]);
+  const [lastFilterPosition, setLastFilterPosition] = useState<GeolocationPosition | null>(null);
   
-  // Async filtering effect - always shows stations within proximity of closest station
+  // Helper function to check if location change is significant enough to re-filter
+  const shouldRefilter = useCallback((newPosition: GeolocationPosition | null, lastPosition: GeolocationPosition | null): boolean => {
+    if (!newPosition) return false;
+    if (!lastPosition) return true;
+    
+    // Use existing distance utility instead of duplicating calculation
+    const distance = calculateDistance(
+      { lat: lastPosition.coords.latitude, lon: lastPosition.coords.longitude },
+      { lat: newPosition.coords.latitude, lon: newPosition.coords.longitude }
+    );
+    
+    // Use constant from configuration
+    return distance > LOCATION_CONFIG.REFILTER_DISTANCE_THRESHOLD;
+  }, []);
+  
+  // Async filtering effect - only re-filter when location changes significantly or data changes
   useEffect(() => {
     const filterAsync = async () => {
       // Early return if no stations available
@@ -100,6 +117,16 @@ export function useStationFilter(): StationFilterResult {
       if (trips.length === 0 && !tripError) {
         setFilteredStations([]);
         return;
+      }
+
+      // Check if we should re-filter based on location change OR if we have no filtered stations yet
+      // Always re-filter when vehicles/stops/trips data changes (dependencies trigger this effect)
+      const hasLocationChanged = shouldRefilter(currentPosition, lastFilterPosition);
+      const hasNoResults = filteredStations.length === 0;
+      
+      if (!hasLocationChanged && !hasNoResults && lastFilterPosition !== null) {
+        // Location hasn't changed significantly and we have results, but data might have changed
+        // Re-filter to update vehicle predictions in existing stations
       }
 
       try {
@@ -123,6 +150,7 @@ export function useStationFilter(): StationFilterResult {
         }
         
         setFilteredStations(result);
+        setLastFilterPosition(currentPosition); // Update last filter position
       } catch (error) {
         console.error('Error filtering stations:', error);
         setFilteredStations([]);
@@ -130,13 +158,17 @@ export function useStationFilter(): StationFilterResult {
     };
 
     filterAsync();
-  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition]);
+  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, shouldRefilter, lastFilterPosition]);
   
-  const retryFiltering = useCallback(() => {}, []); // No-op for simple implementation
+  const retryFiltering = useCallback(() => {
+    // Force re-filtering by clearing last position
+    setLastFilterPosition(null);
+  }, []);
   
   return {
     filteredStations,
-    loading: locationLoading || stationLoading || tripLoading || vehicleLoading || routeLoading,
+    // Only show loading for initial data loads, not location updates when we have data
+    loading: (locationLoading && stops.length === 0) || stationLoading || tripLoading || vehicleLoading || routeLoading,
     error: locationError || stationError || tripError || vehicleError || routeError,
     retryFiltering,
     // Utility functions for UI formatting

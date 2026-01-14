@@ -6,7 +6,8 @@
 import { projectPointToShape } from './distanceUtils.ts';
 import { isProjectionBetween, calculateSegmentConfidence } from './geometryUtils.ts';
 import { calculateDistance } from '../location/distanceUtils.ts';
-import { getTripStopSequence } from './tripUtils.ts';
+import { CALCULATION_TOLERANCES } from '../core/constants';
+import { CONFIDENCE_LEVELS, ARRIVAL_METHODS } from '../core/stringConstants';
 import type {
   TranzyVehicleResponse,
   TranzyStopResponse,
@@ -36,8 +37,8 @@ export function estimateVehicleProgressWithShape(
     return {
       projectionPoint: vehicleProjection.closestPoint,
       segmentBetweenStops: null,
-      confidence: 'low',
-      method: 'route_projection'
+      confidence: CONFIDENCE_LEVELS.LOW,
+      method: ARRIVAL_METHODS.ROUTE_PROJECTION
     };
   }
   
@@ -89,8 +90,8 @@ export function estimateVehicleProgressWithShape(
         previousStop: bestSegment.previousStop,
         nextStop: bestSegment.nextStop
       },
-      confidence: bestSegment.confidence > 0.7 ? 'high' : 'medium',
-      method: 'route_projection'
+      confidence: bestSegment.confidence > 0.7 ? CONFIDENCE_LEVELS.HIGH : CONFIDENCE_LEVELS.MEDIUM,
+      method: ARRIVAL_METHODS.ROUTE_PROJECTION
     };
   }
   
@@ -98,8 +99,8 @@ export function estimateVehicleProgressWithShape(
   return {
     projectionPoint: vehicleProjection.closestPoint,
     segmentBetweenStops: null,
-    confidence: 'low',
-    method: 'route_projection'
+    confidence: CONFIDENCE_LEVELS.LOW,
+    method: ARRIVAL_METHODS.ROUTE_PROJECTION
   };
 }
 
@@ -120,8 +121,8 @@ export function estimateVehicleProgressWithStops(
     return {
       projectionPoint: vehiclePosition,
       segmentBetweenStops: null,
-      confidence: 'low',
-      method: 'stop_segments'
+      confidence: CONFIDENCE_LEVELS.LOW,
+      method: ARRIVAL_METHODS.STOP_SEGMENTS
     };
   }
   
@@ -166,7 +167,7 @@ export function estimateVehicleProgressWithStops(
       const segmentLength = calculateDistance(stopAPosition, stopBPosition);
       
       // If sum of distances is much larger than segment length, vehicle might be off-route
-      const tolerance = 0.5; // 50% tolerance
+      const tolerance = CALCULATION_TOLERANCES.SEGMENT_DISTANCE;
       const isReasonablyClose = bestSegment.totalDistance <= segmentLength * (1 + tolerance);
       
       return {
@@ -175,8 +176,8 @@ export function estimateVehicleProgressWithStops(
           previousStop: bestSegment.previousStop,
           nextStop: bestSegment.nextStop
         },
-        confidence: isReasonablyClose ? 'medium' : 'low',
-        method: 'stop_segments'
+        confidence: isReasonablyClose ? CONFIDENCE_LEVELS.MEDIUM : CONFIDENCE_LEVELS.LOW,
+        method: ARRIVAL_METHODS.STOP_SEGMENTS
       };
     }
   }
@@ -185,7 +186,62 @@ export function estimateVehicleProgressWithStops(
   return {
     projectionPoint: vehiclePosition,
     segmentBetweenStops: null,
-    confidence: 'low',
-    method: 'stop_segments'
+    confidence: CONFIDENCE_LEVELS.LOW,
+    method: ARRIVAL_METHODS.STOP_SEGMENTS
   };
+}
+
+/**
+ * Get the next station for a vehicle based on its progress
+ * Reusable utility to avoid duplicating next station calculation logic
+ */
+export function getNextStationForVehicle(
+  vehicle: TranzyVehicleResponse,
+  stopTimes: TranzyStopTimeResponse[],
+  stations: TranzyStopResponse[]
+): TranzyStopResponse | null {
+  if (!vehicle.trip_id) return null;
+  
+  // Get trip stop sequence
+  const tripStopTimes = stopTimes.filter(st => st.trip_id === vehicle.trip_id)
+    .sort((a, b) => a.stop_sequence - b.stop_sequence);
+  
+  if (tripStopTimes.length === 0) return null;
+  
+  const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
+  const STATION_PROXIMITY_THRESHOLD = 50; // meters - same as vehicleEnhancementUtils
+  
+  // FIRST: Check if vehicle is AT a station (within 50m)
+  // If yes, return the NEXT stop in the sequence, not the current one
+  for (let i = 0; i < tripStopTimes.length; i++) {
+    const stopTime = tripStopTimes[i];
+    const station = stations.find(s => s.stop_id === stopTime.stop_id);
+    
+    if (!station) continue;
+    
+    const stationPosition = { lat: station.stop_lat, lon: station.stop_lon };
+    const distance = calculateDistance(vehiclePosition, stationPosition);
+    
+    // Vehicle is AT this station
+    if (distance <= STATION_PROXIMITY_THRESHOLD) {
+      // Return the NEXT stop in sequence (if available)
+      if (i + 1 < tripStopTimes.length) {
+        const nextStopId = tripStopTimes[i + 1].stop_id;
+        return stations.find(s => s.stop_id === nextStopId) || null;
+      }
+      // Vehicle is at the last stop - no next station
+      return null;
+    }
+  }
+  
+  // SECOND: Vehicle is NOT at a station, use segment-based logic
+  const vehicleProgress = estimateVehicleProgressWithStops(vehicle, tripStopTimes, stations);
+  
+  // Extract next stop from vehicle progress
+  if (vehicleProgress.segmentBetweenStops?.nextStop) {
+    const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
+    return stations.find(s => s.stop_id === nextStopId) || null;
+  }
+  
+  return null;
 }

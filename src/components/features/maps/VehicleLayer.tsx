@@ -2,18 +2,17 @@
  * VehicleLayer - Renders vehicle markers on the map with route-based coloring
  * Handles vehicle click events and popup functionality
  * Supports multiple coloring strategies: by route, by confidence, uniform
- * Includes performance optimizations and loading states
+ * Includes performance optimizations, loading states, and smooth animation
  */
 
 import type { FC } from 'react';
-import { useMemo, useState, useCallback } from 'react';
-import { Marker, Popup, useMap } from 'react-leaflet';
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMap } from 'react-leaflet';
 import { CircularProgress, Box } from '@mui/material';
 import type { VehicleLayerProps } from '../../../types/interactiveMap';
 import { VehicleColorStrategy, DEFAULT_MAP_PERFORMANCE } from '../../../types/interactiveMap';
-import { formatTimestamp } from '../../../utils/vehicle/vehicleFormatUtils';
-import { createVehicleIcon } from '../../../utils/maps/iconUtils';
 import { useOptimizedVehicles, useDebouncedLoading } from '../../../utils/maps/performanceUtils';
+import { AnimatedVehicleMarker } from './AnimatedVehicleMarker';
 
 // Extend window object for tracking logged vehicles
 declare global {
@@ -25,6 +24,7 @@ declare global {
 export const VehicleLayer: FC<VehicleLayerProps> = ({
   vehicles,
   routes,
+  trips,
   onVehicleClick,
   highlightedVehicleId,
   colorStrategy = VehicleColorStrategy.BY_ROUTE,
@@ -49,7 +49,7 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
   }, [map]);
 
   // Listen to map events for performance optimization
-  useMemo(() => {
+  useEffect(() => {
     map.on('moveend', updateMapState);
     map.on('zoomend', updateMapState);
     updateMapState(); // Initial call
@@ -118,17 +118,6 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
     }
   }, [colorStrategy, colorScheme]);
 
-  // Get vehicle status text
-  const getVehicleStatus = useCallback((vehicle: typeof vehicles[0]): string => {
-    if (vehicle.speed === 0) {
-      return 'Stopped';
-    } else if (vehicle.speed < 5) {
-      return 'Moving slowly';
-    } else {
-      return 'In transit';
-    }
-  }, []);
-
   // Handle cluster click
   const handleClusterClick = useCallback((cluster) => {
     // Zoom to cluster bounds
@@ -159,105 +148,44 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
     );
   }
 
-  // Render individual vehicle markers
+  // Render individual vehicle markers with smooth animation
   return (
     <>
       {optimizedVehicles.map(vehicle => {
         const isSelected = vehicle.id === highlightedVehicleId;
-        const color = '#3182CE'; // Always use station blue, even when selected
-        const icon = createVehicleIcon({ 
-          color, 
-          isSelected, 
-          speed: vehicle.speed,
-          size: 24 
-        });
+        const color = getVehicleColor(vehicle);
         const route = vehicle.route_id ? routes.get(vehicle.route_id) : null;
+        const trip = vehicle.trip_id && trips ? trips.get(vehicle.trip_id) : null;
 
         return (
-          <Marker
+          <AnimatedVehicleMarker
             key={vehicle.id}
-            position={[vehicle.latitude, vehicle.longitude]}
-            icon={icon}
-            eventHandlers={{
-              click: () => onVehicleClick?.(vehicle),
-            }}
-          >
-            <Popup>
-              <div style={{ minWidth: '200px' }}>
-                <div style={{ 
-                  fontWeight: 'bold', 
-                  fontSize: '16px', 
-                  marginBottom: '8px',
-                  color: color 
-                }}>
-                  Vehicle {vehicle.label}
-                </div>
-                
-                {route && (
-                  <div style={{ marginBottom: '6px' }}>
-                    <strong>Route:</strong> {route.route_short_name} - {route.route_long_name}
-                  </div>
-                )}
-                
-                <div style={{ marginBottom: '4px' }}>
-                  <strong>Status:</strong> {getVehicleStatus(vehicle)}
-                </div>
-                
-                <div style={{ marginBottom: '4px' }}>
-                  <strong>Speed:</strong> {vehicle.speed} km/h
-                </div>
-                
-                <div style={{ marginBottom: '4px' }}>
-                  <strong>Last Update:</strong> {formatTimestamp(vehicle.timestamp)}
-                </div>
-                
-                {vehicle.trip_id && (
-                  <div style={{ marginBottom: '4px' }}>
-                    <strong>Trip:</strong> {vehicle.trip_id}
-                  </div>
-                )}
-                
-                <div style={{ 
-                  fontSize: '12px', 
-                  color: '#666', 
-                  marginTop: '8px',
-                  borderTop: '1px solid #eee',
-                  paddingTop: '4px'
-                }}>
-                  ID: {vehicle.id} | Lat: {vehicle.latitude?.toFixed(6) ?? 'N/A'}, Lon: {vehicle.longitude?.toFixed(6) ?? 'N/A'}
-                </div>
-                
-                {/* Accessibility info */}
-                {(vehicle.wheelchair_accessible === 'WHEELCHAIR_ACCESSIBLE' || 
-                  vehicle.bike_accessible === 'BIKE_ACCESSIBLE') && (
-                  <div style={{ 
-                    fontSize: '12px', 
-                    marginTop: '4px',
-                    color: '#4CAF50'
-                  }}>
-                    {vehicle.wheelchair_accessible === 'WHEELCHAIR_ACCESSIBLE' && '♿ '}
-                    {vehicle.bike_accessible === 'BIKE_ACCESSIBLE' && '🚲 '}
-                    Accessible
-                  </div>
-                )}
-
-                {/* Performance info for debugging */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div style={{ 
-                    fontSize: '10px', 
-                    color: '#999', 
-                    marginTop: '4px',
-                    borderTop: '1px solid #eee',
-                    paddingTop: '2px'
-                  }}>
-                    Showing {optimizedVehicles.length} of {vehicles.length} vehicles
-                  </div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
+            vehicle={vehicle}
+            route={route}
+            trip={trip}
+            onVehicleClick={onVehicleClick}
+            isSelected={isSelected}
+            color={color}
+          />
         );
       })}
+      
+      {/* Performance info for debugging */}
+      {process.env.NODE_ENV === 'development' && optimizedVehicles.length > 0 && (
+        <div style={{ 
+          position: 'absolute',
+          bottom: 10,
+          left: 10,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: 4,
+          padding: 8,
+          fontSize: '10px',
+          color: '#999'
+        }}>
+          Showing {optimizedVehicles.length} of {vehicles.length} vehicles
+        </div>
+      )}
     </>
   );
 };

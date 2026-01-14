@@ -19,6 +19,9 @@ interface StationStore {
   // Performance optimization: track last update time
   lastUpdated: number | null;
   
+  // Separate API fetch timestamp for freshness checks
+  lastApiFetch: number | null;
+  
   // Actions
   loadStops: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -48,6 +51,7 @@ export const useStationStore = create<StationStore>()(
       loading: false,
       error: null,
       lastUpdated: null,
+      lastApiFetch: null,
       
       // Actions
       loadStops: async () => {
@@ -87,7 +91,7 @@ export const useStationStore = create<StationStore>()(
         await refreshMethod(get, set);
       },
       
-      clearStops: () => set({ stops: [], error: null, lastUpdated: null }),
+      clearStops: () => set({ stops: [], error: null, lastUpdated: null, lastApiFetch: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default 24 hours for general data)

@@ -6,6 +6,7 @@
 
 import { calculateDistance } from '../location/distanceUtils.ts';
 import { projectPointToSegment } from './geometryUtils.ts';
+import { CONFIDENCE_LEVELS, ARRIVAL_METHODS } from '../core/stringConstants';
 import type {
   Coordinates,
   TranzyStopResponse,
@@ -77,8 +78,8 @@ export function calculateDistanceViaStops(
 
   return {
     totalDistance,
-    method: 'stop_segments',
-    confidence: 'medium' // stop_segments method is inherently medium confidence
+    method: ARRIVAL_METHODS.STOP_SEGMENTS,
+    confidence: CONFIDENCE_LEVELS.MEDIUM // stop_segments method is inherently medium confidence
   };
 }
 

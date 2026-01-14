@@ -10,7 +10,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Polyline, Popup, Marker } from 'react-leaflet';
 import { CircularProgress, Box } from '@mui/material';
 import type { RouteShapeLayerProps, MapColorScheme } from '../../../types/interactiveMap';
-import type { Coordinates } from '../../../types/interactiveMap';
+import type { Coordinates } from '../../../utils/location/distanceUtils';
 import type { TranzyRouteResponse } from '../../../types/rawTranzyApi';
 import { calculateBearing } from '../../../utils/arrival/geometryUtils';
 import { createDirectionArrow } from '../../../utils/maps/iconUtils';

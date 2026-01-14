@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { RouteShape } from '../types/arrivalTime.ts';
-import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants.ts';
+import { IN_MEMORY_CACHE_DURATIONS, CALCULATION_TOLERANCES } from '../utils/core/constants.ts';
 import { compressData, decompressData, getCompressionRatio, formatSize } from '../utils/core/compressionUtils.ts';
 import { 
   createRefreshMethod, 
@@ -24,6 +24,9 @@ interface ShapeStore {
   
   // Performance optimization: track last update time
   lastUpdated: number | null;
+  
+  // Separate API fetch timestamp for freshness checks
+  lastApiFetch: number | null;
   
   // Actions
   loadShapes: () => Promise<void>;
@@ -79,6 +82,7 @@ export const useShapeStore = create<ShapeStore>()(
   loading: false,
   error: null,
   lastUpdated: null,
+  lastApiFetch: null,
   
   // Actions
   loadShapes: async () => {
@@ -112,7 +116,8 @@ export const useShapeStore = create<ShapeStore>()(
     set({
       shapes: new Map<string, RouteShape>(),
       error: null,
-      lastUpdated: null
+      lastUpdated: null,
+      lastApiFetch: null
     });
   },
   
@@ -204,7 +209,7 @@ export const useShapeStore = create<ShapeStore>()(
               const ratio = getCompressionRatio(jsonString, compressed);
               const isCompressed = compressed.startsWith('gzip:');
               
-              if (isCompressed && ratio > 1.1) {
+              if (isCompressed && ratio > CALCULATION_TOLERANCES.COMPRESSION_RATIO_THRESHOLD) {
                 console.log(`📦 Shape data compressed: ${formatSize(originalSize)} → ${formatSize(compressedSize)} (${ratio.toFixed(1)}x reduction)`);
               }
             }

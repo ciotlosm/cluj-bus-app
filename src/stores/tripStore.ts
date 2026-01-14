@@ -19,6 +19,9 @@ interface TripStore {
   // Performance optimization: track last update time
   lastUpdated: number | null;
   
+  // Separate API fetch timestamp for freshness checks
+  lastApiFetch: number | null;
+  
   // Actions
   loadTrips: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -53,6 +56,7 @@ export const useTripStore = create<TripStore>()(
       loading: false,
       error: null,
       lastUpdated: null,
+      lastApiFetch: null,
       
       // Actions
       loadTrips: async () => {
@@ -92,7 +96,7 @@ export const useTripStore = create<TripStore>()(
         await refreshMethod(get, set);
       },
       
-      clearTrips: () => set({ trips: [], error: null, lastUpdated: null }),
+      clearTrips: () => set({ trips: [], error: null, lastUpdated: null, lastApiFetch: null }),
       clearError: () => set({ error: null }),
       
       // Performance helper: check if data is fresh (default 24 hours for general data)

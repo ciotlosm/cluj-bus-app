@@ -14,8 +14,9 @@ import {
   CardContent,
   Divider
 } from '@mui/material';
-import { useConfigStore } from '../../../stores/configStore';
 import { ThemeToggle } from '../../theme/ThemeToggle';
+import { useConfigStore } from '../../../stores/configStore';
+import { HeaderControls } from '../../layout/HeaderControls';
 
 export const SettingsView: FC = () => {
   const { 
@@ -45,6 +46,11 @@ export const SettingsView: FC = () => {
 
   return (
     <Box sx={{ p: 2 }}>
+      {/* Header controls with GPS details enabled for settings view */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <HeaderControls showGpsDetails={true} />
+      </Box>
+      
       {error && (
         <Alert 
           severity="error" 

@@ -71,16 +71,18 @@ export function getArrivalStatus(
   }
 }
 
+import { CONFIDENCE_LEVELS } from '../core/stringConstants';
+
 /**
  * Generate status message with confidence indicator
  */
 export function generateStatusWithConfidence(
   status: ArrivalStatus,
   estimatedMinutes: number,
-  confidence: 'high' | 'medium' | 'low'
+  confidence: typeof CONFIDENCE_LEVELS[keyof typeof CONFIDENCE_LEVELS]
 ): string {
   const baseMessage = generateStatusMessage(status, estimatedMinutes);
-  return confidence === 'low' ? `${baseMessage} (estimated)` : baseMessage;
+  return confidence === CONFIDENCE_LEVELS.LOW ? `${baseMessage} (estimated)` : baseMessage;
 }
 
 function generateTimeBasedMessage(estimatedMinutes: number): string {

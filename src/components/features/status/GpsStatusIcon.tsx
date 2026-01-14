@@ -1,12 +1,12 @@
 import type { FC } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
-import type { PermissionState, LocationAccuracy } from '../../../types/location';
+import type { PermissionState, LocationAccuracyLevel } from '../../../types/location';
 import { getGpsIcon, getGpsColor, getGpsTooltip } from '../../../utils/status/gpsStatusHelpers';
 import { formatExactTime } from '../../../utils/vehicle/vehicleFormatUtils';
 
 interface GpsStatusIconProps {
   status: 'available' | 'unavailable' | 'disabled';
-  accuracy: LocationAccuracy | null;
+  accuracy: LocationAccuracyLevel | null;
   permissionState: PermissionState | null;
   lastUpdated: number | null;
   onClick?: () => void;

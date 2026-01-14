@@ -1,19 +1,25 @@
 // Vehicle Format Utilities
 // Helper functions for formatting vehicle data display
 
+import { TIME_THRESHOLDS } from '../core/constants';
+import { CONFIDENCE_LEVELS } from '../core/stringConstants';
+import { 
+  formatRelativeTime, 
+  formatArrivalTime as formatArrivalTimeUtil, 
+  formatAbsoluteTime 
+} from '../time/timestampFormatUtils';
+
 /**
  * Format vehicle timestamp for display
  * 
  * @param timestamp - ISO timestamp string
  * @returns Formatted time string (HH:MM) in 24-hour format or 'Unknown' if invalid
+ * @deprecated Use formatAbsoluteTime from timestampFormatUtils instead
  */
 export function formatTimestamp(timestamp: string): string {
   try {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false
-    });
+    const timestampMs = new Date(timestamp).getTime();
+    return formatAbsoluteTime(timestampMs).replace('at ', '');
   } catch {
     return 'Unknown';
   }
@@ -24,26 +30,10 @@ export function formatTimestamp(timestamp: string): string {
  * 
  * @param timestamp - Timestamp in milliseconds
  * @returns Human-readable "time ago" string
+ * @deprecated Use formatRelativeTime from timestampFormatUtils instead
  */
 export function formatTimeAgo(timestamp: number): string {
-  const now = Date.now();
-  const diffMs = now - timestamp;
-  
-  if (diffMs < 0) return 'Just now';
-  
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  
-  if (diffSeconds < 30) return 'Just now';
-  if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
-  if (diffMinutes === 1) return '1 minute ago';
-  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-  if (diffHours === 1) return '1 hour ago';
-  if (diffHours < 24) return `${diffHours} hours ago`;
-  if (diffDays === 1) return '1 day ago';
-  return `${diffDays} days ago`;
+  return formatRelativeTime(timestamp);
 }
 
 /**
@@ -72,7 +62,7 @@ export function formatExactTime(timestamp: number): string {
  * @returns Formatted speed string or 'Stopped' if speed is 0
  */
 export function formatSpeed(speed: number): string {
-  return speed > 0 ? `${Math.round(speed)} km/h` : 'Stopped';
+  return speed > 0 ? `${Number(speed).toFixed(2)} km/h` : 'Stopped';
 }
 
 /**
@@ -108,6 +98,16 @@ export function getAccessibilityFeatures(
 export function formatArrivalTime(arrivalResult?: { statusMessage: string; confidence: string }): string {
   if (!arrivalResult) return '';
   
-  const confidenceIndicator = arrivalResult.confidence === 'low' ? ' (est.)' : '';
+  const confidenceIndicator = arrivalResult.confidence === CONFIDENCE_LEVELS.LOW ? ' (est.)' : '';
   return `${arrivalResult.statusMessage}${confidenceIndicator}`;
+}
+
+/**
+ * Format arrival time in minutes for display
+ * 
+ * @param minutes - Minutes until arrival
+ * @returns Formatted arrival time string
+ */
+export function formatArrivalMinutes(minutes: number): string {
+  return formatArrivalTimeUtil(minutes);
 }

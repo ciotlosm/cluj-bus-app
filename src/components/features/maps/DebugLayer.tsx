@@ -1,14 +1,15 @@
 /**
- * DebugLayer - Renders debug visualization for distance calculations
- * Shows debug lines, projections, and distance labels for troubleshooting arrival time accuracy
- * Implements requirements 4.1, 4.2, 4.3, 4.4, 4.5
+ * DebugLayer - Renders debug visualization for distance calculations and vehicle position predictions
+ * Shows debug lines, projections, distance labels, and both API/predicted positions
+ * Implements requirements 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5
  */
 
 import type { FC } from 'react';
 import { Polyline, Marker, Popup, Circle } from 'react-leaflet';
-import type { DebugLayerProps } from '../../../types/interactiveMap';
+import type { DebugLayerProps } from '../../../types/map/mapLayers';
 import { calculateDistance } from '../../../utils/location/distanceUtils';
-import { createDebugIcon, createDistanceLabelIcon } from '../../../utils/maps/iconUtils';
+import { createDebugIcon, createDistanceLabelIcon, createVehicleIcon } from '../../../utils/maps/iconUtils';
+import type { EnhancedVehicleData } from '../../../utils/vehicle/vehicleEnhancementUtils';
 
 // Calculate midpoint between two coordinates
 const calculateMidpoint = (coord1: { lat: number; lon: number }, coord2: { lat: number; lon: number }) => ({
@@ -20,6 +21,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
   debugData,
   visible,
   colorScheme,
+  vehicles = [],
 }) => {
   if (!visible) return null;
 
@@ -35,10 +37,19 @@ export const DebugLayer: FC<DebugLayerProps> = ({
     nextStationInfo,
   } = debugData;
 
+  // Only validate the most critical data - allow partial debug info to show
+  if (!vehiclePosition || !targetStationPosition) {
+    return null;
+  }
+
   // Calculate various distances for display
   const directDistance = calculateDistance(vehiclePosition, targetStationPosition);
-  const vehicleToProjectionDistance = calculateDistance(vehiclePosition, vehicleProjection.closestPoint);
-  const stationToProjectionDistance = calculateDistance(targetStationPosition, stationProjection.closestPoint);
+  const vehicleToProjectionDistance = vehicleProjection?.closestPoint 
+    ? calculateDistance(vehiclePosition, vehicleProjection.closestPoint)
+    : 0;
+  const stationToProjectionDistance = stationProjection?.closestPoint
+    ? calculateDistance(targetStationPosition, stationProjection.closestPoint)
+    : 0;
 
   return (
     <>
@@ -66,9 +77,9 @@ export const DebugLayer: FC<DebugLayerProps> = ({
               Direct Distance Line (NOT USED)
             </div>
             <div><strong>Distance:</strong> {directDistance.toFixed(0)}m</div>
-            <div><strong>Calculation Method:</strong> {distanceCalculation.method}</div>
-            <div><strong>Confidence:</strong> {distanceCalculation.confidence}</div>
-            <div><strong>Total Distance:</strong> {distanceCalculation.totalDistance.toFixed(0)}m</div>
+            <div><strong>Calculation Method:</strong> {distanceCalculation?.method || 'Unknown'}</div>
+            <div><strong>Confidence:</strong> {distanceCalculation?.confidence || 'Unknown'}</div>
+            <div><strong>Total Distance:</strong> {distanceCalculation?.totalDistance?.toFixed(0) || '0'}m</div>
             <div style={{ 
               fontSize: '11px', 
               color: '#666', 
@@ -82,7 +93,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       </Polyline>
 
       {/* 2. Vehicle projection line (Requirement 4.2) - NOT used in calculation */}
-      {vehicleProjection.distanceToShape > 10 && ( // Only show if vehicle is significantly off route
+      {vehicleProjection?.closestPoint && vehicleProjection.distanceToShape > 10 && ( // Only show if vehicle is significantly off route
         <Polyline
           positions={[
             [vehiclePosition.lat, vehiclePosition.lon],
@@ -122,7 +133,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       )}
 
       {/* 3. Station projection line (Requirement 4.3) - NOT used in calculation */}
-      {stationProjection.distanceToShape > 10 && ( // Only show if station is significantly off route
+      {stationProjection?.closestPoint && stationProjection.distanceToShape > 10 && ( // Only show if station is significantly off route
         <Polyline
           positions={[
             [targetStationPosition.lat, targetStationPosition.lon],
@@ -163,6 +174,11 @@ export const DebugLayer: FC<DebugLayerProps> = ({
 
       {/* Route segment between vehicle and target station */}
       {(() => {
+        // Check if projection data is available
+        if (vehicleProjection?.segmentIndex === undefined || stationProjection?.segmentIndex === undefined) {
+          return null;
+        }
+        
         // Show the route from vehicle position to target station (or from station to vehicle if passed)
         const vehicleSegmentIndex = vehicleProjection.segmentIndex;
         const stationSegmentIndex = stationProjection.segmentIndex;
@@ -172,7 +188,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
         const segmentSpan = Math.abs(stationSegmentIndex - vehicleSegmentIndex);
         
         // Skip if the route would be too long (performance protection)
-        if (segmentSpan > 400) {
+        if (segmentSpan > 500) {
           return null; // Truly excessive, would be too long to display meaningfully
         }
         
@@ -298,30 +314,33 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       {/* Debug markers with distinct shapes (Requirement 4.4) */}
       
       {/* Vehicle projection point */}
-      <Marker
-        position={[vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]}
-        icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'square', size: 14 })}
-      >
-        <Popup>
-          <div>
-            <strong>Vehicle Projection Point</strong>
-            <br />
-            Closest point on route to vehicle
-            <br />
-            Distance: {vehicleProjection.distanceToShape.toFixed(1)}m
-            <br />
-            Coordinates: {vehicleProjection.closestPoint.lat.toFixed(6)}, {vehicleProjection.closestPoint.lon.toFixed(6)}
-          </div>
-        </Popup>
-      </Marker>
+      {vehicleProjection?.closestPoint && (
+        <Marker
+          position={[vehicleProjection.closestPoint.lat, vehicleProjection.closestPoint.lon]}
+          icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'square', size: 14 })}
+        >
+          <Popup>
+            <div>
+              <strong>Vehicle Projection Point</strong>
+              <br />
+              Closest point on route to vehicle
+              <br />
+              Distance: {vehicleProjection.distanceToShape.toFixed(1)}m
+              <br />
+              Coordinates: {vehicleProjection.closestPoint.lat.toFixed(6)}, {vehicleProjection.closestPoint.lon.toFixed(6)}
+            </div>
+          </Popup>
+        </Marker>
+      )}
 
       {/* Station projection point */}
-      <Marker
-        position={[stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]}
-        icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'triangle', size: 14 })}
-      >
-        <Popup>
-          <div>
+      {stationProjection?.closestPoint && (
+        <Marker
+          position={[stationProjection.closestPoint.lat, stationProjection.closestPoint.lon]}
+          icon={createDebugIcon({ color: colorScheme.debug.projectionLine, shape: 'triangle', size: 14 })}
+        >
+          <Popup>
+            <div>
             <strong>Station Projection Point</strong>
             <br />
             Closest point on route to station
@@ -332,6 +351,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
           </div>
         </Popup>
       </Marker>
+      )}
 
       {/* Vehicle position marker */}
       <Marker
@@ -489,7 +509,7 @@ export const DebugLayer: FC<DebugLayerProps> = ({
         icon={createDistanceLabelIcon(
           `${directDistance.toFixed(0)}m`, 
           'direct', 
-          distanceCalculation.confidence
+          distanceCalculation?.confidence as 'high' | 'medium' | 'low' || 'low'
         )}
       />
 
@@ -522,27 +542,191 @@ export const DebugLayer: FC<DebugLayerProps> = ({
       )}
 
       {/* Accuracy circles around key points */}
-      <Circle
-        center={[vehiclePosition.lat, vehiclePosition.lon]}
-        radius={Math.max(10, vehicleProjection.distanceToShape)}
-        pathOptions={{
-          color: colorScheme.debug.projectionLine,
-          weight: 1,
-          opacity: 0.3,
-          fillOpacity: 0.1,
-        }}
-      />
+      {vehicleProjection?.distanceToShape !== undefined && (
+        <Circle
+          center={[vehiclePosition.lat, vehiclePosition.lon]}
+          radius={Math.max(10, vehicleProjection.distanceToShape)}
+          pathOptions={{
+            color: colorScheme.debug.projectionLine,
+            weight: 1,
+            opacity: 0.3,
+            fillOpacity: 0.1,
+          }}
+        />
+      )}
 
-      <Circle
-        center={[targetStationPosition.lat, targetStationPosition.lon]}
-        radius={Math.max(10, stationProjection.distanceToShape)}
-        pathOptions={{
-          color: colorScheme.debug.projectionLine,
-          weight: 1,
-          opacity: 0.3,
-          fillOpacity: 0.1,
-        }}
-      />
+      {stationProjection?.distanceToShape !== undefined && (
+        <Circle
+          center={[targetStationPosition.lat, targetStationPosition.lon]}
+          radius={Math.max(10, stationProjection.distanceToShape)}
+          pathOptions={{
+            color: colorScheme.debug.projectionLine,
+            weight: 1,
+            opacity: 0.3,
+            fillOpacity: 0.1,
+          }}
+        />
+      )}
+
+      {/* Vehicle Position Prediction Debug Visualization (Requirements 5.1, 5.2, 5.3, 5.4, 5.5) */}
+      {vehicles.map(vehicle => {
+        // Only show vehicles with prediction metadata
+        if (!vehicle.predictionMetadata) return null;
+
+        const { positionApplied, timestampAge } = vehicle.predictionMetadata;
+        
+        // Skip vehicles without meaningful prediction data
+        if (!positionApplied || timestampAge < 1000) return null; // Less than 1 second age
+
+        const apiPosition = { lat: vehicle.apiLatitude, lon: vehicle.apiLongitude };
+        const predictedPosition = { lat: vehicle.latitude, lon: vehicle.longitude };
+        
+        // Calculate distance between API and predicted positions
+        const predictionDistance = calculateDistance(apiPosition, predictedPosition);
+        
+        // Skip if positions are too close (less than 5 meters apart)
+        if (predictionDistance < 5) return null;
+
+        return (
+          <div key={`vehicle-prediction-${vehicle.id}`}>
+            {/* Line connecting API position to predicted position */}
+            <Polyline
+              positions={[
+                [apiPosition.lat, apiPosition.lon],
+                [predictedPosition.lat, predictedPosition.lon],
+              ]}
+              pathOptions={{
+                color: '#FF9800', // Orange for prediction movement
+                weight: 3,
+                opacity: 0.8,
+                dashArray: '8, 4',
+                lineCap: 'round',
+              }}
+            >
+              <Popup>
+                <div style={{ minWidth: '220px' }}>
+                  <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '14px', 
+                    marginBottom: '8px',
+                    color: '#FF9800'
+                  }}>
+                    Position Prediction Movement
+                  </div>
+                  <div><strong>Vehicle:</strong> {vehicle.label}</div>
+                  <div><strong>Timestamp Age:</strong> {Math.round(timestampAge / 1000)}s</div>
+                  <div><strong>Predicted Distance:</strong> {Math.round(vehicle.predictionMetadata.predictedDistance)}m</div>
+                  <div><strong>Movement Distance:</strong> {Math.round(predictionDistance)}m</div>
+                  <div><strong>Stations Encountered:</strong> {vehicle.predictionMetadata.stationsEncountered}</div>
+                  <div><strong>Total Dwell Time:</strong> {Math.round(vehicle.predictionMetadata.totalDwellTime / 1000)}s</div>
+                  <div><strong>Method:</strong> {vehicle.predictionMetadata.positionMethod}</div>
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#666', 
+                    marginTop: '6px',
+                    fontStyle: 'italic'
+                  }}>
+                    Shows vehicle movement from API position (grey) to predicted current position (normal)
+                  </div>
+                </div>
+              </Popup>
+            </Polyline>
+
+            {/* API Position Marker (washed/grey styling) */}
+            <Marker
+              position={[apiPosition.lat, apiPosition.lon]}
+              icon={createVehicleIcon({ 
+                color: '#9E9E9E', // Grey for historical API position
+                size: 20,
+                isSelected: false
+              })}
+            >
+              <Popup>
+                <div style={{ minWidth: '200px' }}>
+                  <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '14px', 
+                    marginBottom: '8px',
+                    color: '#9E9E9E'
+                  }}>
+                    API Position (Historical)
+                  </div>
+                  <div><strong>Vehicle:</strong> {vehicle.label}</div>
+                  <div><strong>Coordinates:</strong> {apiPosition.lat.toFixed(6)}, {apiPosition.lon.toFixed(6)}</div>
+                  <div><strong>Timestamp:</strong> {vehicle.timestamp}</div>
+                  <div><strong>Age:</strong> {Math.round(timestampAge / 1000)} seconds old</div>
+                  <div><strong>Speed:</strong> {vehicle.speed} km/h</div>
+                  {vehicle.trip_id && (
+                    <div><strong>Trip ID:</strong> {vehicle.trip_id}</div>
+                  )}
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#666', 
+                    marginTop: '6px',
+                    fontStyle: 'italic'
+                  }}>
+                    This is the original GPS position from the API - shown in grey because it's historical data
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* Predicted Position Marker (normal vehicle styling) */}
+            <Marker
+              position={[predictedPosition.lat, predictedPosition.lon]}
+              icon={createVehicleIcon({ 
+                color: '#3182CE', // Station blue for predicted position
+                size: 24,
+                isSelected: false
+              })}
+            >
+              <Popup>
+                <div style={{ minWidth: '200px' }}>
+                  <div style={{ 
+                    fontWeight: 'bold', 
+                    fontSize: '14px', 
+                    marginBottom: '8px',
+                    color: '#3182CE'
+                  }}>
+                    Predicted Position (Current)
+                  </div>
+                  <div><strong>Vehicle:</strong> {vehicle.label}</div>
+                  <div><strong>Coordinates:</strong> {predictedPosition.lat.toFixed(6)}, {predictedPosition.lon.toFixed(6)}</div>
+                  <div><strong>Prediction Method:</strong> {vehicle.predictionMetadata.positionMethod}</div>
+                  <div><strong>Moved Distance:</strong> {Math.round(vehicle.predictionMetadata.predictedDistance)}m</div>
+                  <div><strong>Time Elapsed:</strong> {Math.round(timestampAge / 1000)}s</div>
+                  <div><strong>Stations Passed:</strong> {vehicle.predictionMetadata.stationsEncountered}</div>
+                  <div><strong>Dwell Time Applied:</strong> {Math.round(vehicle.predictionMetadata.totalDwellTime / 1000)}s</div>
+                  {vehicle.trip_id && (
+                    <div><strong>Trip ID:</strong> {vehicle.trip_id}</div>
+                  )}
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#666', 
+                    marginTop: '6px',
+                    fontStyle: 'italic'
+                  }}>
+                    This is the calculated current position based on route movement simulation
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* Distance label for prediction movement */}
+            <Marker
+              position={[
+                (apiPosition.lat + predictedPosition.lat) / 2,
+                (apiPosition.lon + predictedPosition.lon) / 2,
+              ]}
+              icon={createDistanceLabelIcon(
+                `${Math.round(predictionDistance)}m`, 
+                'route',
+                'high' // Prediction is considered high confidence
+              )}
+            />
+          </div>
+        );
+      })}
     </>
   );
 };

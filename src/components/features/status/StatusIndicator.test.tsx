@@ -37,7 +37,7 @@ describe('StatusIndicator', () => {
   });
 
   it('shows GPS detail dialog when GPS icon is clicked', async () => {
-    render(<StatusIndicator />);
+    render(<StatusIndicator showGpsDetails={true} />);
     
     const gpsIcon = screen.getByLabelText('GPS status');
     fireEvent.click(gpsIcon);

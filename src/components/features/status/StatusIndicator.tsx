@@ -9,14 +9,12 @@ import { useStatusStore } from '../../../stores/statusStore';
 
 interface StatusIndicatorProps {
   className?: string;
-  onGpsClick?: () => void;
-  onApiClick?: () => void;
+  showGpsDetails?: boolean; // Only control whether to show detailed popup
 }
 
 export const StatusIndicator: FC<StatusIndicatorProps> = ({
   className,
-  onGpsClick,
-  onApiClick
+  showGpsDetails = false // Default to false - only show details in settings
 }) => {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -40,28 +38,22 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
     setNetworkStatus
   } = useStatusStore();
 
-  // Handle GPS icon click - always trigger GPS update and show detailed info
+  // Handle GPS icon click - always request location, optionally show details
   const handleGpsClick = () => {
-    // Close dialog first to avoid confusion during update
-    setDialogOpen(false);
-    
-    // Always request location update when GPS icon is clicked
+    // Always request fresh location (no caching, browser handles fallback)
     requestLocation();
     
-    // Open dialog after a brief delay to show updated status
-    setTimeout(() => {
+    // Only show detailed popup in settings view
+    if (showGpsDetails) {
       setDialogType('gps');
       setDialogOpen(true);
-    }, 100);
-    
-    onGpsClick?.(); // Call parent handler if provided
+    }
   };
 
   // Handle API icon click - show detailed connection info
   const handleApiClick = () => {
     setDialogType('api');
     setDialogOpen(true);
-    onApiClick?.(); // Call parent handler if provided
   };
 
   // Handle dialog close with proper focus management
