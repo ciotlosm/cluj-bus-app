@@ -187,64 +187,27 @@ export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
     >
       <Popup>
         <div style={{ minWidth: '220px' }}>
-          {/* Vehicle number */}
+          {/* Vehicle header with route and station */}
           <div style={{ 
             fontWeight: 'bold', 
             fontSize: '16px', 
             marginBottom: '8px',
             color 
           }}>
-            Vehicle {vehicle.label}
+            {route && trip ? (
+              <>
+                {route.route_short_name} {trip.trip_headsign} ({vehicle.label})
+              </>
+            ) : (
+              `Vehicle ${vehicle.label}`
+            )}
           </div>
-          
-          {/* Route and headsign */}
-          {route && trip && (
-            <div style={{ marginBottom: '8px' }}>
-              <strong>{route.route_short_name}</strong> {trip.trip_headsign}
-            </div>
-          )}
           
           {/* Status with speed */}
           <div style={{ marginBottom: '4px' }}>
             <strong>Status:</strong> {getVehicleStatus()}
             {vehicle.speed > 0 && ` (${Number(vehicle.speed).toFixed(2)} km/h)`}
           </div>
-          
-          {/* Position prediction */}
-          {vehicle.predictionMetadata && (
-            <div style={{ marginBottom: '4px' }}>
-              <strong>Position:</strong> {vehicle.predictionMetadata.positionMethod} 
-              <span style={{ 
-                color: vehicle.predictionMetadata.positionMethod === 'route_shape' ? '#4CAF50' : '#FF9800'
-              }}>
-                {' '}({vehicle.predictionMetadata.positionMethod === 'route_shape' ? 'high' : 'medium'})
-              </span>
-            </div>
-          )}
-          
-          {/* Speed prediction */}
-          {vehicle.predictionMetadata && (
-            <div style={{ marginBottom: '8px' }}>
-              <strong>Speed:</strong> {vehicle.predictionMetadata.speedMethod} 
-              <span style={{ 
-                color: vehicle.predictionMetadata.speedConfidence === 'high' ? '#4CAF50' : 
-                       vehicle.predictionMetadata.speedConfidence === 'medium' ? '#FF9800' : '#F44336'
-              }}>
-                {' '}({vehicle.predictionMetadata.speedConfidence})
-              </span>
-            </div>
-          )}
-          
-          {/* Movement and dwell info */}
-          {vehicle.predictionMetadata?.positionApplied && (
-            <div style={{ marginBottom: '4px', fontSize: '13px' }}>
-              <strong>Moved:</strong> {Math.round(vehicle.predictionMetadata.predictedDistance)}m 
-              ({Math.round(vehicle.predictionMetadata.timestampAge / 1000)}s ahead)
-              {vehicle.predictionMetadata.totalDwellTime > 0 && (
-                <> | <strong>Dwell:</strong> {Math.round(vehicle.predictionMetadata.totalDwellTime / 1000)}s</>
-              )}
-            </div>
-          )}
           
           {/* Debug info */}
           <div style={{ 
@@ -260,6 +223,35 @@ export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
               return relativeTime ? ` (~${relativeTime})` : '';
             })()}
           </div>
+          
+          {/* Prediction info */}
+          {vehicle.predictionMetadata && (
+            <>
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#666'
+              }}>
+                <strong>Position:</strong> {vehicle.predictionMetadata.positionMethod} ({vehicle.predictionMetadata.positionMethod === 'route_shape' ? 'high' : 'medium'})
+              </div>
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#666'
+              }}>
+                <strong>Speed:</strong> {vehicle.predictionMetadata.speedMethod} ({vehicle.predictionMetadata.speedConfidence})
+              </div>
+              {vehicle.predictionMetadata.positionApplied && (
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#666'
+                }}>
+                  <strong>Moved:</strong> {Math.round(vehicle.predictionMetadata.predictedDistance)}m ({Math.round(vehicle.predictionMetadata.timestampAge / 1000)}s ahead)
+                  {vehicle.predictionMetadata.totalDwellTime > 0 && (
+                    <> | <strong>Dwell:</strong> {Math.round(vehicle.predictionMetadata.totalDwellTime / 1000)}s</>
+                  )}
+                </div>
+              )}
+            </>
+          )}
           
           {/* Accessibility info */}
           {(vehicle.wheelchair_accessible === 'WHEELCHAIR_ACCESSIBLE' || 

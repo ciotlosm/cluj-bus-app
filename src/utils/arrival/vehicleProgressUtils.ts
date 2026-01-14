@@ -208,7 +208,33 @@ export function getNextStationForVehicle(
   
   if (tripStopTimes.length === 0) return null;
   
-  // Use existing vehicle progress estimation to find next stop
+  const vehiclePosition = { lat: vehicle.latitude, lon: vehicle.longitude };
+  const STATION_PROXIMITY_THRESHOLD = 50; // meters - same as vehicleEnhancementUtils
+  
+  // FIRST: Check if vehicle is AT a station (within 50m)
+  // If yes, return the NEXT stop in the sequence, not the current one
+  for (let i = 0; i < tripStopTimes.length; i++) {
+    const stopTime = tripStopTimes[i];
+    const station = stations.find(s => s.stop_id === stopTime.stop_id);
+    
+    if (!station) continue;
+    
+    const stationPosition = { lat: station.stop_lat, lon: station.stop_lon };
+    const distance = calculateDistance(vehiclePosition, stationPosition);
+    
+    // Vehicle is AT this station
+    if (distance <= STATION_PROXIMITY_THRESHOLD) {
+      // Return the NEXT stop in sequence (if available)
+      if (i + 1 < tripStopTimes.length) {
+        const nextStopId = tripStopTimes[i + 1].stop_id;
+        return stations.find(s => s.stop_id === nextStopId) || null;
+      }
+      // Vehicle is at the last stop - no next station
+      return null;
+    }
+  }
+  
+  // SECOND: Vehicle is NOT at a station, use segment-based logic
   const vehicleProgress = estimateVehicleProgressWithStops(vehicle, tripStopTimes, stations);
   
   // Extract next stop from vehicle progress

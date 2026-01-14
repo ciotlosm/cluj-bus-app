@@ -62,7 +62,7 @@ export const sortStationVehiclesByArrival = (vehicles: StationVehicle[]): Statio
 function getStatusFromMessage(statusMessage: string): ArrivalStatus {
   if (statusMessage.includes('At stop')) return 'at_stop';
   if (statusMessage.includes('Departed')) return 'departed';
-  if (statusMessage.includes('minutes')) return 'in_minutes';
+  if (statusMessage.includes('minute')) return 'in_minutes'; // Changed to 'minute' to match both singular and plural
   return 'off_route';
 }
 
