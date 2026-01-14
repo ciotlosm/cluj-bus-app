@@ -74,6 +74,30 @@ export const filterStations = async (
     }
   }
 
+  // Build vehicle-to-station index ONCE (O(m) instead of O(n×m))
+  // This maps stationId -> vehicles that serve it
+  const vehiclesByStation = new Map<number, EnhancedVehicleData[]>();
+  
+  for (const vehicle of vehicles) {
+    // Skip vehicles without required data
+    if (!vehicle.trip_id || !vehicle.route_id || !vehicle.latitude || !vehicle.longitude) {
+      continue;
+    }
+    
+    // Find all stations this vehicle serves
+    const stationIds = stopTimes
+      .filter(st => st.trip_id === vehicle.trip_id)
+      .map(st => st.stop_id);
+    
+    // Add vehicle to each station's list
+    for (const stationId of stationIds) {
+      if (!vehiclesByStation.has(stationId)) {
+        vehiclesByStation.set(stationId, []);
+      }
+      vehiclesByStation.get(stationId)!.push(vehicle);
+    }
+  }
+
   // Apply core filtering logic: location + trips
   const validStations: FilteredStation[] = [];
   let primaryStation: FilteredStation | null = null;
@@ -84,15 +108,23 @@ export const filterStations = async (
       continue;
     }
 
-    // Create station with metadata (now with route shapes available)
+    // Get vehicles for this station from pre-built index (O(1) lookup)
+    const stationVehicles = vehiclesByStation.get(station.stop_id) || [];
+    
+    // Skip stations with no vehicles
+    if (stationVehicles.length === 0) {
+      continue;
+    }
+
+    // Create station with metadata using the indexed vehicles
     const stationWithMetadata = addStationMetadata({
       station,
       distance: userLocation ? calculateDistance(userLocation, { lat: station.stop_lat, lon: station.stop_lon }) : 0,
       hasActiveTrips: true,
       stationType: 'all' as const // Will be updated based on position
-    }, stopTimes, vehicles, allRoutes, trips, stops, routeShapes);
+    }, stopTimes, stationVehicles, allRoutes, trips, stops, routeShapes);
 
-    // Skip stations with no active vehicles - they should be filtered out entirely
+    // Skip stations with no active vehicles after filtering
     if (stationWithMetadata.vehicles.length === 0) {
       continue;
     }

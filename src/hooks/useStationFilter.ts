@@ -11,6 +11,7 @@ import { useStopTimeStore } from '../stores/stopTimeStore';
 import { useTripStore } from '../stores/tripStore';
 import { useVehicleStore } from '../stores/vehicleStore';
 import { useRouteStore } from '../stores/routeStore';
+import { useStationCacheStore } from '../stores/stationCacheStore';
 import { calculateDistance } from '../utils/location/distanceUtils';
 import { LOCATION_CONFIG } from '../utils/core/constants';
 import { 
@@ -27,6 +28,7 @@ import type { FilteredStation } from '../types/stationFilter';
 interface StationFilterResult {
   filteredStations: FilteredStation[];
   loading: boolean;
+  processing: boolean; // NEW: Track when filtering is actively running
   error: string | null;
   retryFiltering: () => void;
   utilities: {
@@ -86,8 +88,32 @@ export function useStationFilter(): StationFilterResult {
     loadData();
   }, [stopTimes.length, trips.length, stopTimeLoading, tripLoading, stopTimeError, tripError, loadStopTimes, loadTrips, vehicles.length, vehicleLoading, vehicleError, loadVehicles, allRoutes.length, routeLoading, routeError, loadRoutes]);
   
-  const [filteredStations, setFilteredStations] = useState<FilteredStation[]>([]);
+  // Use Zustand store for cache (persists across unmounts)
+  const { get: getCachedStations, set: setCachedStations } = useStationCacheStore();
+  
+  // Generate cache key from location (rounded to 3 decimals = ~100m precision)
+  const getCacheKey = useCallback((position: GeolocationPosition | null): string | null => {
+    if (!position) return null;
+    const lat = position.coords.latitude.toFixed(3);
+    const lon = position.coords.longitude.toFixed(3);
+    return `${lat},${lon}`;
+  }, []);
+  
+  // Initialize filtered stations from cache if available
+  const initialFilteredStations = useCallback(() => {
+    const cacheKey = getCacheKey(currentPosition);
+    if (cacheKey) {
+      const cached = getCachedStations(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+    return [];
+  }, [currentPosition, getCacheKey, getCachedStations]);
+  
+  const [filteredStations, setFilteredStations] = useState<FilteredStation[]>(initialFilteredStations);
   const [lastFilterPosition, setLastFilterPosition] = useState<GeolocationPosition | null>(null);
+  const [processing, setProcessing] = useState(false);
   
   // Helper function to check if location change is significant enough to re-filter
   const shouldRefilter = useCallback((newPosition: GeolocationPosition | null, lastPosition: GeolocationPosition | null): boolean => {
@@ -104,18 +130,20 @@ export function useStationFilter(): StationFilterResult {
     return distance > LOCATION_CONFIG.REFILTER_DISTANCE_THRESHOLD;
   }, []);
   
-  // Async filtering effect - only re-filter when location changes significantly or data changes
+  // Async filtering effect with 100ms debounce - batch rapid updates
   useEffect(() => {
     const filterAsync = async () => {
       // Early return if no stations available
       if (stops.length === 0) {
         setFilteredStations([]);
+        setProcessing(false);
         return;
       }
 
       // Wait for trips to be loaded before filtering to avoid fallback calculations
       if (trips.length === 0 && !tripError) {
         setFilteredStations([]);
+        setProcessing(false);
         return;
       }
 
@@ -124,11 +152,46 @@ export function useStationFilter(): StationFilterResult {
       const hasLocationChanged = shouldRefilter(currentPosition, lastFilterPosition);
       const hasNoResults = filteredStations.length === 0;
       
-      if (!hasLocationChanged && !hasNoResults && lastFilterPosition !== null) {
-        // Location hasn't changed significantly and we have results, but data might have changed
-        // Re-filter to update vehicle predictions in existing stations
+      // Check cache for this location
+      const cacheKey = getCacheKey(currentPosition);
+      const cachedStations = cacheKey ? getCachedStations(cacheKey) : null;
+      
+      if (cachedStations) {
+        // Use cached filtered stations immediately
+        setFilteredStations(cachedStations);
+        
+        // If location hasn't changed and we have results, skip re-filtering
+        // But still update vehicles in background
+        if (!hasLocationChanged && !hasNoResults && lastFilterPosition !== null) {
+          // Just update vehicles without full re-filter
+          setProcessing(true);
+          try {
+            // Re-filter to update vehicle data
+            const result = await filterStations(
+              stops,
+              currentPosition!,
+              stopTimes,
+              vehicles,
+              allRoutes,
+              1,
+              SECONDARY_STATION_THRESHOLD,
+              trips
+            );
+            setFilteredStations(result);
+            // Update cache
+            if (cacheKey) {
+              setCachedStations(cacheKey, result);
+            }
+          } catch (error) {
+            console.error('Error updating vehicles:', error);
+          } finally {
+            setProcessing(false);
+          }
+          return;
+        }
       }
 
+      setProcessing(true);
       try {
         let result: FilteredStation[];
         
@@ -151,14 +214,26 @@ export function useStationFilter(): StationFilterResult {
         
         setFilteredStations(result);
         setLastFilterPosition(currentPosition); // Update last filter position
+        
+        // Update cache
+        if (cacheKey && result.length > 0) {
+          setCachedStations(cacheKey, result);
+        }
       } catch (error) {
         console.error('Error filtering stations:', error);
         setFilteredStations([]);
+      } finally {
+        setProcessing(false);
       }
     };
 
-    filterAsync();
-  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, shouldRefilter, lastFilterPosition]);
+    // Debounce filter execution by 100ms to batch rapid updates
+    const timeoutId = setTimeout(() => {
+      filterAsync();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [stops, stopTimes, trips, vehicles, allRoutes, currentPosition, shouldRefilter, lastFilterPosition, filteredStations.length, tripError]);
   
   const retryFiltering = useCallback(() => {
     // Force re-filtering by clearing last position
@@ -169,13 +244,15 @@ export function useStationFilter(): StationFilterResult {
     filteredStations,
     // Only show loading for initial data loads when cache is empty
     // Don't show loading during background refreshes when we already have data
+    // Removed vehicleLoading - let vehicles load in background while showing cached stations
     loading: (
-      (locationLoading && stops.length === 0) || 
+      locationLoading || 
       (stationLoading && stops.length === 0) || 
       (tripLoading && trips.length === 0) || 
-      (vehicleLoading && vehicles.length === 0) || 
+      (stopTimeLoading && stopTimes.length === 0) ||
       (routeLoading && allRoutes.length === 0)
     ),
+    processing, // NEW: Track when filtering is actively running
     error: locationError || stationError || tripError || vehicleError || routeError,
     retryFiltering,
     // Utility functions for UI formatting

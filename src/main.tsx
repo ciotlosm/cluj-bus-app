@@ -1,7 +1,7 @@
 // Clean main entry point - minimal setup
 // Single file for app initialization
 
-import { StrictMode, useState, Component, useEffect } from 'react';
+import { StrictMode, useState, Component, useEffect, startTransition } from 'react';
 // Leaflet CSS for map components
 import 'leaflet/dist/leaflet.css';
 import type { ErrorInfo, ReactNode } from 'react';
@@ -130,7 +130,12 @@ function App() {
         {renderContent()}
         <Navigation 
           value={currentView} 
-          onChange={setCurrentView} 
+          onChange={(newView) => {
+            // Use startTransition for non-blocking view switching
+            startTransition(() => {
+              setCurrentView(newView);
+            });
+          }} 
         />
       </AppLayout>
     </ThemeProvider>

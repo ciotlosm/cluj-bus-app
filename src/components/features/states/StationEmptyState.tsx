@@ -8,11 +8,20 @@ import {
 
 interface StationEmptyStateProps {
   filteredCount: number;
+  processing?: boolean; // Don't show empty state while processing
+  hasStops?: boolean; // Don't show empty state if we have stops but haven't filtered yet
 }
 
 export const StationEmptyState: FC<StationEmptyStateProps> = ({
-  filteredCount
+  filteredCount,
+  processing = false,
+  hasStops = false
 }) => {
+  // Don't show empty state while processing or if we have stops but haven't filtered yet
+  if (processing || (hasStops && filteredCount === 0)) {
+    return null;
+  }
+  
   // No nearby stations found
   if (filteredCount === 0) {
     return (

@@ -6,7 +6,7 @@ import type { FC } from 'react';
 import { memo, useState, useMemo } from 'react';
 import { 
   Card, CardContent, Typography, Chip, Stack, Box, Avatar, IconButton,
-  Collapse, List, ListItem, ListItemText, Tooltip
+  Collapse, List, ListItem, ListItemText, Tooltip, CircularProgress
 } from '@mui/material';
 import { 
   AccessibleForward as WheelchairIcon,
@@ -41,9 +41,10 @@ interface StationVehicleListProps {
   stationRouteCount?: number; // Number of routes serving this station
   selectedRouteId?: number | null; // NEW: route filter
   vehicleRefreshTimestamp?: number | null; // Timestamp when vehicle data was last refreshed
+  vehicleLoading?: boolean; // NEW: vehicle loading state for showing loading indicator
 }
 
-export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount, selectedRouteId, vehicleRefreshTimestamp }) => {
+export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles, expanded, station, stationRouteCount, selectedRouteId, vehicleRefreshTimestamp, vehicleLoading }) => {
   // State for expansion functionality
   const [showingAll, setShowingAll] = useState(false);
   
@@ -92,6 +93,18 @@ export const StationVehicleList: FC<StationVehicleListProps> = memo(({ vehicles,
   
   // Don't render when collapsed (performance optimization)
   if (!expanded) return null;
+
+  // Show loading indicator when vehicles are being loaded
+  if (vehicleLoading && vehicles.length === 0) {
+    return (
+      <Box display="flex" alignItems="center" gap={1} sx={{ p: 2 }}>
+        <CircularProgress size={16} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+          Loading vehicles...
+        </Typography>
+      </Box>
+    );
+  }
 
   // Empty state - no vehicles found
   if (vehicles.length === 0) {

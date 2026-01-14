@@ -30,9 +30,10 @@ interface StationListProps {
   stations: FilteredStation[];
   utilities: StationUtilities;
   vehicleRefreshTimestamp?: number | null;
+  vehicleLoading?: boolean; // NEW: vehicle loading state
 }
 
-export const StationList: FC<StationListProps> = memo(({ stations, utilities, vehicleRefreshTimestamp }) => {
+export const StationList: FC<StationListProps> = memo(({ stations, utilities, vehicleRefreshTimestamp, vehicleLoading }) => {
   const { formatDistance, getStationTypeColor, getStationTypeLabel } = utilities;
   const { routes } = useRouteStore();
   const { isFavorite } = useFavoritesStore();
@@ -297,6 +298,7 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, ve
                   stationRouteCount={routeIds.length}
                   selectedRouteId={selectedRouteId}
                   vehicleRefreshTimestamp={vehicleRefreshTimestamp}
+                  vehicleLoading={vehicleLoading}
                 />
               </Collapse>
             </CardContent>

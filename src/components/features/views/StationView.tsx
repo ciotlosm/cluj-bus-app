@@ -18,12 +18,18 @@ import { StationEmptyState } from '../states/StationEmptyState';
 import { FirstTimeLoadingState } from '../states/FirstTimeLoadingState';
 
 export const StationView: FC = () => {
-  const { stops, loading: stationLoading } = useStationStore();
-  const { vehicles, loading: vehicleLoading, lastUpdated: vehicleLastUpdated } = useVehicleStore();
-  const { apiKey, agency_id } = useConfigStore();
+  // Use selectors to prevent unnecessary re-renders
+  const stops = useStationStore(state => state.stops);
+  const stationLoading = useStationStore(state => state.loading);
+  const vehicleLoading = useVehicleStore(state => state.loading);
+  const vehicleLastUpdated = useVehicleStore(state => state.lastUpdated);
+  const apiKey = useConfigStore(state => state.apiKey);
+  const agency_id = useConfigStore(state => state.agency_id);
+  
   const { 
     filteredStations, 
     loading, 
+    processing,
     error, 
     retryFiltering,
     utilities
@@ -81,15 +87,30 @@ export const StationView: FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ position: 'relative' }}>
+      {/* Small processing spinner - non-blocking */}
+      {processing && (
+        <Box sx={{ 
+          position: 'absolute', 
+          top: 8, 
+          right: 8, 
+          zIndex: 1 
+        }}>
+          <CircularProgress size={16} />
+        </Box>
+      )}
+      
       <StationList 
         stations={filteredStations} 
         utilities={utilities}
         vehicleRefreshTimestamp={vehicleLastUpdated}
+        vehicleLoading={vehicleLoading}
       />
       
       <StationEmptyState
         filteredCount={filteredStations.length}
+        processing={processing}
+        hasStops={stops.length > 0}
       />
     </Box>
   );
