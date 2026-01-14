@@ -2,6 +2,11 @@
 
 ## Recent Updates (January 2025)
 
+### January 14, 2026 - Fixed Loading State Flickering During Auto-Refresh
+- **🚨 UX FIX**: Eliminated flickering between station list → loading spinner → station list during automatic refresh
+- **🔧 SOLUTION**: Modified `useStationFilter` to only show loading when cache is empty, not during background refreshes with cached data
+- **✅ RESULT**: Smooth experience - first load shows proper loading state, subsequent refreshes update data silently without UI disruption
+
 ### January 14, 2026 - Fixed Speed Prediction Algorithm Logic
 - **🚨 CRITICAL FIX**: Speed prediction now correctly handles low-speed scenarios (1-5 km/h)
 - **🔧 SOLUTION**: API speeds ≤5 km/h now trigger fallback to nearby average or location-based prediction instead of being used directly
