@@ -69,22 +69,19 @@ export interface LocationAccuracyConfig {
   low: LocationServiceOptions;
 }
 
-// Default accuracy configurations
+// Default accuracy configurations - always fresh GPS (maximumAge: 0 is default)
 export const DEFAULT_LOCATION_ACCURACY: LocationAccuracyConfig = {
   [LOCATION_ACCURACY.HIGH]: {
     enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 60000 // 1 minute
+    timeout: 15000
   },
   [LOCATION_ACCURACY.BALANCED]: {
     enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 300000 // 5 minutes
+    timeout: 10000
   },
   [LOCATION_ACCURACY.LOW]: {
     enableHighAccuracy: false,
-    timeout: 5000,
-    maximumAge: 600000 // 10 minutes
+    timeout: 5000
   }
 };
 

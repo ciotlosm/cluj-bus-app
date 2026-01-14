@@ -6,7 +6,7 @@
  */
 
 import type { FC } from 'react';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import { CircularProgress, Box } from '@mui/material';
 import type { VehicleLayerProps } from '../../../types/interactiveMap';
@@ -24,6 +24,7 @@ declare global {
 export const VehicleLayer: FC<VehicleLayerProps> = ({
   vehicles,
   routes,
+  trips,
   onVehicleClick,
   highlightedVehicleId,
   colorStrategy = VehicleColorStrategy.BY_ROUTE,
@@ -48,7 +49,7 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
   }, [map]);
 
   // Listen to map events for performance optimization
-  useMemo(() => {
+  useEffect(() => {
     map.on('moveend', updateMapState);
     map.on('zoomend', updateMapState);
     updateMapState(); // Initial call
@@ -154,12 +155,14 @@ export const VehicleLayer: FC<VehicleLayerProps> = ({
         const isSelected = vehicle.id === highlightedVehicleId;
         const color = getVehicleColor(vehicle);
         const route = vehicle.route_id ? routes.get(vehicle.route_id) : null;
+        const trip = vehicle.trip_id && trips ? trips.get(vehicle.trip_id) : null;
 
         return (
           <AnimatedVehicleMarker
             key={vehicle.id}
             vehicle={vehicle}
             route={route}
+            trip={trip}
             onVehicleClick={onVehicleClick}
             isSelected={isSelected}
             color={color}

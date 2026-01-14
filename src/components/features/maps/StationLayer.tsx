@@ -7,7 +7,7 @@
  */
 
 import type { FC } from 'react';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Marker, Popup, useMap } from 'react-leaflet';
 import { CircularProgress, Box } from '@mui/material';
 import type { StationLayerProps } from '../../../types/interactiveMap';
@@ -32,26 +32,53 @@ export const StationLayer: FC<StationLayerProps> = ({
 
   // Update bounds and zoom when map changes
   const updateMapState = useCallback(() => {
-    const bounds = map.getBounds();
-    setMapBounds({
-      north: bounds.getNorth(),
-      south: bounds.getSouth(),
-      east: bounds.getEast(),
-      west: bounds.getWest(),
-    });
-    setZoomLevel(map.getZoom());
+    try {
+      // Check if map is still valid before accessing bounds
+      if (!map || !map.getContainer() || !map.getContainer().parentNode) {
+        return;
+      }
+      
+      const bounds = map.getBounds();
+      setMapBounds({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      });
+      setZoomLevel(map.getZoom());
+    } catch (error) {
+      console.warn('Map state update failed:', error);
+      // Reset to null on error to prevent further issues
+      setMapBounds(null);
+    }
   }, [map]);
 
   // Listen to map events for performance optimization
-  useMemo(() => {
-    map.on('moveend', updateMapState);
-    map.on('zoomend', updateMapState);
-    updateMapState(); // Initial call
-    
-    return () => {
-      map.off('moveend', updateMapState);
-      map.off('zoomend', updateMapState);
-    };
+  useEffect(() => {
+    try {
+      // Check if map is valid before adding listeners
+      if (!map || !map.getContainer()) {
+        return;
+      }
+      
+      map.on('moveend', updateMapState);
+      map.on('zoomend', updateMapState);
+      updateMapState(); // Initial call
+      
+      return () => {
+        try {
+          // Safely remove listeners even if map is being destroyed
+          if (map && map.off) {
+            map.off('moveend', updateMapState);
+            map.off('zoomend', updateMapState);
+          }
+        } catch (error) {
+          console.warn('Error removing map listeners:', error);
+        }
+      };
+    } catch (error) {
+      console.warn('Error setting up map listeners:', error);
+    }
   }, [map, updateMapState]);
 
   // Filter out stations with invalid coordinates
@@ -154,14 +181,21 @@ export const StationLayer: FC<StationLayerProps> = ({
           customSize = 20; // Larger than normal stations, smaller than vehicles (24px)
         }
         
-        const icon = createStationIcon({
-          color,
-          isSelected: isSelected || isTargetStation || isNextStation,
-          symbolType: stationType,
-          customSize,
-          isPulsing: isNextStation, // Pulse the next station
-          pulseColor: '#3182CE' // Blue for pulsing (same as vehicle color)
-        });
+        let icon;
+        try {
+          icon = createStationIcon({
+            color,
+            isSelected: isSelected || isTargetStation || isNextStation,
+            symbolType: stationType,
+            customSize,
+            isPulsing: isNextStation, // Pulse the next station
+            pulseColor: '#3182CE' // Blue for pulsing (same as vehicle color)
+          });
+        } catch (error) {
+          console.warn(`Failed to create icon for station ${station.stop_id}:`, error);
+          // Return null to skip this marker if icon creation fails
+          return null;
+        }
 
         return (
           <Marker
@@ -261,7 +295,7 @@ export const StationLayer: FC<StationLayerProps> = ({
             </Popup>
           </Marker>
         );
-      })}
+      }).filter(Boolean)}
     </>
   );
 };

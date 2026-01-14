@@ -7,10 +7,10 @@ import type { FC } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import type { EnhancedVehicleData } from '../../../utils/vehicle/vehicleEnhancementUtils';
-import type { TranzyRouteResponse } from '../../../types/rawTranzyApi';
+import type { TranzyRouteResponse, TranzyTripResponse } from '../../../types/rawTranzyApi';
 import { createVehicleIcon } from '../../../utils/maps/iconUtils';
 import { formatTimestamp } from '../../../utils/vehicle/vehicleFormatUtils';
-import { formatAbsoluteTime } from '../../../utils/time/timestampFormatUtils';
+import { formatAbsoluteTime, formatCompactRelativeTime } from '../../../utils/time/timestampFormatUtils';
 import {
   interpolateCoordinates,
   calculateAnimationProgress,
@@ -23,6 +23,7 @@ import { PREDICTION_UPDATE_CYCLE } from '../../../utils/core/constants';
 interface AnimatedVehicleMarkerProps {
   vehicle: EnhancedVehicleData;
   route?: TranzyRouteResponse;
+  trip?: TranzyTripResponse;
   onVehicleClick?: (vehicle: EnhancedVehicleData) => void;
   isSelected?: boolean;
   color?: string;
@@ -31,6 +32,7 @@ interface AnimatedVehicleMarkerProps {
 export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
   vehicle,
   route,
+  trip,
   onVehicleClick,
   isSelected = false,
   color = '#3182CE'
@@ -91,7 +93,12 @@ export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
           progress
         );
         
-        setCurrentPosition(interpolatedPosition);
+        // Only update state if position actually changed (prevent unnecessary re-renders)
+        setCurrentPosition(prevPosition => {
+          const hasChanged = Math.abs(prevPosition.lat - interpolatedPosition.lat) > 0.000001 ||
+                           Math.abs(prevPosition.lon - interpolatedPosition.lon) > 0.000001;
+          return hasChanged ? interpolatedPosition : prevPosition;
+        });
         
         // Continue animation
         animationFrameRef.current = requestAnimationFrame(animate);
@@ -179,7 +186,8 @@ export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
       }}
     >
       <Popup>
-        <div style={{ minWidth: '200px' }}>
+        <div style={{ minWidth: '220px' }}>
+          {/* Vehicle number */}
           <div style={{ 
             fontWeight: 'bold', 
             fontSize: '16px', 
@@ -189,39 +197,56 @@ export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
             Vehicle {vehicle.label}
           </div>
           
-          {route && (
-            <div style={{ marginBottom: '6px' }}>
-              <strong>Route:</strong> {route.route_short_name} - {route.route_long_name}
+          {/* Route and headsign */}
+          {route && trip && (
+            <div style={{ marginBottom: '8px' }}>
+              <strong>{route.route_short_name}</strong> {trip.trip_headsign}
             </div>
           )}
           
+          {/* Status with speed */}
           <div style={{ marginBottom: '4px' }}>
             <strong>Status:</strong> {getVehicleStatus()}
+            {vehicle.speed > 0 && ` (${Number(vehicle.speed).toFixed(2)} km/h)`}
           </div>
           
-          <div style={{ marginBottom: '4px' }}>
-            <strong>Speed:</strong> {Number(vehicle.speed).toFixed(2)} km/h
-            {vehicle.predictionMetadata && (
-              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                {getSpeedPredictionDetails()}
-              </div>
-            )}
-          </div>
-          
-          <div style={{ marginBottom: '4px' }}>
-            <strong>Last Update:</strong> {formatAbsoluteTime(new Date(vehicle.timestamp).getTime()).replace('at ', '')}
-          </div>
-          
-          <div style={{ marginBottom: '4px' }}>
-            <strong>Position:</strong> {getPredictionStatus()}
-          </div>
-          
-          {vehicle.trip_id && (
+          {/* Position prediction */}
+          {vehicle.predictionMetadata && (
             <div style={{ marginBottom: '4px' }}>
-              <strong>Trip:</strong> {vehicle.trip_id}
+              <strong>Position:</strong> {vehicle.predictionMetadata.positionMethod} 
+              <span style={{ 
+                color: vehicle.predictionMetadata.positionMethod === 'route_shape' ? '#4CAF50' : '#FF9800'
+              }}>
+                {' '}({vehicle.predictionMetadata.positionMethod === 'route_shape' ? 'high' : 'medium'})
+              </span>
             </div>
           )}
           
+          {/* Speed prediction */}
+          {vehicle.predictionMetadata && (
+            <div style={{ marginBottom: '8px' }}>
+              <strong>Speed:</strong> {vehicle.predictionMetadata.speedMethod} 
+              <span style={{ 
+                color: vehicle.predictionMetadata.speedConfidence === 'high' ? '#4CAF50' : 
+                       vehicle.predictionMetadata.speedConfidence === 'medium' ? '#FF9800' : '#F44336'
+              }}>
+                {' '}({vehicle.predictionMetadata.speedConfidence})
+              </span>
+            </div>
+          )}
+          
+          {/* Movement and dwell info */}
+          {vehicle.predictionMetadata?.positionApplied && (
+            <div style={{ marginBottom: '4px', fontSize: '13px' }}>
+              <strong>Moved:</strong> {Math.round(vehicle.predictionMetadata.predictedDistance)}m 
+              ({Math.round(vehicle.predictionMetadata.timestampAge / 1000)}s ahead)
+              {vehicle.predictionMetadata.totalDwellTime > 0 && (
+                <> | <strong>Dwell:</strong> {Math.round(vehicle.predictionMetadata.totalDwellTime / 1000)}s</>
+              )}
+            </div>
+          )}
+          
+          {/* Debug info */}
           <div style={{ 
             fontSize: '12px', 
             color: '#666', 
@@ -229,56 +254,12 @@ export const AnimatedVehicleMarker: FC<AnimatedVehicleMarkerProps> = ({
             borderTop: '1px solid #eee',
             paddingTop: '4px'
           }}>
-            ID: {vehicle.id} | Current: {currentPosition.lat.toFixed(6)}, {currentPosition.lon.toFixed(6)}
-            {vehicle.predictionMetadata?.positionApplied && (
-              <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-                API: {vehicle.apiLatitude?.toFixed(6) ?? 'N/A'}, {vehicle.apiLongitude?.toFixed(6) ?? 'N/A'}
-              </div>
-            )}
+            <strong>Trip:</strong> {vehicle.trip_id || 'N/A'} | <strong>ID:</strong> {vehicle.id} | <strong>Update:</strong> {formatAbsoluteTime(new Date(vehicle.timestamp).getTime()).replace('at ', '')}
+            {(() => {
+              const relativeTime = formatCompactRelativeTime(new Date(vehicle.timestamp).getTime());
+              return relativeTime ? ` (~${relativeTime})` : '';
+            })()}
           </div>
-          
-          {/* Animation status for debugging */}
-          {process.env.NODE_ENV === 'development' && animationStateRef.current && (
-            <div style={{ 
-              fontSize: '10px', 
-              color: '#999', 
-              marginTop: '4px',
-              borderTop: '1px solid #eee',
-              paddingTop: '2px'
-            }}>
-              Animating to: {animationStateRef.current.endPosition.lat.toFixed(6)}, {animationStateRef.current.endPosition.lon.toFixed(6)}
-            </div>
-          )}
-          
-          {/* Prediction metadata for debugging */}
-          {vehicle.predictionMetadata?.positionApplied && (
-            <div style={{ 
-              fontSize: '11px', 
-              color: '#666', 
-              marginTop: '4px',
-              borderTop: '1px solid #eee',
-              paddingTop: '4px'
-            }}>
-              Moved: {Math.round(vehicle.predictionMetadata.predictedDistance)}m | 
-              Stations: {vehicle.predictionMetadata.stationsEncountered} | 
-              Dwell: {Math.round(vehicle.predictionMetadata.totalDwellTime / 1000)}s
-            </div>
-          )}
-          
-          {/* Speed prediction metadata for debugging */}
-          {vehicle.predictionMetadata && process.env.NODE_ENV === 'development' && (
-            <div style={{ 
-              fontSize: '10px', 
-              color: '#888', 
-              marginTop: '4px',
-              borderTop: '1px solid #eee',
-              paddingTop: '2px'
-            }}>
-              Speed Method: {vehicle.predictionMetadata.speedMethod} | 
-              Confidence: {vehicle.predictionMetadata.speedConfidence}
-              {vehicle.predictionMetadata.isAtStation && ' | At Station'}
-            </div>
-          )}
           
           {/* Accessibility info */}
           {(vehicle.wheelchair_accessible === 'WHEELCHAIR_ACCESSIBLE' || 

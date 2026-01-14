@@ -40,7 +40,7 @@ export const StatusIndicator: FC<StatusIndicatorProps> = ({
 
   // Handle GPS icon click - always request location, optionally show details
   const handleGpsClick = () => {
-    // Always request location (manual refresh pattern)
+    // Always request fresh location (no caching, browser handles fallback)
     requestLocation();
     
     // Only show detailed popup in settings view

@@ -2,6 +2,40 @@
 
 ## Recent Updates (January 2025)
 
+### January 14, 2026 - Fixed Speed Prediction Algorithm Logic
+- **🚨 CRITICAL FIX**: Speed prediction now correctly handles low-speed scenarios (1-5 km/h)
+- **🔧 SOLUTION**: API speeds ≤5 km/h now trigger fallback to nearby average or location-based prediction instead of being used directly
+- **📊 TECHNICAL**: Station detection now runs FIRST before speed prediction to avoid unnecessary calculations for stopped vehicles
+- **✅ RESULT**: "Moving slowly" status eliminated - vehicles are either "At station" (0 km/h), "Stopped" (0 km/h), or "In transit" (>5 km/h)
+
+### January 14, 2026 - Simplified Vehicle Map Tooltip
+- **🎨 UI IMPROVEMENT**: Redesigned vehicle tooltip with cleaner, more scannable format
+- **📍 ROUTE DISPLAY**: Shows route number + headsign instead of full route name
+- **🎯 CONFIDENCE COLORS**: Color-coded confidence levels (green=high, orange=medium, red=low)
+- **⏱️ COMPACT TIME**: Uses "4m ago" instead of "4 minutes ago" to save space
+- **🧹 REDUCED REDUNDANCY**: Removed duplicate information and verbose labels
+
+### January 13, 2025 - Fixed Leaflet Map Refresh Errors
+- **🚨 CRITICAL FIX**: Resolved cascade of Leaflet DOM errors during manual refresh in map view
+- **🔧 SOLUTION**: Removed unnecessary lastUpdated subscription causing map container reuse, added error handling for map state updates and icon creation
+
+### January 13, 2025 - Fixed Critical Infinite Re-render Issues
+- **🚨 CRITICAL FIX**: Resolved "Maximum update depth exceeded" errors in ManualRefreshButton, VehicleLayer, StationLayer, and AnimatedVehicleMarker
+- **🔧 SOLUTION**: Fixed useEffect dependencies, changed useMemo to useEffect for side effects, added state update optimization for animations
+
+### January 13, 2025 - Fixed Station Detection Bug for Moving Vehicles
+- **🚨 CRITICAL FIX**: Vehicles between stations no longer incorrectly show "At station" status
+- **🔧 SOLUTION**: Fixed dwell time logic to only show "stopped_at_station" when vehicle is actually dwelling, not after it has moved away
+
+### January 13, 2025 - Fixed Speed Prediction Inconsistency at Stations
+- **🚨 CRITICAL FIX**: Speed prediction now correctly shows "Stopped" when vehicles are dwelling at stations
+- **🔧 SOLUTION**: Unified station detection logic between speed and position prediction algorithms
+- **📊 TECHNICAL**: Speed prediction now checks dwell time metadata from movement simulation, not just final position proximity
+
+### January 13, 2025 - Fixed GPS Location Update Flickering
+- **🚨 UI FIX**: GPS location updates no longer cause station list to flicker and disappear
+- **🔧 SOLUTION**: Location loading state only shows spinner on initial load, not during background location updates
+
 ### January 13, 2025 - Enhanced Speed Display and Prediction Details
 - **🎯 SPEED PRECISION**: Speed now displays with 2 decimal places for better accuracy
 - **📊 TOOLTIP ENHANCEMENT**: Arrival chip tooltips show speed prediction algorithm and confidence level

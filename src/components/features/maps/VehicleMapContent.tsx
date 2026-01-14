@@ -16,7 +16,7 @@ import { DebugLayer } from './DebugLayer';
 import { MapControls } from './MapControls';
 import { MapMode, VehicleColorStrategy } from '../../../types/map';
 import { projectPointToShape, calculateDistanceAlongShape } from '../../../utils/arrival/distanceUtils';
-import { estimateVehicleProgressWithStops } from '../../../utils/arrival/vehicleProgressUtils';
+import { getNextStationForVehicle } from '../../../utils/arrival/vehicleProgressUtils';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import { useVehicleStore } from '../../../stores/vehicleStore';
 import type { RouteShape } from '../../../types/arrivalTime';
@@ -45,7 +45,11 @@ const MapController: FC<MapControllerProps> = ({ onMapReady }) => {
   useEffect(() => {
     if (map && !hasInitialized.current) {
       hasInitialized.current = true;
-      onMapReady(map);
+      
+      // Wait for map to be fully ready before notifying parent
+      map.whenReady(() => {
+        onMapReady(map);
+      });
     }
   }, [map, onMapReady]);
   
@@ -118,13 +122,14 @@ export const VehicleMapContent: FC<VehicleMapContentProps> = ({
   onUserLocationToggle,
   onDebugToggle
 }) => {
-  // Subscribe to vehicle updates (includes both API fetches and prediction updates)
-  const lastUpdated = useVehicleStore(state => state.lastUpdated);
-  const storeVehicles = useVehicleStore(state => state.vehicles);
+  // Subscribe to vehicle updates to get latest vehicle data
+  // Use a selector to only subscribe to the specific vehicle we care about
+  const targetVehicleFromStore = useVehicleStore(
+    state => state.vehicles.find(v => v.id === vehicleId) || null
+  );
 
   // Find the target vehicle from store (has latest predictions) or fallback to props
   const targetStationVehicle = vehicles.find(sv => sv.vehicle.id === vehicleId);
-  const targetVehicleFromStore = storeVehicles.find(v => v.id === vehicleId);
   const targetVehicle = targetVehicleFromStore || targetStationVehicle?.vehicle || null;
   const vehicleTrip = targetVehicle ? trips.find(trip => trip.trip_id === targetVehicle.trip_id) : null;
 
@@ -154,25 +159,11 @@ export const VehicleMapContent: FC<VehicleMapContentProps> = ({
     return shape ? new Map([[vehicleTrip.shape_id, shape]]) : new Map();
   }, [vehicleTrip?.shape_id, routeShapes]);
 
-  // Calculate next stop using existing vehicle progress estimation
+  // Calculate next stop using reusable utility
   const nextStop = useMemo(() => {
-    if (!targetVehicle?.trip_id) return null;
-    
-    // Get trip stop sequence using existing utility
-    const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
-    if (tripStopTimes.length === 0) return null;
-    
-    // Use existing vehicle progress estimation to find next stop
-    const vehicleProgress = estimateVehicleProgressWithStops(targetVehicle, tripStopTimes, stations);
-    
-    // Extract next stop from vehicle progress
-    if (vehicleProgress.segmentBetweenStops?.nextStop) {
-      const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
-      return stations.find(s => s.stop_id === nextStopId) || null;
-    }
-    
-    return null;
-  }, [targetVehicle, stopTimes, stations, lastUpdated]);
+    if (!targetVehicle) return null;
+    return getNextStationForVehicle(targetVehicle, stopTimes, stations);
+  }, [targetVehicle, stopTimes, stations]);
 
   // Create debug data using REAL distance calculations
   const debugData: DebugVisualizationData | null = useMemo(() => {
@@ -313,6 +304,7 @@ export const VehicleMapContent: FC<VehicleMapContentProps> = ({
           <VehicleLayer
             vehicles={filteredVehicles}
             routes={new Map(filteredRoutes.map(r => [r.route_id, r]))}
+            trips={new Map(trips.map(t => [t.trip_id, t]))}
             highlightedVehicleId={vehicleId}
             colorStrategy={VehicleColorStrategy.BY_ROUTE}
             colorScheme={DEFAULT_MAP_COLORS}

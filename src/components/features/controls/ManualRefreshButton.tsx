@@ -39,12 +39,14 @@ const RefreshCountdownDots: FC<RefreshCountdownDotsProps> = ({
     const unsubscribe = manualRefreshService.subscribeToProgress((progress) => {
       // If refresh just started (progress has items), reset animation
       if (Object.keys(progress).length > 0 && currentProgress > 0) {
-        resetAnimation();
+        setAnimationStartTime(Date.now());
+        setCurrentProgress(0);
+        setKey(prev => prev + 1); // Force re-render
       }
     });
 
     return unsubscribe;
-  }, [resetAnimation, currentProgress]);
+  }, [currentProgress]); // Remove resetAnimation from dependencies
 
   // Run smooth 60-second animation
   useEffect(() => {
@@ -54,12 +56,15 @@ const RefreshCountdownDots: FC<RefreshCountdownDotsProps> = ({
       setCurrentProgress(progress);
       
       if (progress >= 1) {
-        resetAnimation(); // Loop the animation
+        // Loop the animation - inline instead of calling resetAnimation
+        setAnimationStartTime(Date.now());
+        setCurrentProgress(0);
+        setKey(prev => prev + 1);
       }
     }, 100); // Update every 100ms for smooth animation
 
     return () => clearInterval(interval);
-  }, [animationStartTime, resetAnimation]);
+  }, [animationStartTime]); // Remove resetAnimation from dependencies
 
   const radius = size / 2 - 3;
   const center = size / 2;

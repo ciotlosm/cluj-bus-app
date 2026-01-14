@@ -57,6 +57,8 @@ export interface VehicleLayerProps {
   vehicles: EnhancedVehicleData[];
   /** Route information mapped by route ID */
   routes: Map<number, TranzyRouteResponse>;
+  /** Trip information mapped by trip ID */
+  trips?: Map<string, TranzyTripResponse>;
   /** Callback when user clicks on a vehicle marker */
   onVehicleClick?: (vehicle: EnhancedVehicleData) => void;
   /** Vehicle ID to highlight with special styling */

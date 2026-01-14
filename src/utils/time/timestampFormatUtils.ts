@@ -29,6 +29,31 @@ export function formatRelativeTime(timestamp: number): string {
 }
 
 /**
+ * Format time as compact relative time (e.g., "4m ago", "2h ago")
+ * Use for space-constrained displays like tooltips
+ */
+export function formatCompactRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 30) {
+    return 'now';
+  } else if (diffSeconds < 60) {
+    return `${diffSeconds}s ago`;
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else {
+    return `${diffDays}d ago`;
+  }
+}
+
+/**
  * Format time as arrival time (e.g., "in 5 minutes", "in 1 hour")
  * Use for arrival predictions and future events
  */

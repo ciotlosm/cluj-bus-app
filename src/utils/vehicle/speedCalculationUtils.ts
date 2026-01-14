@@ -56,8 +56,8 @@ export function predictVehicleSpeed(
   nearbyVehicles: TranzyVehicleResponse[],
   stationDensityCenter: Coordinates
 ): SpeedPrediction {
-  // 1. Try API speed first (highest confidence)
-  if (vehicle.speed && vehicle.speed > 0) {
+  // 1. Try API speed first (only if > SPEED_THRESHOLD = 5 km/h)
+  if (vehicle.speed && vehicle.speed > SPEED_PREDICTION_CONFIG.SPEED_THRESHOLD) {
     return {
       speed: vehicle.speed,
       method: 'api_speed',
@@ -66,9 +66,9 @@ export function predictVehicleSpeed(
     };
   }
 
-  // 2. Try nearby vehicle average
+  // 2. Try nearby vehicle average (only vehicles > SPEED_THRESHOLD)
   const nearbySpeed = calculateNearbyAverageSpeed(vehicle, nearbyVehicles);
-  if (nearbySpeed.speed > 0) {
+  if (nearbySpeed.speed > SPEED_PREDICTION_CONFIG.SPEED_THRESHOLD) {
     return {
       speed: nearbySpeed.speed,
       method: 'nearby_average',
@@ -82,7 +82,7 @@ export function predictVehicleSpeed(
 
   // 3. Try location-based speed estimation
   const locationSpeed = calculateLocationBasedSpeed(vehicle, stationDensityCenter);
-  if (locationSpeed.speed > 0) {
+  if (locationSpeed.speed > SPEED_PREDICTION_CONFIG.SPEED_THRESHOLD) {
     return {
       speed: locationSpeed.speed,
       method: 'location_based',
@@ -119,7 +119,10 @@ function calculateNearbyAverageSpeed(
   const validSpeeds: number[] = [];
 
   for (const nearby of nearbyVehicles) {
-    if (nearby.id === vehicle.id || !nearby.speed || nearby.speed <= 0) continue;
+    // Skip self and vehicles with speed <= SPEED_THRESHOLD (5 km/h)
+    if (nearby.id === vehicle.id || !nearby.speed || nearby.speed <= SPEED_PREDICTION_CONFIG.SPEED_THRESHOLD) {
+      continue;
+    }
 
     const nearbyPosition = { lat: nearby.latitude, lon: nearby.longitude };
     

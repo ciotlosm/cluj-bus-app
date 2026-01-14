@@ -190,3 +190,32 @@ export function estimateVehicleProgressWithStops(
     method: ARRIVAL_METHODS.STOP_SEGMENTS
   };
 }
+
+/**
+ * Get the next station for a vehicle based on its progress
+ * Reusable utility to avoid duplicating next station calculation logic
+ */
+export function getNextStationForVehicle(
+  vehicle: TranzyVehicleResponse,
+  stopTimes: TranzyStopTimeResponse[],
+  stations: TranzyStopResponse[]
+): TranzyStopResponse | null {
+  if (!vehicle.trip_id) return null;
+  
+  // Get trip stop sequence
+  const tripStopTimes = stopTimes.filter(st => st.trip_id === vehicle.trip_id)
+    .sort((a, b) => a.stop_sequence - b.stop_sequence);
+  
+  if (tripStopTimes.length === 0) return null;
+  
+  // Use existing vehicle progress estimation to find next stop
+  const vehicleProgress = estimateVehicleProgressWithStops(vehicle, tripStopTimes, stations);
+  
+  // Extract next stop from vehicle progress
+  if (vehicleProgress.segmentBetweenStops?.nextStop) {
+    const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
+    return stations.find(s => s.stop_id === nextStopId) || null;
+  }
+  
+  return null;
+}

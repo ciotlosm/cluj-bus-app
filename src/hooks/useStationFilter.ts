@@ -167,7 +167,8 @@ export function useStationFilter(): StationFilterResult {
   
   return {
     filteredStations,
-    loading: locationLoading || stationLoading || tripLoading || vehicleLoading || routeLoading,
+    // Only show loading for initial data loads, not location updates when we have data
+    loading: (locationLoading && stops.length === 0) || stationLoading || tripLoading || vehicleLoading || routeLoading,
     error: locationError || stationError || tripError || vehicleError || routeError,
     retryFiltering,
     // Utility functions for UI formatting

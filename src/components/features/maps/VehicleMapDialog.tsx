@@ -20,7 +20,7 @@ import { VehicleMapContent } from './VehicleMapContent';
 import { MapMode } from '../../../types/interactiveMap';
 import { fetchRouteShapesForTrips } from '../../../services/routeShapeService';
 import { calculateVehicleComprehensiveViewport, calculateRouteOverviewViewport } from '../../../utils/maps/viewportUtils';
-import { estimateVehicleProgressWithStops } from '../../../utils/arrival/vehicleProgressUtils';
+import { getNextStationForVehicle } from '../../../utils/arrival/vehicleProgressUtils';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import type { RouteShape } from '../../../types/arrivalTime';
 import type { 
@@ -118,25 +118,35 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
   const handleMapReady = (map: LeafletMap) => {
     mapRef.current = map;
     
-    if (targetVehicle) {
-      const targetStation = targetStationId 
-        ? stations.find(s => s.stop_id === targetStationId) 
-        : null;
-      
-      const viewport = calculateVehicleComprehensiveViewport(
-        { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
-        targetStation,
-        null
-      );
-      
-      if (viewport && viewport.bounds) {
-        const bounds: [[number, number], [number, number]] = [
-          [viewport.bounds.south, viewport.bounds.west],
-          [viewport.bounds.north, viewport.bounds.east]
-        ];
-        map.fitBounds(bounds, { padding: [20, 20] });
+    // Wait for Leaflet to fully initialize before manipulating viewport
+    map.whenReady(() => {
+      if (targetVehicle) {
+        const targetStation = targetStationId 
+          ? stations.find(s => s.stop_id === targetStationId) 
+          : null;
+        
+        const nextStation = getNextStationForVehicle(targetVehicle, stopTimes, stations);
+        
+        const viewport = calculateVehicleComprehensiveViewport(
+          { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
+          targetStation,
+          nextStation
+        );
+        
+        if (viewport && viewport.bounds) {
+          const bounds: [[number, number], [number, number]] = [
+            [viewport.bounds.south, viewport.bounds.west],
+            [viewport.bounds.north, viewport.bounds.east]
+          ];
+          
+          try {
+            map.fitBounds(bounds, { padding: [20, 20] });
+          } catch (error) {
+            console.warn('Failed to fit bounds on map ready:', error);
+          }
+        }
       }
-    }
+    });
   };
 
   // Load route shapes
@@ -182,71 +192,71 @@ export const VehicleMapDialog: FC<VehicleMapDialogProps> = React.memo(({
     
     if (!mapRef.current || !targetVehicle) return;
     
-    if (newMode === MapMode.VEHICLE_TRACKING) {
-      // Vehicle tracking: show vehicle, target station, and next station
-      const targetStation = targetStationId 
-        ? stations.find(s => s.stop_id === targetStationId) 
-        : null;
-      
-      // Calculate next stop for vehicle tracking mode using existing methods
-      const nextStation = (() => {
-        if (!targetVehicle.trip_id) return null;
+    const map = mapRef.current;
+    
+    // Ensure map is ready before manipulating viewport
+    map.whenReady(() => {
+      if (newMode === MapMode.VEHICLE_TRACKING) {
+        // Vehicle tracking: show vehicle, target station, and next station
+        const targetStation = targetStationId 
+          ? stations.find(s => s.stop_id === targetStationId) 
+          : null;
         
-        const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
-        if (tripStopTimes.length === 0) return null;
+        const nextStation = getNextStationForVehicle(targetVehicle, stopTimes, stations);
         
-        const vehicleProgress = estimateVehicleProgressWithStops(targetVehicle, tripStopTimes, stations);
+        const viewport = calculateVehicleComprehensiveViewport(
+          { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
+          targetStation,
+          nextStation
+        );
         
-        if (vehicleProgress.segmentBetweenStops?.nextStop) {
-          const nextStopId = vehicleProgress.segmentBetweenStops.nextStop.stop_id;
-          return stations.find(s => s.stop_id === nextStopId) || null;
+        if (viewport && viewport.bounds) {
+          const bounds: [[number, number], [number, number]] = [
+            [viewport.bounds.south, viewport.bounds.west],
+            [viewport.bounds.north, viewport.bounds.east]
+          ];
+          
+          try {
+            map.fitBounds(bounds, { padding: [20, 20] });
+          } catch (error) {
+            console.warn('Failed to fit bounds in vehicle tracking mode:', error);
+          }
         }
+      } else if (newMode === MapMode.ROUTE_OVERVIEW) {
+        // Route overview: show the entire route with all stations
+        const tripStations = (() => {
+          if (!targetVehicle.trip_id) return stations;
+          
+          const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
+          if (tripStopTimes.length === 0) return stations;
+          
+          const tripStationIds = new Set(tripStopTimes.map(st => st.stop_id));
+          return stations.filter(station => tripStationIds.has(station.stop_id));
+        })();
         
-        return null;
-      })();
-      
-      const viewport = calculateVehicleComprehensiveViewport(
-        { lat: targetVehicle.latitude, lon: targetVehicle.longitude },
-        targetStation,
-        nextStation
-      );
-      
-      if (viewport && viewport.bounds) {
-        const bounds: [[number, number], [number, number]] = [
-          [viewport.bounds.south, viewport.bounds.west],
-          [viewport.bounds.north, viewport.bounds.east]
-        ];
-        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+        const routeShapesForOverview = vehicleTrip?.shape_id && routeShapes.has(vehicleTrip.shape_id)
+          ? new Map([[vehicleTrip.shape_id, routeShapes.get(vehicleTrip.shape_id)!]])
+          : new Map();
+        
+        const viewport = calculateRouteOverviewViewport(
+          routeShapesForOverview,
+          tripStations
+        );
+        
+        if (viewport && viewport.bounds) {
+          const bounds: [[number, number], [number, number]] = [
+            [viewport.bounds.south, viewport.bounds.west],
+            [viewport.bounds.north, viewport.bounds.east]
+          ];
+          
+          try {
+            map.fitBounds(bounds, { padding: [20, 20] });
+          } catch (error) {
+            console.warn('Failed to fit bounds in route overview mode:', error);
+          }
+        }
       }
-    } else if (newMode === MapMode.ROUTE_OVERVIEW) {
-      // Route overview: show the entire route with all stations
-      const tripStations = (() => {
-        if (!targetVehicle.trip_id) return stations;
-        
-        const tripStopTimes = getTripStopSequence(targetVehicle, stopTimes);
-        if (tripStopTimes.length === 0) return stations;
-        
-        const tripStationIds = new Set(tripStopTimes.map(st => st.stop_id));
-        return stations.filter(station => tripStationIds.has(station.stop_id));
-      })();
-      
-      const routeShapesForOverview = vehicleTrip?.shape_id && routeShapes.has(vehicleTrip.shape_id)
-        ? new Map([[vehicleTrip.shape_id, routeShapes.get(vehicleTrip.shape_id)!]])
-        : new Map();
-      
-      const viewport = calculateRouteOverviewViewport(
-        routeShapesForOverview,
-        tripStations
-      );
-      
-      if (viewport && viewport.bounds) {
-        const bounds: [[number, number], [number, number]] = [
-          [viewport.bounds.south, viewport.bounds.west],
-          [viewport.bounds.north, viewport.bounds.east]
-        ];
-        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
-      }
-    }
+    });
   };
 
   return (

@@ -96,25 +96,54 @@ export function enhanceVehicle(
     options.stops
   );
   
-  // 2. Apply speed prediction (always enabled)
-  const speedResult = predictVehicleSpeed(
-    vehicle,
-    options.nearbyVehicles || [],
-    options.stationDensityCenter || { lat: 0, lon: 0 }
-  );
+  // 2. Check if vehicle is at station FIRST (before speed prediction)
+  let stationDetection: { isAtStation: boolean; stationId?: number } = { isAtStation: false, stationId: undefined };
   
-  // 3. Check if vehicle is at station based on predicted position
-  const stationDetection = checkIfAtStation(
-    { lat: positionResult.predictedPosition.lat, lon: positionResult.predictedPosition.lon },
-    options.stops || []
-  );
+  // First check if vehicle is dwelling at a station (from movement simulation)
+  if (positionResult.metadata.stationsEncountered > 0 && positionResult.metadata.totalDwellTime > 0) {
+    // Vehicle encountered stations and has dwell time - check if still dwelling
+    const timestampAge = positionResult.metadata.timestampAge;
+    const totalDwellTimeMs = positionResult.metadata.totalDwellTime;
+    
+    // Calculate how much time was spent moving vs dwelling
+    // If the vehicle has moved beyond the dwell time, it's no longer at a station
+    const effectiveMovementTime = Math.max(0, timestampAge - totalDwellTimeMs);
+    
+    // Only consider "at station" if the vehicle hasn't had time to move away yet
+    // This means the timestamp age is still within or close to the dwell period
+    if (timestampAge <= totalDwellTimeMs + 5000) { // 5 second buffer for timing precision
+      stationDetection.isAtStation = true;
+    }
+  }
   
-  // 4. Override speed if vehicle is detected at station
-  let finalSpeed = speedResult.speed;
-  let finalSpeedMethod = speedResult.method;
+  // If not dwelling, check final predicted position proximity to stations
+  if (!stationDetection.isAtStation) {
+    stationDetection = checkIfAtStation(
+      { lat: positionResult.predictedPosition.lat, lon: positionResult.predictedPosition.lon },
+      options.stops || []
+    );
+  }
+  
+  // 3. Apply speed prediction (skip if at station)
+  let finalSpeed: number;
+  let finalSpeedMethod: 'api_speed' | 'nearby_average' | 'location_based' | 'stopped_at_station' | 'static_fallback';
+  let speedConfidence: 'high' | 'medium' | 'low' | 'very_low';
+  
   if (stationDetection.isAtStation) {
+    // Vehicle is at station - no need to predict speed
     finalSpeed = 0;
     finalSpeedMethod = 'stopped_at_station';
+    speedConfidence = 'high';
+  } else {
+    // Vehicle is moving - predict speed
+    const speedResult = predictVehicleSpeed(
+      vehicle,
+      options.nearbyVehicles || [],
+      options.stationDensityCenter || { lat: 0, lon: 0 }
+    );
+    finalSpeed = speedResult.speed;
+    finalSpeedMethod = speedResult.method;
+    speedConfidence = speedResult.confidence;
   }
   
   // Create base enhanced vehicle with prediction timestamp
@@ -140,7 +169,7 @@ export function enhanceVehicle(
       // Speed prediction (always applied)
       predictedSpeed: finalSpeed,
       speedMethod: finalSpeedMethod,
-      speedConfidence: speedResult.confidence,
+      speedConfidence: speedConfidence,
       speedApplied: true,
       
       // Station detection
