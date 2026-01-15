@@ -17,7 +17,11 @@ import { StationList } from '../lists/StationList';
 import { StationEmptyState } from '../states/StationEmptyState';
 import { FirstTimeLoadingState } from '../states/FirstTimeLoadingState';
 
-export const StationView: FC = () => {
+interface StationViewProps {
+  onNavigateToSettings?: () => void;
+}
+
+export const StationView: FC<StationViewProps> = ({ onNavigateToSettings }) => {
   // Use selectors to prevent unnecessary re-renders
   const stops = useStationStore(state => state.stops);
   const stationLoading = useStationStore(state => state.loading);
@@ -41,7 +45,21 @@ export const StationView: FC = () => {
 
   if (!apiKey || !agency_id) {
     return (
-      <Alert severity="info" sx={{ m: 2 }}>
+      <Alert 
+        severity="info" 
+        sx={{ m: 2 }}
+        action={
+          onNavigateToSettings && (
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={onNavigateToSettings}
+            >
+              Settings
+            </Button>
+          )
+        }
+      >
         Please configure your API key and agency in settings
       </Alert>
     );
@@ -49,7 +67,11 @@ export const StationView: FC = () => {
 
   // Show first-time loading state when cache is empty and data is loading
   // Requirement 7.6: Display loading states when cache is empty on first load
-  if (loading && stops.length === 0 && vehicles.length === 0) {
+  // Show loading if we're missing ANY critical data (stops or vehicles)
+  // OR if any store is actively loading
+  if (stops.length === 0 || vehicles.length === 0) {
+    // If we have no stops or vehicles, show loading state
+    // Don't show empty state until we've actually tried to load data
     return (
       <FirstTimeLoadingState 
         message="Loading nearby stations..."

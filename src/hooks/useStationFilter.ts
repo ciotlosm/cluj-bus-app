@@ -238,17 +238,19 @@ export function useStationFilter(): StationFilterResult {
     setLastFilterPosition(null);
   }, []);
   
+  const loadingState = (
+    (locationLoading && filteredStations.length === 0) || 
+    (stationLoading && stops.length === 0) || 
+    (tripLoading && trips.length === 0) || 
+    (stopTimeLoading && stopTimes.length === 0) ||
+    (routeLoading && allRoutes.length === 0)
+  );
+
   return {
     filteredStations,
     // Only show loading for initial data loads when we have no data
     // Don't show loading during background refreshes when we already have cached data
-    loading: (
-      (locationLoading && filteredStations.length === 0) || 
-      (stationLoading && stops.length === 0) || 
-      (tripLoading && trips.length === 0) || 
-      (stopTimeLoading && stopTimes.length === 0) ||
-      (routeLoading && allRoutes.length === 0)
-    ),
+    loading: loadingState,
     processing, // NEW: Track when filtering is actively running
     error: locationError || stationError || tripError || vehicleError || routeError,
     retryFiltering,

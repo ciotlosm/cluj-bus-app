@@ -73,7 +73,8 @@ export class DataFreshnessMonitor {
 
     // Calculate vehicle data age (most critical)
     const vehicleAge = timestamps.vehicles ? now - timestamps.vehicles : Infinity;
-    const isVehicleDataStale = vehicleAge > STALENESS_THRESHOLDS.VEHICLES;
+    const hasVehicleData = timestamps.vehicles !== null;
+    const isVehicleDataStale = hasVehicleData && vehicleAge > STALENESS_THRESHOLDS.VEHICLES;
 
     // Calculate static data age (stations, routes, shapes, stopTimes, trips)
     const staticDataAges = [
@@ -85,10 +86,15 @@ export class DataFreshnessMonitor {
     ];
 
     const maxStaticDataAge = Math.max(...staticDataAges);
-    const isStaticDataStale = maxStaticDataAge > STALENESS_THRESHOLDS.STATIC_DATA;
+    const hasStaticData = staticDataAges.some(age => age !== Infinity);
+    const isStaticDataStale = hasStaticData && maxStaticDataAge > STALENESS_THRESHOLDS.STATIC_DATA;
 
-    // Overall status is stale if either vehicle or static data is stale
-    const status = isVehicleDataStale || isStaticDataStale ? 'stale' : 'fresh';
+    // Overall status logic:
+    // - If no data exists at all (both Infinity), status is 'fresh' (empty/grey state)
+    // - If data exists but is stale, status is 'stale' (red state)
+    // - If data exists and is fresh, status is 'fresh' (green state)
+    const hasAnyData = hasVehicleData || hasStaticData;
+    const status = hasAnyData && (isVehicleDataStale || isStaticDataStale) ? 'stale' : 'fresh';
 
     // Check if any store is currently refreshing
     const isRefreshing = this.isAnyStoreRefreshing();

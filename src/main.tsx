@@ -11,11 +11,12 @@ import { Navigation } from './components/layout/Navigation';
 import { StationView } from './components/features/views/StationView';
 import { RouteView } from './components/features/views/RouteView';
 import { SettingsView } from './components/features/views/SettingsView';
+import { ApiKeySetupView } from './components/features/views/ApiKeySetupView';
 import { ThemeProvider } from './components/theme/ThemeProvider';
 import { useAutoLocation } from './hooks/useAutoLocation';
-import { useShapeInitialization } from './hooks/useShapeInitialization';
 import { setupAppContext } from './context/contextInitializer';
 import { automaticRefreshService } from './services/automaticRefreshService';
+import { useConfigStore } from './stores/configStore';
 
 // Error boundary for context initialization failures
 interface ErrorBoundaryState {
@@ -75,13 +76,23 @@ class ContextErrorBoundary extends Component<
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState(0); // 0 = stations, 1 = routes
+  // Calculate initial view based on configuration state
+  // -1 = API key setup, 0 = stations, 1 = routes, 2 = settings
+  const [currentView, setCurrentView] = useState(() => {
+    const { apiKey, agency_id } = useConfigStore.getState();
+    
+    // No API key → Setup view
+    if (!apiKey) return -1;
+    
+    // Has API key but no agency → Settings
+    if (!agency_id) return 2;
+    
+    // Fully configured → Stations
+    return 0;
+  });
   
   // Auto-request location on app start and foreground return
   useAutoLocation();
-  
-  // Initialize shape store with cache-first loading strategy
-  useShapeInitialization();
 
   // Initialize automatic refresh service on app start
   useEffect(() => {
@@ -94,9 +105,26 @@ function App() {
       automaticRefreshService.destroy();
     };
   }, []);
+  
+  // Listen for navigation events from error handlers
+  useEffect(() => {
+    const handleNavigateToSettings = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('Navigation to settings triggered:', customEvent.detail);
+      setCurrentView(2);
+    };
+    
+    window.addEventListener('navigate-to-settings', handleNavigateToSettings);
+    
+    return () => {
+      window.removeEventListener('navigate-to-settings', handleNavigateToSettings);
+    };
+  }, []);
 
   const getViewTitle = () => {
     switch (currentView) {
+      case -1:
+        return 'Setup';
       case 0:
         return 'Stations';
       case 1:
@@ -109,13 +137,31 @@ function App() {
   };
 
   const renderContent = () => {
+    const { apiKey, agency_id } = useConfigStore.getState();
+    
     switch (currentView) {
+      case -1:
+        return (
+          <ApiKeySetupView
+            initialApiKey={apiKey || undefined}
+            isUpdate={!!apiKey}
+            onSuccess={() => {
+              // After API key validation
+              const { agency_id: currentAgencyId } = useConfigStore.getState();
+              if (!currentAgencyId) {
+                setCurrentView(2); // Go to settings for agency selection
+              } else {
+                setCurrentView(0); // Go to stations if agency already configured
+              }
+            }}
+          />
+        );
       case 0:
-        return <StationView />;
+        return <StationView onNavigateToSettings={() => setCurrentView(2)} />;
       case 1:
-        return <RouteView />;
+        return <RouteView onNavigateToSettings={() => setCurrentView(2)} />;
       case 2:
-        return <SettingsView />;
+        return <SettingsView onNavigateToApiKeySetup={() => setCurrentView(-1)} />;
       default:
         return <StationView />;
     }
@@ -128,15 +174,18 @@ function App() {
         onNavigateToSettings={() => setCurrentView(2)}
       >
         {renderContent()}
-        <Navigation 
-          value={currentView} 
-          onChange={(newView) => {
-            // Use startTransition for non-blocking view switching
-            startTransition(() => {
-              setCurrentView(newView);
-            });
-          }} 
-        />
+        {/* Hide navigation when in setup view */}
+        {currentView !== -1 && (
+          <Navigation 
+            value={currentView} 
+            onChange={(newView) => {
+              // Use startTransition for non-blocking view switching
+              startTransition(() => {
+                setCurrentView(newView);
+              });
+            }} 
+          />
+        )}
       </AppLayout>
     </ThemeProvider>
   );

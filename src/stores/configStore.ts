@@ -26,6 +26,7 @@ interface ConfigStore {
   toggleTheme: () => void;
   clearError: () => void;
   clearSuccess: () => void;
+  validateApiKey: (apiKey: string) => Promise<void>;
   validateAndSave: (apiKey: string, agencyId: number) => Promise<void>;
 }
 
@@ -53,30 +54,64 @@ export const useConfigStore = create<ConfigStore>()(
         set({ agency_id, error: null, success: null });
       },
       
+      validateApiKey: async (apiKey: string) => {
+        set({ loading: true, error: null, success: null });
+        
+        try {
+          // Validate API key using standalone service function
+          const { agencyService } = await import('../services/agencyService');
+          const agencies = await agencyService.validateApiKey(apiKey);
+          
+          // On success: save API key, clear agency_id, load agencies into agency store
+          set({ 
+            apiKey,
+            agency_id: null, // Clear agency when API key changes
+            loading: false,
+            success: 'API key validated successfully'
+          });
+          
+          // Load agencies into agency store
+          const { useAgencyStore } = await import('./agencyStore');
+          useAgencyStore.getState().setAgencies(agencies);
+          
+        } catch (error) {
+          // On error: set error state, throw to prevent navigation
+          let errorMessage = 'Failed to validate API key';
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          
+          set({ 
+            loading: false, 
+            error: errorMessage,
+            success: null
+          });
+          
+          throw error; // Re-throw to prevent navigation
+        }
+      },
+      
       validateAndSave: async (apiKey: string, agencyId: number) => {
         set({ loading: true, error: null, success: null });
         
         try {
-          // Temporarily set the config to test it
-          const originalApiKey = get().apiKey;
-          const originalAgencyId = get().agency_id;
+          // Validate using standalone service function
+          const { routeService } = await import('../services/routeService');
+          const isValid = await routeService.validateAgency(apiKey, agencyId);
           
-          set({ apiKey, agency_id: agencyId });
+          if (!isValid) {
+            throw new Error('Invalid API key and agency combination');
+          }
           
-          // Test the API key by calling existing agencyService
-          const { agencyService } = await import('../services/agencyService');
-          await agencyService.getAgencies();
-          
-          // If we get here, the API call succeeded
+          // Save to store (triggers app context update)
           set({ 
+            apiKey, 
+            agency_id: agencyId,
             loading: false, 
             success: 'Configuration validated and saved successfully'
           });
         } catch (error) {
-          // Restore original values on error
-          const originalApiKey = get().apiKey;
-          const originalAgencyId = get().agency_id;
-          
           let errorMessage = 'Failed to validate configuration';
           
           if (error instanceof Error) {
@@ -88,6 +123,8 @@ export const useConfigStore = create<ConfigStore>()(
             error: errorMessage,
             success: null
           });
+          
+          throw error; // Re-throw to prevent navigation
         }
       },
       

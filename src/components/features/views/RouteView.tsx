@@ -20,7 +20,11 @@ import { FirstTimeLoadingState } from '../states/FirstTimeLoadingState';
 import { DEFAULT_FILTER_STATE } from '../../../types/routeFilter';
 import type { RouteFilterState } from '../../../types/routeFilter';
 
-export const RouteView: FC = () => {
+interface RouteViewProps {
+  onNavigateToSettings?: () => void;
+}
+
+export const RouteView: FC<RouteViewProps> = ({ onNavigateToSettings }) => {
   const { routes, loading, error } = useRouteStore();
   const { apiKey, agency_id } = useConfigStore();
   
@@ -42,7 +46,21 @@ export const RouteView: FC = () => {
 
   if (!apiKey || !agency_id) {
     return (
-      <Alert severity="info" sx={{ m: 2 }}>
+      <Alert 
+        severity="info" 
+        sx={{ m: 2 }}
+        action={
+          onNavigateToSettings && (
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={onNavigateToSettings}
+            >
+              Settings
+            </Button>
+          )
+        }
+      >
         Please configure your API key and agency in settings
       </Alert>
     );

@@ -43,6 +43,13 @@ class AutomaticRefreshService {
 
     this.hasInitializedStartup = true;
 
+    // Check if API configuration is ready before starting refresh
+    const { isContextReady } = await import('../context/appContext');
+    if (!isContextReady()) {
+      console.log('[AutoRefresh] Skipping initialization - API key and agency ID not configured');
+      return;
+    }
+
     // Start background refresh immediately (components handle their own cache loading)
     this.startBackgroundRefresh();
 
@@ -60,6 +67,12 @@ class AutomaticRefreshService {
   private async startBackgroundRefresh(): Promise<void> {
     if (!manualRefreshService.isNetworkAvailable()) {
       // Network not available, wait for connectivity
+      return;
+    }
+
+    // Check if API configuration is ready
+    const { isContextReady } = await import('../context/appContext');
+    if (!isContextReady()) {
       return;
     }
 
@@ -88,6 +101,12 @@ class AutomaticRefreshService {
 
       const statusStore = useStatusStore.getState();
       if (!statusStore.networkOnline) {
+        return;
+      }
+
+      // Check if API configuration is ready
+      const { isContextReady } = await import('../context/appContext');
+      if (!isContextReady()) {
         return;
       }
 
@@ -249,6 +268,12 @@ class AutomaticRefreshService {
       return;
     }
 
+    // Check if API configuration is ready
+    const { isContextReady } = await import('../context/appContext');
+    if (!isContextReady()) {
+      return;
+    }
+
     try {
       // Use the same unified refresh mechanism for consistency
       await this.triggerManualRefresh();
@@ -276,6 +301,12 @@ class AutomaticRefreshService {
    */
   private async onNetworkAvailable(): Promise<void> {
     if (!this.hasInitializedStartup) {
+      return;
+    }
+
+    // Check if API configuration is ready
+    const { isContextReady } = await import('../context/appContext');
+    if (!isContextReady()) {
       return;
     }
 

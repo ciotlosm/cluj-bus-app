@@ -33,6 +33,7 @@ function processAxiosError(errorObj: any): string {
 
 /**
  * Handles API errors with consistent error messages and status tracking
+ * Detects 401 errors and triggers navigation to settings for credential recovery
  */
 export function handleApiError(error: unknown, operation: string): never {
   console.error(`Failed to ${operation}:`, error);
@@ -52,6 +53,36 @@ export function handleApiError(error: unknown, operation: string): never {
     }).catch(() => {
       // Ignore import errors - status store may not be available
     });
+  }
+  
+  // Detect 401 errors and trigger credential recovery
+  let is401Error = false;
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    is401Error = true;
+  } else if (error && typeof error === 'object' && 'response' in error) {
+    const errorObj = error as any;
+    if (errorObj.response?.status === 401) {
+      is401Error = true;
+    }
+  }
+  
+  if (is401Error && typeof window !== 'undefined') {
+    // Set error message in configStore and trigger navigation to settings
+    import('../../stores/configStore').then(({ useConfigStore }) => {
+      const store = useConfigStore.getState();
+      store.clearSuccess();
+      // Set error message explaining the issue
+      useConfigStore.setState({ 
+        error: 'Your API key is invalid or has expired. Please update your credentials in settings.' 
+      });
+    }).catch(() => {
+      // Ignore import errors
+    });
+    
+    // Trigger navigation to settings view by dispatching a custom event
+    window.dispatchEvent(new CustomEvent('navigate-to-settings', { 
+      detail: { reason: 'invalid-credentials' } 
+    }));
   }
   
   // Handle axios errors (primary method)

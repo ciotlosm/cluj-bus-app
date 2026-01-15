@@ -2,6 +2,10 @@
 
 ## Recent Updates (January 2025)
 
+### January 15, 2026 - Fixed Status Indicators After API Setup
+- **🚨 UX FIX**: Connection icon now turns green after successful agency validation, data refresh icon shows grey (empty) instead of red (stale) when no data exists yet
+- **🔧 SOLUTION**: Agency validation now updates status store, data freshness monitor distinguishes between "no data" and "stale data"
+
 ### January 14, 2026 - Station View Loading UX Improvements
 - **🎯 UX FIX**: Cached stations now appear immediately when switching to Stations view
 - **🔧 SOLUTION 1**: Removed vehicleLoading from view loading condition - vehicles load in background while showing cached stations

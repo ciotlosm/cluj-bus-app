@@ -39,5 +39,26 @@ export const agencyService = {
     } catch (error) {
       handleApiError(error, 'fetch agencies');
     }
+  },
+
+  /**
+   * Validate API key by calling the agency endpoint
+   * Standalone function that doesn't require app context
+   * @param apiKey - API key to validate
+   * @returns Agency list on success
+   * @throws Error on validation failure
+   */
+  async validateApiKey(apiKey: string): Promise<TranzyAgencyResponse[]> {
+    try {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/agency`, {
+        headers: {
+          'X-API-Key': apiKey
+        }
+      });
+      
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'validate API key');
+    }
   }
 };

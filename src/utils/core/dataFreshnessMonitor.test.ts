@@ -90,11 +90,12 @@ describe('DataFreshnessMonitor', () => {
   });
 
   describe('calculateFreshness', () => {
-    it('should return stale status when no data exists', () => {
+    it('should return fresh status when no data exists (empty state)', () => {
       monitor = new DataFreshnessMonitor();
       const status = monitor.calculateFreshness();
 
-      expect(status.status).toBe('stale');
+      // When no data exists, status should be 'fresh' (grey/default state, not red/stale)
+      expect(status.status).toBe('fresh');
       expect(status.vehicleDataAge).toBe(Infinity);
       expect(status.staticDataAge).toBe(Infinity);
       expect(status.isRefreshing).toBe(false);
