@@ -94,6 +94,11 @@ export const setupAppContext = (): void => {
     const currentConfig = getCurrentConfig();
     if (currentConfig) {
       initializeAppContext(currentConfig);
+      
+      // Initialize favorites store with current agency
+      import('../stores/favoritesStore').then(({ useFavoritesStore }) => {
+        useFavoritesStore.getState().setCurrentAgency(currentConfig.agencyId);
+      });
     }
     
     // Subscribe to config store changes for automatic updates
