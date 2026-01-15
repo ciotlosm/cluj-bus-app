@@ -57,7 +57,14 @@ export const useFavoritesStore = create<FavoritesStore>()(
       // Actions
       addFavorite: (routeId: string) => {
         const { currentAgencyId } = get();
-        const agencyKey = currentAgencyId || 'default';
+        
+        // Require agency ID to be set
+        if (!currentAgencyId) {
+          console.error('[FavoritesStore] Cannot add favorite: agency ID not set');
+          return;
+        }
+        
+        const agencyKey = currentAgencyId;
         
         set((state) => {
           const currentFavorites = state.favoritesByAgency[agencyKey] || [];
@@ -79,7 +86,14 @@ export const useFavoritesStore = create<FavoritesStore>()(
       
       removeFavorite: (routeId: string) => {
         const { currentAgencyId } = get();
-        const agencyKey = currentAgencyId || 'default';
+        
+        // Require agency ID to be set
+        if (!currentAgencyId) {
+          console.error('[FavoritesStore] Cannot remove favorite: agency ID not set');
+          return;
+        }
+        
+        const agencyKey = currentAgencyId;
         
         set((state) => {
           const currentFavorites = state.favoritesByAgency[agencyKey] || [];
@@ -105,14 +119,27 @@ export const useFavoritesStore = create<FavoritesStore>()(
       
       isFavorite: (routeId: string) => {
         const { currentAgencyId, favoritesByAgency } = get();
-        const agencyKey = currentAgencyId || 'default';
+        
+        // Require agency ID to be set
+        if (!currentAgencyId) {
+          return false;
+        }
+        
+        const agencyKey = currentAgencyId;
         const currentFavorites = favoritesByAgency[agencyKey] || [];
         return currentFavorites.includes(routeId);
       },
       
       clearFavorites: () => {
         const { currentAgencyId } = get();
-        const agencyKey = currentAgencyId || 'default';
+        
+        // Require agency ID to be set
+        if (!currentAgencyId) {
+          console.error('[FavoritesStore] Cannot clear favorites: agency ID not set');
+          return;
+        }
+        
+        const agencyKey = currentAgencyId;
         
         set((state) => ({
           favoritesByAgency: {
@@ -132,14 +159,26 @@ export const useFavoritesStore = create<FavoritesStore>()(
       // Utilities
       getFavoriteCount: () => {
         const { currentAgencyId, favoritesByAgency } = get();
-        const agencyKey = currentAgencyId || 'default';
+        
+        // Require agency ID to be set
+        if (!currentAgencyId) {
+          return 0;
+        }
+        
+        const agencyKey = currentAgencyId;
         const currentFavorites = favoritesByAgency[agencyKey] || [];
         return currentFavorites.length;
       },
       
       getFavoriteRouteIds: () => {
         const { currentAgencyId, favoritesByAgency } = get();
-        const agencyKey = currentAgencyId || 'default';
+        
+        // Require agency ID to be set
+        if (!currentAgencyId) {
+          return [];
+        }
+        
+        const agencyKey = currentAgencyId;
         const currentFavorites = favoritesByAgency[agencyKey] || [];
         return [...currentFavorites]; // Return copy to prevent mutations
       },

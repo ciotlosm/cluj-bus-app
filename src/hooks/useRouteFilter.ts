@@ -35,14 +35,15 @@ export function useRouteFilter(
   routes: TranzyRouteResponse[],
   filterState: RouteFilterState
 ): UseRouteFilterReturn {
-  // Access favorites store for route enhancement
+  // Subscribe to favorites store changes via lastUpdated
+  const lastUpdated = useFavoritesStore((state) => state.lastUpdated);
   const getFavoriteRouteIds = useFavoritesStore((state) => state.getFavoriteRouteIds);
-  const favoriteRouteIds = getFavoriteRouteIds();
-
+  
   // Memoize route enhancement - recompute when routes or favorites change
   const enhancedRoutes = useMemo(() => {
+    const favoriteRouteIds = getFavoriteRouteIds();
     return enhanceRoutes(routes, favoriteRouteIds);
-  }, [routes, favoriteRouteIds]);
+  }, [routes, getFavoriteRouteIds, lastUpdated]); // Include lastUpdated to trigger updates
 
   // Memoize filtering - only recompute when enhanced routes or filter state changes
   const filteredRoutes = useMemo(() => {
