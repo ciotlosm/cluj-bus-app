@@ -23,8 +23,8 @@ export const PREDICTION_UPDATE_CYCLE = 15 * 1000; // 15 seconds
 
 // In-memory cache durations (when to fetch new data)
 export const IN_MEMORY_CACHE_DURATIONS = {
-  // Vehicle data - cache duration (2 minutes to match refresh cycle)
-  VEHICLES: 120 * 1000, // 2 minutes
+  // Vehicle data - cache duration 
+  VEHICLES: 60 * 1000, // 1 minute
   
   // Static data - 24 hours (routes, stations, shapes, trips, stop times)
   STATIC_DATA: 24 * 60 * 60 * 1000, // 24 hours
