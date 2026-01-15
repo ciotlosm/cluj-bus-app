@@ -6,22 +6,23 @@ import type { FC } from 'react';
 import { memo, useState, useMemo } from 'react';
 import { 
   Card, CardContent, Typography, Chip, Stack, Box, Avatar, IconButton,
-  Collapse, List, ListItem, ListItemText, Tooltip, CircularProgress
+  Collapse, List, ListItem, ListItemText, Tooltip, CircularProgress, ClickAwayListener
 } from '@mui/material';
 import { 
   AccessibleForward as WheelchairIcon,
-  DirectionsBike as BikeIcon, Speed as SpeedIcon, Schedule as TimeIcon,
+  DirectionsBike as BikeIcon, Speed as SpeedIcon,
   AccessTime as ArrivalIcon, ExpandMore as ExpandMoreIcon, Map as MapIcon,
-  LocationOn as TargetStationIcon, Favorite as FavoriteIcon
+  LocationOn as TargetStationIcon, Favorite as FavoriteIcon,
+  AccessTime as AccessTimeIcon, Warning as WarningIcon, Error as ErrorIcon
 } from '@mui/icons-material';
 import { formatTimestamp, formatSpeed, getAccessibilityFeatures, formatArrivalTime } from '../../../utils/vehicle/vehicleFormatUtils';
-import { formatAbsoluteTime, formatRelativeTime } from '../../../utils/time/timestampFormatUtils';
+import { formatAbsoluteTime, formatRelativeTime, formatDetailedRelativeTime } from '../../../utils/time/timestampFormatUtils';
 import { sortStationVehiclesByArrival } from '../../../utils/station/stationVehicleUtils';
+import { calculateDataAge } from '../../../utils/vehicle/dataAgeUtils';
 import { groupVehiclesForDisplay } from '../../../utils/station/vehicleGroupingUtils';
 import { VEHICLE_DISPLAY } from '../../../utils/core/constants';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import { determineTargetStopRelation } from '../../../utils/arrival/arrivalUtils';
-import { generateConfidenceDebugInfo, formatConfidenceDebugTooltip } from '../../../utils/debug/confidenceDebugUtils';
 import { useTripStore } from '../../../stores/tripStore';
 import { useStopTimeStore } from '../../../stores/stopTimeStore';
 import { useStationStore } from '../../../stores/stationStore';
@@ -197,9 +198,65 @@ interface VehicleCardProps {
   allStationVehicles: StationVehicle[]; // Keep this for the map dialog
 }
 
+// Data Age Icon Component - displays freshness indicator
+interface DataAgeIconProps {
+  status: 'current' | 'aging' | 'stale';
+}
+
+const DataAgeIcon: FC<DataAgeIconProps> = ({ status }) => {
+  if (status === 'current') {
+    return <AccessTimeIcon fontSize="small" sx={{ color: 'success.main' }} />;
+  } else if (status === 'aging') {
+    return <WarningIcon fontSize="small" sx={{ color: 'warning.main' }} />;
+  } else {
+    return <ErrorIcon fontSize="small" sx={{ color: 'error.main' }} />;
+  }
+};
+
+// Data Popup Content Component - displays detailed timestamp information
+interface DataPopupContentProps {
+  vehicleTimestamp: string;
+  fetchTimestamp: number;
+  gpsAge: number;
+  fetchAge: number;
+  tip: string;
+}
+
+const DataPopupContent: FC<DataPopupContentProps> = ({ 
+  vehicleTimestamp, 
+  fetchTimestamp, 
+  gpsAge, 
+  fetchAge, 
+  tip 
+}) => {
+  // Parse vehicle timestamp to get milliseconds
+  const vehicleTime = new Date(vehicleTimestamp).getTime();
+  
+  return (
+    <Box sx={{ p: 1 }}>
+      <Typography variant="body2">
+        Vehicle GPS: {formatAbsoluteTime(vehicleTime)} ({formatDetailedRelativeTime(gpsAge)})
+      </Typography>
+      <Typography variant="body2">
+        Last API fetch: {formatAbsoluteTime(fetchTimestamp)} ({formatDetailedRelativeTime(fetchAge)})
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+        💡 {tip}
+      </Typography>
+    </Box>
+  );
+};
+
 const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp, allStationVehicles }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const [dataTooltipOpen, setDataTooltipOpen] = useState(false);
+  const [arrivalTooltipOpen, setArrivalTooltipOpen] = useState(false);
+  
+  // Calculate data age for freshness indicator
+  const dataAgeResult = vehicleRefreshTimestamp 
+    ? calculateDataAge(vehicle.timestamp, vehicleRefreshTimestamp)
+    : null;
   
   // Check if this vehicle's route is a favorite
   const { isFavorite } = useFavoritesStore();
@@ -300,27 +357,55 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
             </Box>
           </Box>
           
-          {/* Timestamp - compact */}
+          {/* Timestamp with data age indicator - compact */}
           <Box display="flex" alignItems="center" gap={0.5} sx={{ flexShrink: 0 }}>
-            <TimeIcon fontSize="small" color="action" />
+            {/* Data age indicator icon */}
+            {dataAgeResult && <DataAgeIcon status={dataAgeResult.status} />}
+            
+            {/* Timestamp with data popup */}
             <Box sx={{ textAlign: 'right' }}>
-              <Tooltip 
-                title={vehicleRefreshTimestamp ? `Fetched ${formatRelativeTime(vehicleRefreshTimestamp)}` : ''}
-                arrow
-              >
-                <Typography 
-                  variant="caption" 
-                  color="text.secondary"
-                  sx={{ 
-                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                    whiteSpace: 'nowrap',
-                    display: 'block',
-                    cursor: vehicleRefreshTimestamp ? 'help' : 'default'
-                  }}
+              <ClickAwayListener onClickAway={() => setDataTooltipOpen(false)}>
+                <Tooltip 
+                  open={dataTooltipOpen}
+                  onClose={() => setDataTooltipOpen(false)}
+                  disableFocusListener
+                  disableHoverListener
+                  disableTouchListener
+                  title={
+                    dataAgeResult ? (
+                      <DataPopupContent
+                        vehicleTimestamp={vehicle.timestamp}
+                        fetchTimestamp={vehicleRefreshTimestamp || Date.now()}
+                        gpsAge={dataAgeResult.gpsAge}
+                        fetchAge={dataAgeResult.fetchAge}
+                        tip={dataAgeResult.tip}
+                      />
+                    ) : (
+                      vehicleRefreshTimestamp ? `Fetched ${formatRelativeTime(vehicleRefreshTimestamp)}` : ''
+                    )
+                  }
+                  arrow
                 >
-                  {formatTimestamp(vehicle.timestamp)}
-                </Typography>
-              </Tooltip>
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary"
+                    onClick={() => setDataTooltipOpen(!dataTooltipOpen)}
+                    sx={{ 
+                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      cursor: 'pointer',
+                      minWidth: '44px',
+                      minHeight: '44px',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      px: 0.5
+                    }}
+                  >
+                    {formatTimestamp(vehicle.timestamp)}
+                  </Typography>
+                </Tooltip>
+              </ClickAwayListener>
             </Box>
           </Box>
         </Stack>
@@ -395,121 +480,77 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         {arrivalTime && (
           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1.5 }}>
             {(() => {
-              // Generate enhanced debug info for all arrivals to help troubleshoot 15-second updates
-              const enhancedDebugInfo = {
-                // Basic arrival info
-                confidence: arrivalTime?.confidence || 'unknown',
-                status: arrivalTime?.statusMessage || 'unknown',
-                arrivalText: formatArrivalTime(arrivalTime),
-                
-                // Timing details for troubleshooting
-                vehicleTimestamp: vehicle.timestamp,
-                vehicleAge: vehicle.timestamp ? `${Math.round((Date.now() - new Date(vehicle.timestamp).getTime()) / 1000)}s ago` : 'unknown',
-                currentTime: new Date().toLocaleTimeString(),
-                
-                // Vehicle position details
-                vehicleId: vehicle.label || vehicle.id, // Use label first (user-facing number), fallback to ID
-                vehicleSpeed: vehicle.speed ? `${Number(vehicle.speed).toFixed(2)} km/h` : 'stopped',
-                vehiclePosition: `${vehicle.latitude?.toFixed(6)}, ${vehicle.longitude?.toFixed(6)}`,
-                
-                // Prediction calculation details
-                method: arrivalTime?.calculationMethod || 'unknown',
-                estimatedArrival: arrivalTime?.estimatedMinutes !== undefined 
-                  ? new Date(Date.now() + (arrivalTime.estimatedMinutes * 60 * 1000)).toLocaleTimeString()
-                  : 'unknown',
-                estimatedMinutes: arrivalTime?.estimatedMinutes !== undefined 
-                  ? `${arrivalTime.estimatedMinutes} min`
-                  : 'unknown',
-                
-                // Store refresh info
-                lastRefresh: vehicleRefreshTimestamp ? new Date(vehicleRefreshTimestamp).toLocaleTimeString() : 'unknown'
-              };
+              // Format time difference without "ago" suffix
+              const totalSeconds = Math.abs(arrivalTime.estimatedMinutes * 60);
+              const minutes = Math.floor(totalSeconds / 60);
+              const seconds = Math.floor(totalSeconds % 60);
+              const timeFormat = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
               
-              // Generate debug info for low confidence arrivals (existing functionality)
-              const lowConfidenceDebugInfo = arrivalTime?.confidence === 'low' 
-                ? generateConfidenceDebugInfo({ vehicle, route, trip, arrivalTime }) 
-                : null;
+              let tooltipContent = '';
               
-              const chip = (
-                <Chip
-                  icon={<ArrivalIcon />}
-                  label={formatArrivalTime(arrivalTime)}
-                  color={arrivalTime.statusMessage.includes('Departed') ? 'default' : 'success'}
-                  variant="filled"
-                  size="small"
-                  sx={{ 
-                    fontWeight: 'medium',
-                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                    '& .MuiChip-icon': { color: 'inherit' },
-                    cursor: 'help' // Always show cursor since we always have tooltip now
-                  }}
-                />
-              );
-
-              // Always show enhanced tooltip for troubleshooting 15-second updates
-              const shouldShowTooltip = true;
+              // Check statusMessage since status field is not included in StationVehicle.arrivalTime
+              const isDeparted = arrivalTime.statusMessage.toLowerCase().includes('departed');
+              const isAtStop = arrivalTime.statusMessage.toLowerCase().includes('at stop');
               
-              if (shouldShowTooltip) {
-                // Create simplified tooltip content
-                let tooltipContent = '';
-                
-                // Essential vehicle info
-                tooltipContent += `🚌 Vehicle ${enhancedDebugInfo.vehicleId}\n`;
-                tooltipContent += `📍 ${enhancedDebugInfo.vehiclePosition}\n`;
-                tooltipContent += `⚡ ${enhancedDebugInfo.vehicleSpeed}`;
-                
-                // Show API speed if different from predicted speed
-                if (vehicle.apiSpeed !== vehicle.speed) {
-                  tooltipContent += ` (API: ${Number(vehicle.apiSpeed).toFixed(2)} km/h)`;
-                }
-                tooltipContent += `\n⏰ ${enhancedDebugInfo.arrivalText}\n\n`;
-                
-                // Vehicle data age
-                tooltipContent += `📡 Vehicle Data: ${enhancedDebugInfo.vehicleAge}\n`;
-                tooltipContent += `🎯 Precise ETA: ${enhancedDebugInfo.estimatedMinutes}\n\n`;
-                
-                // Position prediction info (compact format)
-                if (vehicle.predictionMetadata?.positionMethod && vehicle.predictionMetadata?.positionApplied) {
-                  const positionConfidence = vehicle.predictionMetadata.timestampAge < 60000 ? 'high' : 
-                                            vehicle.predictionMetadata.timestampAge < 120000 ? 'medium' : 'low';
-                  tooltipContent += `📍 Position: ${vehicle.predictionMetadata.positionMethod} (${positionConfidence})\n`;
-                }
-                
-                // Speed prediction info
-                if (vehicle.predictionMetadata?.speedMethod) {
-                  tooltipContent += `🏃 Speed: ${vehicle.predictionMetadata.speedMethod} (${vehicle.predictionMetadata.speedConfidence})\n`;
-                }
-                
-                // Add low confidence debug info if available
-                if (lowConfidenceDebugInfo) {
-                  tooltipContent += `\n--- Low Confidence Details ---\n`;
-                  tooltipContent += formatConfidenceDebugTooltip(lowConfidenceDebugInfo);
-                }
-                
-                return (
+              if (isDeparted) {
+                tooltipContent = `⏰ Departed ${timeFormat} ago`;
+              } else if (isAtStop) {
+                tooltipContent = `⏰ At stop now`;
+              } else {
+                tooltipContent = `⏰ Arrival in ${timeFormat}`;
+              }
+              
+              // Position prediction info
+              if (vehicle.predictionMetadata?.positionMethod && vehicle.predictionMetadata?.positionApplied) {
+                const positionConfidence = vehicle.predictionMetadata.timestampAge < 60000 ? 'high' : 
+                                          vehicle.predictionMetadata.timestampAge < 120000 ? 'medium' : 'low';
+                tooltipContent += `\n\n📍 Position: ${vehicle.predictionMetadata.positionMethod} (${positionConfidence})`;
+              }
+              
+              // Speed prediction info
+              if (vehicle.predictionMetadata?.speedMethod) {
+                tooltipContent += `\n🏃 Speed: ${vehicle.predictionMetadata.speedMethod} (${vehicle.predictionMetadata.speedConfidence})`;
+              }
+              
+              return (
+                <ClickAwayListener onClickAway={() => setArrivalTooltipOpen(false)}>
                   <Tooltip
+                    open={arrivalTooltipOpen}
+                    onClose={() => setArrivalTooltipOpen(false)}
+                    disableFocusListener
+                    disableHoverListener
+                    disableTouchListener
                     title={tooltipContent}
                     placement="top"
                     arrow
                     slotProps={{
                       tooltip: {
                         sx: {
-                          fontSize: '0.7rem',
-                          maxWidth: 500,
+                          fontSize: '0.75rem',
+                          maxWidth: 300,
                           whiteSpace: 'pre-line',
-                          fontFamily: 'monospace',
-                          backgroundColor: 'rgba(0, 0, 0, 0.95)',
-                          lineHeight: 1.3
+                          lineHeight: 1.4
                         }
                       }
                     }}
                   >
-                    {chip}
+                    <Chip
+                      icon={<ArrivalIcon />}
+                      label={formatArrivalTime(arrivalTime)}
+                      color={isDeparted ? 'default' : 'success'}
+                      variant="filled"
+                      size="small"
+                      onClick={() => setArrivalTooltipOpen(!arrivalTooltipOpen)}
+                      sx={{ 
+                        fontWeight: 'medium',
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        '& .MuiChip-icon': { color: 'inherit' },
+                        cursor: 'pointer'
+                      }}
+                    />
                   </Tooltip>
-                );
-              }
-
-              return chip;
+                </ClickAwayListener>
+              );
             })()}
           </Box>
         )}

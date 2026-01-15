@@ -86,6 +86,34 @@ export function formatAbsoluteTime(timestamp: number): string {
 }
 
 /**
+ * Format time difference as detailed relative time (e.g., "2m 30s ago", "1h 15m ago")
+ * Use for detailed data age displays in tooltips and popups
+ * 
+ * @param ageMs - Age in milliseconds
+ * @returns Formatted string with appropriate units
+ */
+export function formatDetailedRelativeTime(ageMs: number): string {
+  const seconds = Math.floor(ageMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  
+  // Less than 60 seconds: show only seconds
+  if (minutes === 0) {
+    return `${seconds}s ago`;
+  }
+  
+  // Less than 60 minutes: show minutes and seconds
+  if (hours === 0) {
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s ago`;
+  }
+  
+  // 60 minutes or more: show hours and minutes
+  const remainingMinutes = minutes % 60;
+  return `${hours}h ${remainingMinutes}m ago`;
+}
+
+/**
  * Format timestamp for debugging purposes with full context
  * Use in debug panels and development tools
  */

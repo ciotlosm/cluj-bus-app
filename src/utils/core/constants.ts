@@ -43,6 +43,19 @@ export const STALENESS_THRESHOLDS = {
 } as const;
 
 /**
+ * GPS Data Age Indicator Configuration
+ * Independent from cache freshness system - these control user-facing indicators
+ * showing how old vehicle GPS timestamps are (Requirements 1.1, 1.2, 1.3, 1.4)
+ */
+export const GPS_DATA_AGE_THRESHOLDS = {
+  // GPS timestamp age threshold for "current" status (green indicator)
+  CURRENT_THRESHOLD: 2 * 60 * 1000, // 2 minutes
+  
+  // GPS timestamp age threshold for "stale" status (red indicator when fetch is fresh)
+  STALE_THRESHOLD: 5 * 60 * 1000, // 5 minutes
+} as const;
+
+/**
  * Performance optimization constants
  */
 export const PERFORMANCE = {
