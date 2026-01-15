@@ -2,6 +2,12 @@
 
 ## Recent Updates (January 2025)
 
+### January 15, 2026 - Fixed API Key Management Bugs
+- **🚨 BUG FIX 1**: Masked API key validation - clicking Continue without changing masked key now works correctly
+- **🔧 SOLUTION**: ApiKeySetupView detects unchanged masked keys and uses original key for validation
+- **🚨 BUG FIX 2**: Agency/API key change now clears all cached data (routes, vehicles, stations, trips, shapes, stop times)
+- **🔧 SOLUTION**: Added clearAgencyData() method that clears all agency-specific stores when API key or agency changes
+
 ### January 15, 2026 - Fixed Status Indicators After API Setup
 - **🚨 UX FIX**: Connection icon now turns green after successful agency validation, data refresh icon shows grey (empty) instead of red (stale) when no data exists yet
 - **🔧 SOLUTION**: Agency validation now updates status store, data freshness monitor distinguishes between "no data" and "stale data"

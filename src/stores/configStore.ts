@@ -28,6 +28,7 @@ interface ConfigStore {
   clearSuccess: () => void;
   validateApiKey: (apiKey: string) => Promise<void>;
   validateAndSave: (apiKey: string, agencyId: number) => Promise<void>;
+  clearAgencyData: () => Promise<void>;
 }
 
 export const useConfigStore = create<ConfigStore>()(
@@ -61,6 +62,9 @@ export const useConfigStore = create<ConfigStore>()(
           // Validate API key using standalone service function
           const { agencyService } = await import('../services/agencyService');
           const agencies = await agencyService.validateApiKey(apiKey);
+          
+          // Clear all agency-specific cached data before changing API key
+          await get().clearAgencyData();
           
           // On success: save API key, clear agency_id, load agencies into agency store
           set({ 
@@ -104,6 +108,15 @@ export const useConfigStore = create<ConfigStore>()(
             throw new Error('Invalid API key and agency combination');
           }
           
+          // Check if agency is changing
+          const currentState = get();
+          const isAgencyChanging = currentState.agency_id !== agencyId;
+          
+          // Clear all agency-specific cached data if agency is changing
+          if (isAgencyChanging) {
+            await get().clearAgencyData();
+          }
+          
           // Save to store (triggers app context update)
           set({ 
             apiKey, 
@@ -125,6 +138,30 @@ export const useConfigStore = create<ConfigStore>()(
           });
           
           throw error; // Re-throw to prevent navigation
+        }
+      },
+      
+      clearAgencyData: async () => {
+        // Clear all agency-specific data from all stores
+        try {
+          const { useRouteStore } = await import('./routeStore');
+          const { useStationStore } = await import('./stationStore');
+          const { useVehicleStore } = await import('./vehicleStore');
+          const { useTripStore } = await import('./tripStore');
+          const { useStopTimeStore } = await import('./stopTimeStore');
+          const { useShapeStore } = await import('./shapeStore');
+          
+          // Clear all stores
+          useRouteStore.getState().clearRoutes();
+          useStationStore.getState().clearStops();
+          useVehicleStore.getState().clearVehicles();
+          useTripStore.getState().clearTrips();
+          useStopTimeStore.getState().clearStopTimes();
+          useShapeStore.getState().clearShapes();
+          
+          console.log('[ConfigStore] Cleared all agency-specific cached data');
+        } catch (error) {
+          console.error('[ConfigStore] Failed to clear agency data:', error);
         }
       },
       
