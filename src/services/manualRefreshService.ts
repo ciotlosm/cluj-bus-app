@@ -7,6 +7,7 @@ import { useRouteStore } from '../stores/routeStore';
 import { useShapeStore } from '../stores/shapeStore';
 import { useStopTimeStore } from '../stores/stopTimeStore';
 import { useTripStore } from '../stores/tripStore';
+import { useStationRoleStore } from '../stores/stationRoleStore';
 import { useStatusStore } from '../stores/statusStore';
 import { IN_MEMORY_CACHE_DURATIONS } from '../utils/core/constants';
 
@@ -106,6 +107,32 @@ class ManualRefreshService {
         result.success = false;
         
         this.currentProgress[name] = 'error';
+        this.notifyProgressCallbacks();
+      }
+    }
+    
+    // Calculate station roles after trips and stopTimes are loaded
+    // This needs to happen after both trips and stopTimes are available
+    const tripsLoaded = result.refreshedStores.includes('trips') || result.skippedStores.includes('trips');
+    const stopTimesLoaded = result.refreshedStores.includes('stopTimes') || result.skippedStores.includes('stopTimes');
+    
+    if (tripsLoaded && stopTimesLoaded) {
+      try {
+        const stationRoleStore = useStationRoleStore.getState();
+        
+        // Only calculate if data is stale or missing
+        if (!stationRoleStore.isDataFresh(IN_MEMORY_CACHE_DURATIONS.STATIC_DATA)) {
+          this.currentProgress['stationRoles'] = 'starting';
+          this.notifyProgressCallbacks();
+          
+          await stationRoleStore.calculateStationRoles();
+          
+          this.currentProgress['stationRoles'] = 'completed';
+          this.notifyProgressCallbacks();
+        }
+      } catch (error) {
+        console.warn('Failed to calculate station roles:', error);
+        this.currentProgress['stationRoles'] = 'error';
         this.notifyProgressCallbacks();
       }
     }

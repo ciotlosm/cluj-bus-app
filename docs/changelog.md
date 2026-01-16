@@ -2,6 +2,11 @@
 
 ## Recent Updates (January 2025)
 
+### January 16, 2026 - Fixed Station Role Indicators Not Showing
+- **🚨 BUG FIX**: Route filter bubbles in station view now show start/end station markers (green play icon for start, red stop icon for end)
+- **🔧 SOLUTION 1**: Added station role calculation to manualRefreshService - calculateStationRoles() now runs after trips and stopTimes are loaded
+- **🔧 SOLUTION 2**: Fixed icon clipping by adding overflow: 'visible' to RouteBadge Avatar component
+
 ### January 15, 2026 - Fixed API Key Management Bugs
 - **🚨 BUG FIX 1**: Masked API key validation - clicking Continue without changing masked key now works correctly
 - **🔧 SOLUTION**: ApiKeySetupView detects unchanged masked keys and uses original key for validation

@@ -6,7 +6,8 @@ import type { FC } from 'react';
 import { memo, useState, useMemo } from 'react';
 import { 
   Card, CardContent, Typography, Chip, Stack, Box, Avatar, IconButton,
-  Collapse, List, ListItem, ListItemText, Tooltip, CircularProgress, ClickAwayListener
+  Collapse, List, ListItem, ListItemText, Tooltip, CircularProgress, ClickAwayListener,
+  Snackbar, Alert
 } from '@mui/material';
 import { 
   AccessibleForward as WheelchairIcon,
@@ -23,12 +24,14 @@ import { groupVehiclesForDisplay } from '../../../utils/station/vehicleGroupingU
 import { VEHICLE_DISPLAY } from '../../../utils/core/constants';
 import { getTripStopSequence } from '../../../utils/arrival/tripUtils';
 import { determineTargetStopRelation } from '../../../utils/arrival/arrivalUtils';
+import { isStationEndForTrip } from '../../../utils/station/stationRoleUtils';
 import { useTripStore } from '../../../stores/tripStore';
 import { useStopTimeStore } from '../../../stores/stopTimeStore';
 import { useStationStore } from '../../../stores/stationStore';
 import { useVehicleStore } from '../../../stores/vehicleStore';
 import { useRouteStore } from '../../../stores/routeStore';
 import { VehicleMapDialog } from '../maps/VehicleMapDialog';
+import { VehicleDropOffChip } from '../controls/VehicleDropOffChip';
 import type { StationVehicle } from '../../../types/stationFilter';
 import { useFavoritesStore } from '../../../stores/favoritesStore';
 
@@ -250,8 +253,8 @@ const DataPopupContent: FC<DataPopupContentProps> = ({
 const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalTime, station, vehicleRefreshTimestamp, allStationVehicles }) => {
   const [stopsExpanded, setStopsExpanded] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
-  const [dataTooltipOpen, setDataTooltipOpen] = useState(false);
-  const [arrivalTooltipOpen, setArrivalTooltipOpen] = useState(false);
+  const [dataToastOpen, setDataToastOpen] = useState(false);
+  const [arrivalToastOpen, setArrivalToastOpen] = useState(false);
   
   // Calculate data age for freshness indicator
   const dataAgeResult = vehicleRefreshTimestamp 
@@ -266,6 +269,11 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
   const { stopTimes } = useStopTimeStore();
   const { trips } = useTripStore();
   const { stops } = useStationStore();
+  
+  // Check if current station is the end station for this vehicle's trip
+  const isDropOffOnly = vehicle.trip_id && station?.stop_id
+    ? isStationEndForTrip(station.stop_id, vehicle.trip_id, stopTimes)
+    : false;
   
   // Get all data needed for the map dialog
   const { vehicles: allVehicles } = useVehicleStore();
@@ -362,50 +370,26 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
             {/* Data age indicator icon */}
             {dataAgeResult && <DataAgeIcon status={dataAgeResult.status} />}
             
-            {/* Timestamp with data popup */}
+            {/* Timestamp with data toast */}
             <Box sx={{ textAlign: 'right' }}>
-              <ClickAwayListener onClickAway={() => setDataTooltipOpen(false)}>
-                <Tooltip 
-                  open={dataTooltipOpen}
-                  onClose={() => setDataTooltipOpen(false)}
-                  disableFocusListener
-                  disableHoverListener
-                  disableTouchListener
-                  title={
-                    dataAgeResult ? (
-                      <DataPopupContent
-                        vehicleTimestamp={vehicle.timestamp}
-                        fetchTimestamp={vehicleRefreshTimestamp || Date.now()}
-                        gpsAge={dataAgeResult.gpsAge}
-                        fetchAge={dataAgeResult.fetchAge}
-                        tip={dataAgeResult.tip}
-                      />
-                    ) : (
-                      vehicleRefreshTimestamp ? `Fetched ${formatRelativeTime(vehicleRefreshTimestamp)}` : ''
-                    )
-                  }
-                  arrow
-                >
-                  <Typography 
-                    variant="caption" 
-                    color="text.secondary"
-                    onClick={() => setDataTooltipOpen(!dataTooltipOpen)}
-                    sx={{ 
-                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      cursor: 'pointer',
-                      minWidth: '44px',
-                      minHeight: '44px',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      px: 0.5
-                    }}
-                  >
-                    {formatTimestamp(vehicle.timestamp)}
-                  </Typography>
-                </Tooltip>
-              </ClickAwayListener>
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+                onClick={() => setDataToastOpen(true)}
+                sx={{ 
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  cursor: 'pointer',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  px: 0.5
+                }}
+              >
+                {formatTimestamp(vehicle.timestamp)}
+              </Typography>
             </Box>
           </Box>
         </Stack>
@@ -486,70 +470,30 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
               const seconds = Math.floor(totalSeconds % 60);
               const timeFormat = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
               
-              let tooltipContent = '';
-              
               // Check statusMessage since status field is not included in StationVehicle.arrivalTime
               const isDeparted = arrivalTime.statusMessage.toLowerCase().includes('departed');
               const isAtStop = arrivalTime.statusMessage.toLowerCase().includes('at stop');
               
-              if (isDeparted) {
-                tooltipContent = `⏰ Departed ${timeFormat} ago`;
-              } else if (isAtStop) {
-                tooltipContent = `⏰ At stop now`;
-              } else {
-                tooltipContent = `⏰ Arrival in ${timeFormat}`;
-              }
-              
-              // Position prediction info
-              if (vehicle.predictionMetadata?.positionMethod && vehicle.predictionMetadata?.positionApplied) {
-                const positionConfidence = vehicle.predictionMetadata.timestampAge < 60000 ? 'high' : 
-                                          vehicle.predictionMetadata.timestampAge < 120000 ? 'medium' : 'low';
-                tooltipContent += `\n\n📍 Position: ${vehicle.predictionMetadata.positionMethod} (${positionConfidence})`;
-              }
-              
-              // Speed prediction info
-              if (vehicle.predictionMetadata?.speedMethod) {
-                tooltipContent += `\n🏃 Speed: ${vehicle.predictionMetadata.speedMethod} (${vehicle.predictionMetadata.speedConfidence})`;
-              }
-              
               return (
-                <ClickAwayListener onClickAway={() => setArrivalTooltipOpen(false)}>
-                  <Tooltip
-                    open={arrivalTooltipOpen}
-                    onClose={() => setArrivalTooltipOpen(false)}
-                    disableFocusListener
-                    disableHoverListener
-                    disableTouchListener
-                    title={tooltipContent}
-                    placement="top"
-                    arrow
-                    slotProps={{
-                      tooltip: {
-                        sx: {
-                          fontSize: '0.75rem',
-                          maxWidth: 300,
-                          whiteSpace: 'pre-line',
-                          lineHeight: 1.4
-                        }
-                      }
+                <>
+                  <Chip
+                    icon={<ArrivalIcon />}
+                    label={formatArrivalTime(arrivalTime)}
+                    color={isDeparted ? 'default' : 'success'}
+                    variant="filled"
+                    size="small"
+                    onClick={() => setArrivalToastOpen(true)}
+                    sx={{ 
+                      fontWeight: 'medium',
+                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                      '& .MuiChip-icon': { color: 'inherit' },
+                      cursor: 'pointer'
                     }}
-                  >
-                    <Chip
-                      icon={<ArrivalIcon />}
-                      label={formatArrivalTime(arrivalTime)}
-                      color={isDeparted ? 'default' : 'success'}
-                      variant="filled"
-                      size="small"
-                      onClick={() => setArrivalTooltipOpen(!arrivalTooltipOpen)}
-                      sx={{ 
-                        fontWeight: 'medium',
-                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                        '& .MuiChip-icon': { color: 'inherit' },
-                        cursor: 'pointer'
-                      }}
-                    />
-                  </Tooltip>
-                </ClickAwayListener>
+                  />
+                  
+                  {/* Drop off only chip */}
+                  <VehicleDropOffChip isDropOffOnly={isDropOffOnly} />
+                </>
               );
             })()}
           </Box>
@@ -660,6 +604,93 @@ const VehicleCard: FC<VehicleCardProps> = memo(({ vehicle, route, trip, arrivalT
         trips={trips}
         stopTimes={stopTimes}
       />
+      
+      {/* Data Age Toast */}
+      <Snackbar
+        open={dataToastOpen}
+        autoHideDuration={4000}
+        onClose={() => setDataToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setDataToastOpen(false)} 
+          severity="info" 
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {dataAgeResult ? (
+            <>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                Data Freshness
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                Vehicle GPS: {formatAbsoluteTime(new Date(vehicle.timestamp).getTime())} ({formatDetailedRelativeTime(dataAgeResult.gpsAge)})
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                Last API fetch: {formatAbsoluteTime(vehicleRefreshTimestamp || Date.now())} ({formatDetailedRelativeTime(dataAgeResult.fetchAge)})
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', mt: 0.5, fontStyle: 'italic' }}>
+                {dataAgeResult.tip}
+              </Typography>
+            </>
+          ) : (
+            vehicleRefreshTimestamp ? `Fetched ${formatRelativeTime(vehicleRefreshTimestamp)}` : 'No data available'
+          )}
+        </Alert>
+      </Snackbar>
+      
+      {/* Arrival Time Toast */}
+      {arrivalTime && (() => {
+        const totalSeconds = Math.abs(arrivalTime.estimatedMinutes * 60);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        const timeFormat = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        
+        const isDeparted = arrivalTime.statusMessage.toLowerCase().includes('departed');
+        const isAtStop = arrivalTime.statusMessage.toLowerCase().includes('at stop');
+        
+        let mainMessage = '';
+        if (isDeparted) {
+          mainMessage = `Departed ${timeFormat} ago`;
+        } else if (isAtStop) {
+          mainMessage = 'At stop now';
+        } else {
+          mainMessage = `Arrival in ${timeFormat}`;
+        }
+        
+        return (
+          <Snackbar
+            open={arrivalToastOpen}
+            autoHideDuration={4000}
+            onClose={() => setArrivalToastOpen(false)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <Alert 
+              onClose={() => setArrivalToastOpen(false)} 
+              severity="info" 
+              variant="filled"
+              sx={{ width: '100%' }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                ⏰ {mainMessage}
+              </Typography>
+              {vehicle.predictionMetadata?.positionMethod && vehicle.predictionMetadata?.positionApplied && (
+                <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                  📍 Position: {vehicle.predictionMetadata.positionMethod} ({
+                    vehicle.predictionMetadata.timestampAge < 60000 ? 'high' : 
+                    vehicle.predictionMetadata.timestampAge < 120000 ? 'medium' : 'low'
+                  } confidence)
+                </Typography>
+              )}
+              {vehicle.predictionMetadata?.speedMethod && (
+                <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                  🏃 Speed: {vehicle.predictionMetadata.speedMethod} ({vehicle.predictionMetadata.speedConfidence} confidence)
+                </Typography>
+              )}
+            </Alert>
+          </Snackbar>
+        );
+      })()}
     </Card>
   );
 });

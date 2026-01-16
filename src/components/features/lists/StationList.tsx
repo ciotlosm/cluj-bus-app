@@ -25,6 +25,10 @@ import type { FilteredStation, StationUtilities } from '../../../types/stationFi
 import { StationVehicleList } from './StationVehicleList';
 import { useRouteStore } from '../../../stores/routeStore';
 import { useFavoritesStore } from '../../../stores/favoritesStore';
+import { useStationRoleStore } from '../../../stores/stationRoleStore';
+import { useStopTimeStore } from '../../../stores/stopTimeStore';
+import { RouteBadge } from '../controls/RouteBadge';
+import { shouldShowStationDropOffIndicator } from '../../../utils/station/stationRoleUtils';
 
 interface StationListProps {
   stations: FilteredStation[];
@@ -37,6 +41,8 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, ve
   const { formatDistance, getStationTypeColor, getStationTypeLabel } = utilities;
   const { routes } = useRouteStore();
   const { isFavorite } = useFavoritesStore();
+  const { getStationRole } = useStationRoleStore();
+  const { stopTimes } = useStopTimeStore();
   
   // Expansion state management per station - collapse all when multiple stations
   const [expandedStations, setExpandedStations] = useState<Set<number>>(() => {
@@ -124,6 +130,13 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, ve
         // Get route data for the bubbles
         const stationRoutes = routes.filter(route => routeIds.includes(route.route_id));
         
+        // Check if station-level "Drop off only" indicator should be shown
+        const showStationDropOffIndicator = shouldShowStationDropOffIndicator(
+          vehicles,
+          station.stop_id,
+          stopTimes
+        );
+        
         return (
           <Card key={station.stop_id} sx={{ 
             backgroundColor: 'background.paper',
@@ -185,6 +198,21 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, ve
                       />
                     </Tooltip>
                     
+                    {/* Station-level "Drop off only" indicator */}
+                    {showStationDropOffIndicator && (
+                      <Chip
+                        label="Drop off only"
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          borderColor: 'error.main',
+                          color: 'error.main',
+                          bgcolor: 'transparent',
+                          fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                        }}
+                      />
+                    )}
+                    
                     {/* Station type indicator - blue circle for closest */}
                     {stationType === 'primary' && (
                       <Box
@@ -212,64 +240,29 @@ export const StationList: FC<StationListProps> = memo(({ stations, utilities, ve
                           maxWidth: '100%'
                         }}
                       >
-                        {stationRoutes.slice(0, 8).map((route) => {
+                        {stationRoutes.map((route) => {
                           const isRouteSelected = selectedRouteId === route.route_id;
                           const isRouteFavorite = isFavorite(String(route.route_id));
                           
-                          // Determine background color based on selection and favorite status
-                          let backgroundColor;
-                          if (isRouteSelected) {
-                            backgroundColor = 'primary.main';
-                          } else if (isRouteFavorite) {
-                            // Faint grey+red for unselected favorite routes
-                            backgroundColor = 'grey.A200';
-                          } else {
-                            backgroundColor = route.route_color ? `#${route.route_color}` : 'grey.400';
-                          }
+                          // Get station role for this route and station
+                          const stationRole = getStationRole(route.route_id, station.stop_id);
+                          const isStart = stationRole === 'start' || stationRole === 'turnaround';
+                          const isEnd = stationRole === 'end' || stationRole === 'turnaround';
                           
                           return (
-                            <Avatar
+                            <RouteBadge
                               key={route.route_id}
+                              routeNumber={route.route_short_name}
+                              routeColor={route.route_color}
+                              isStart={isStart}
+                              isEnd={isEnd}
+                              size="medium"
                               onClick={() => handleRouteFilter(station.stop_id, route.route_id)}
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                fontSize: '0.75rem',
-                                fontWeight: 'bold',
-                                bgcolor: backgroundColor,
-                                color: isRouteSelected ? 'white' : (isRouteFavorite ? 'error.dark' : 'white'), // Darker red text for favorites
-                                minWidth: 32,
-                                flexShrink: 0,
-                                cursor: 'pointer',
-                                opacity: selectedRouteId === null || isRouteSelected ? 1 : 0.6,
-                                transition: 'all 0.2s ease-in-out',
-                                '&:hover': {
-                                  transform: 'scale(1.1)',
-                                  opacity: 1,
-                                  boxShadow: 2
-                                },
-                                border: isRouteSelected 
-                                  ? '2px solid' 
-                                  : (isRouteFavorite ? '1px solid' : '1px solid transparent'), // Subtle red border for favorites
-                                borderColor: isRouteSelected 
-                                  ? 'primary.dark' 
-                                  : (isRouteFavorite ? 'grey.A200' : 'transparent'),
-                                boxShadow: isRouteSelected ? 2 : 0
-                              }}
-                            >
-                              {route.route_short_name}
-                            </Avatar>
+                              selected={isRouteSelected}
+                              isFavorite={isRouteFavorite}
+                            />
                           );
                         })}
-                        {stationRoutes.length > 8 && (
-                          <Typography 
-                            variant="caption" 
-                            color="text.secondary"
-                            sx={{ ml: 0.5, fontSize: '0.65rem' }}
-                          >
-                            +{stationRoutes.length - 8} more
-                          </Typography>
-                        )}
                       </Stack>
                     </Box>
                   )}

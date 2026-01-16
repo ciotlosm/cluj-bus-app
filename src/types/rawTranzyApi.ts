@@ -159,7 +159,7 @@ export interface TranzyStopTimeResponse {
   trip_id: string;
   /** ID of the stop in this sequence */
   stop_id: number;
-  /** Order of this stop in the trip (starting from 1) */
+  /** Order of this stop in the trip (starting from 0) */
   stop_sequence: number;
 }
 
